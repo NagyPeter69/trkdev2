@@ -244,6 +244,7 @@
 					}
 				}
 			//error_log( print_r( $magazines, true ) );
+			$xmlChanged = false;
 			for( $i = 0; $i < count( $magazines ); $i++ ) {
 				error_log( $i );
 				$send = array();
@@ -281,7 +282,8 @@
 						$send['MailComm'] = "Yes";
 						$send['old_code'] = $code;
 						$send['deny'] = 'ki_set';
-						changeXmlDatabase_ext( 'modify', $send, '../xml/'.PMD.'.xml' );	
+						changeXmlDatabase_ext( 'modify', $send, '../xml/'.PMD.'.xml' );
+						$xmlChanged = true;
 						}
 					}
 				else {
@@ -305,12 +307,15 @@
 							$send['old_code'] = $code;
 							$send['deny'] = 'ki_set';
 							}
-						changeXmlDatabase_ext( 'modify', $send, '../xml/'.PMD.'.xml' );	
+						changeXmlDatabase_ext( 'modify', $send, '../xml/'.PMD.'.xml' );
+						$xmlChanged = true;
 						}
 					}
 				}
-			
-			XMLUpload2( PMD.'.xml' );
+
+			if( $xmlChanged ) {
+				XMLUpload2( PMD.'.xml' );
+				}
 			}
 		
 		$result = array( $error, $langmod );

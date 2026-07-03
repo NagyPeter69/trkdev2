@@ -222,12 +222,27 @@
 		$array = array(
 			"event" => "xml_data",
 			);
-					
-		$file = array( 
+
+		// Safety net: never let a non-production system upload the PMD
+		// dataset to Switch under the same filename production uses. If
+		// the machine's hostname contains "dev" (case-insensitive, e.g.
+		// "trkdev2"), tag the uploaded file with a _DEV suffix so Switch
+		// can never mistake it for the real dataset.
+		if( stripos( gethostname(), 'dev' ) !== false ) {
+			$dot = strrpos( $file, '.' );
+			if( $dot !== false ) {
+				$file = substr( $file, 0, $dot ) . '_DEV' . substr( $file, $dot );
+				}
+			else {
+				$file .= '_DEV';
+				}
+			}
+
+		$file = array(
 			"name" => $file,
 			"path" => "xml",
 			);
-		$response = SwitchSend_TESZT( $array, $file );		
+		$response = SwitchSend_TESZT( $array, $file );
 		}
 	
 	function XMLUpload( $xml2 = 'client/xml/'.PMD.'.xml' ) {
