@@ -1071,7 +1071,7 @@
     <FinalOutput/>
     <ArchiveMode>RGB</ArchiveMode>
     <Mails/>
-    <MailComm>Yes</MailComm>
+    <MailComm>No</MailComm>
     <AdSizes>
       <value>1/1 portrait, trim: 148 x 210 mm</value>
     </AdSizes>

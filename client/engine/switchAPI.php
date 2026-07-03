@@ -30,8 +30,8 @@ function SwitchLogin() {
 	
 	$login = curl_exec ($ch);
 	$response = json_decode($login, true);
-	$token = "Bearer ".$response["token"];
-	
+	$token = isset( $response["token"] ) ? "Bearer ".$response["token"] : "";
+
 	return $response;
 	}
 

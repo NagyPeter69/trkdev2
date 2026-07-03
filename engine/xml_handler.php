@@ -218,31 +218,104 @@
 		$response = SwitchSend_TESZT( $array, $file );	
 		}
 		
-	function XMLUpload2( $file ) {
-		$array = array(
-			"event" => "xml_data",
+	// Delivers the PMD XML to Switch. $realFile is the actual filename on
+	// disk under xml/ and must never be modified - the fast lookup by
+	// SwitchLogin/curl depends on it existing. $switchLabel is only the
+	// name Switch is told the upload is - this is where the dev-safety
+	// suffix belongs, kept deliberately separate from $realFile so a dev
+	// box can never accidentally look up (or fail to find) the wrong file.
+	function SendPmdXmlToSwitch( $realFile, $switchLabel, $connectTimeout = 2, $totalTimeout = 5 ) {
+		global $token;
+
+		$filePath = TRKPATH.'/xml/'.$realFile;
+		if( !is_file( $filePath ) ) {
+			return false;
+			}
+
+		SwitchLogin();
+		if( empty( $token ) ) {
+			return false;
+			}
+
+		$mime = mime_content_type( realpath( $filePath ) );
+
+		$headers = array(
+			"Authorization: ".$token."",
+			"Content-Type: multipart/form-data",
+			"Connection: Keep-Alive",
 			);
+
+		$data = array(
+			"flowId" => FLOWID_TESZT,
+			"objectId" => OBJECTID_TESZT,
+			"jobName" => $switchLabel,
+			"metadata" => json_encode( array( metadata( "spMF_5", "event", "xml_data" ) ) ),
+			"file[0][path]" => "",
+			"file[0][file]" => new CurlFile( realpath( $filePath ), $mime, $switchLabel ),
+			);
+
+		$ch = curl_init();
+		curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, $connectTimeout );
+		curl_setopt( $ch, CURLOPT_TIMEOUT, $totalTimeout );
+		curl_setopt( $ch, CURLOPT_URL, SWITCHURL );
+		curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers );
+		curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, "POST" );
+		curl_setopt( $ch, CURLOPT_POST, true );
+		curl_setopt( $ch, CURLOPT_POSTFIELDS, $data );
+		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
+		curl_exec( $ch );
+		$errno = curl_errno( $ch );
+		$httpCode = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+		curl_close( $ch );
+
+		return ( $errno === 0 && $httpCode >= 200 && $httpCode < 300 );
+		}
+
+	// Durable fallback for when the synchronous attempt above fails or times
+	// out. The cron worker (client/cron/switch_sync_worker.php) retries
+	// queued jobs with a more generous timeout until they succeed.
+	function QueueSwitchRetry( $jobType, $payload ) {
+		global $con;
+		sql_add(
+			'switch_sync_queue',
+			array( 'job_type', 'payload', 'next_attempt_at' ),
+			array(
+				mysqli_real_escape_string( $con, $jobType ),
+				mysqli_real_escape_string( $con, json_encode( $payload ) ),
+				date( 'Y-m-d H:i:s', time() + 60 ),
+				)
+			);
+		}
+
+	function XMLUpload2( $file ) {
+		$realFile = $file;
+		$switchLabel = $file;
 
 		// Safety net: never let a non-production system upload the PMD
 		// dataset to Switch under the same filename production uses. If
 		// the machine's hostname contains "dev" (case-insensitive, e.g.
 		// "trkdev2"), tag the uploaded file with a _DEV suffix so Switch
-		// can never mistake it for the real dataset.
+		// can never mistake it for the real dataset. Only the label sent
+		// to Switch changes - $realFile (what we read from disk) never
+		// does, since no _DEV-suffixed copy actually exists.
 		if( stripos( gethostname(), 'dev' ) !== false ) {
-			$dot = strrpos( $file, '.' );
+			$dot = strrpos( $switchLabel, '.' );
 			if( $dot !== false ) {
-				$file = substr( $file, 0, $dot ) . '_DEV' . substr( $file, $dot );
+				$switchLabel = substr( $switchLabel, 0, $dot ) . '_DEV' . substr( $switchLabel, $dot );
 				}
 			else {
-				$file .= '_DEV';
+				$switchLabel .= '_DEV';
 				}
 			}
 
-		$file = array(
-			"name" => $file,
-			"path" => "xml",
-			);
-		$response = SwitchSend_TESZT( $array, $file );
+		// Fast path: try synchronously with a short timeout, so the common
+		// case (Switch healthy) is exactly as immediate as before. Only on
+		// failure/timeout do we fall back to the durable retry queue,
+		// rather than blocking the user's request on a slow/dead Switch.
+		$ok = SendPmdXmlToSwitch( $realFile, $switchLabel, 2, 5 );
+		if( !$ok ) {
+			QueueSwitchRetry( 'pmd_xml', array( 'realFile' => $realFile, 'switchLabel' => $switchLabel ) );
+			}
 		}
 	
 	function XMLUpload( $xml2 = 'client/xml/'.PMD.'.xml' ) {
