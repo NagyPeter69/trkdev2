@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>228</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <place>1-2,227-228</place>
+      <color>FOGRA_51</color>
+      <size>205x270</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <place>3-226</place>
+      <color>FOGRA_45</color>
+      <size>205x270</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>EVA</code>
+  <issueCode>2402</issueCode>
+  <deadline>2024-05-08T16:00</deadline>
+  <status>approved</status>
+</issueData>

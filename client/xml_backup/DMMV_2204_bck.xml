@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>4</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>1-4</place>
+      <color>FOGRA_39</color>
+      <size>296x105</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>DMMV</code>
+  <issueCode>2204</issueCode>
+  <deadline>2022-01-31T16:00</deadline>
+  <status>active</status>
+</issueData>

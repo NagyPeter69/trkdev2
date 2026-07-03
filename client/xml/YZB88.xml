@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <pages>2</pages>
+      <color>FOGRA_39</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <pages>248</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>YZB88</code>
+  <issueCode>YZB88</issueCode>
+  <deadline>2022-10-07T16:00</deadline>
+  <status>active</status>
+</issueData>

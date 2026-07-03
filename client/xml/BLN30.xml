@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <pages/>
+      <color>FOGRA_52</color>
+      <size>105x148</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <pages/>
+      <color>FOGRA_52</color>
+      <size>110x148</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>BLN30</code>
+  <issueCode>BLN30</issueCode>
+  <deadline>2025-06-06T16:00</deadline>
+  <status>approved</status>
+</issueData>

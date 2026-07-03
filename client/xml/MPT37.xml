@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <pages>300</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <pages>4</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>ELO</name>
+      <pages>8</pages>
+      <color>FOGRA_52</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>MPT37</code>
+  <issueCode>MPT37</issueCode>
+  <deadline>2025-03-11T16:00</deadline>
+  <status>approved</status>
+</issueData>

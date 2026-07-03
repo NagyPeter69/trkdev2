@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <pages/>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <pages/>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>DDX40</code>
+  <issueCode>DDX40</issueCode>
+  <deadline>2023-10-27T16:00</deadline>
+  <status>approved</status>
+</issueData>

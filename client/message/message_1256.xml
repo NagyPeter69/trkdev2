@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eventComm>
+  <event>upload_ad_results</event>
+  <client>Marquard</client>
+  <pubName>Joy</pubName>
+  <jobCode>JOY</jobCode>
+  <issue>2306</issue>
+  <description>OPTICWORLD2</description>
+  <size>1_2</size>
+  <pageNum>149</pageNum>
+  <offset1>0_0_0</offset1>
+  <pageType/>
+  <caption>off</caption>
+  <capPosition/>
+  <orientation/>
+  <capColor/>
+  <results>
+    <upload>successful</upload>
+  </results>
+</eventComm>

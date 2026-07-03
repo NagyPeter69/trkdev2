@@ -1,0 +1,21 @@
+<svg version="1.2" baseProfile="tiny" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" xml:space="preserve">
+<g>
+	<g>
+		<path fill="none" stroke="#FFFFFF" stroke-miterlimit="10" d="M26.25,17.5c0,1.657-1.344,3-3,3H21l-6.75,4.75V20.5h-7
+			c-1.657,0-3-1.343-3-3v-9c0-1.657,1.343-3,3-3h16c1.656,0,3,1.343,3,3V17.5z"/>
+		<g>
+			<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="8.25" x2="21" y2="8.25"/>
+			<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="11.416" x2="24.25" y2="11.416"/>
+			<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="14.584" x2="22.5" y2="14.584"/>
+			<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="17.75" x2="19.75" y2="17.75"/>
+		</g>
+	</g>
+	<g>
+		
+			<line fill="none" stroke="#BE0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="23" y1="7.75" x2="7" y2="18.25"/>
+		
+			<line fill="none" stroke="#BE0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="7" y1="7.75" x2="23" y2="18.25"/>
+	</g>
+</g>
+</svg>

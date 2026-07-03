@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <pages>300</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>TAB</name>
+      <pages>1</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>ELO</name>
+      <pages>8</pages>
+      <color>FOGRA_52</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>AQU86</code>
+  <issueCode>AQU86</issueCode>
+  <deadline>2025-08-01T16:00</deadline>
+  <status>approved</status>
+</issueData>

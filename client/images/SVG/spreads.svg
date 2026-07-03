@@ -1,0 +1,10 @@
+<svg version="1.2" baseProfile="tiny" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" xml:space="preserve">
+<g>
+	<g>
+		<rect x="4.617" y="7.807" fill="#787878" width="20" height="15"/>
+		<path fill="#FFFFFF" d="M24.117,8.307v14h-19v-14H24.117 M25.117,7.307h-21v16h21V7.307L25.117,7.307z"/>
+	</g>
+	<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="14.617" y1="7.693" x2="14.617" y2="22.848"/>
+</g>
+</svg>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>76</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-74</place>
+      <color>FOGRA_51</color>
+      <size>200x245</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,75-76</place>
+      <color>FOGRA_51</color>
+      <size>200x245</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>ZF</code>
+  <issueCode>2206</issueCode>
+  <deadline>2022-05-19T16:00</deadline>
+  <status>approved</status>
+</issueData>

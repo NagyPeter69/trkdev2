@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>76</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-88</place>
+      <color>FOGRA_51</color>
+      <size>381x677</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,89-90</place>
+      <color>FOGRA_51</color>
+      <size>381x677</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>ZF</code>
+  <issueCode>2302</issueCode>
+  <deadline>2023-01-18T16:00</deadline>
+  <status>archived</status>
+</issueData>

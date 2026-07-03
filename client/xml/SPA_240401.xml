@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>64</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-62</place>
+      <color>FOGRA_51</color>
+      <size>165x235</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,63-64</place>
+      <color>FOGRA_51</color>
+      <size>165x235</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>SPA</code>
+  <issueCode>240401</issueCode>
+  <deadline>2024-03-12T16:00</deadline>
+  <status>stopped</status>
+</issueData>

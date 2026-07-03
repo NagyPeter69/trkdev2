@@ -1,0 +1,954 @@
+#headerExtraLine {
+	background-color: #8A8A8A;
+	color: #FFF;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	}
+	
+.cyan rect {
+	fill: #407180;
+	}
+
+.cyan path {
+	fill: #00C4FF;
+	}
+
+.cyan line {
+	stroke: #00C4FF;
+	}
+	
+#loading {
+	z-index: 999 !important;
+	}
+
+#mymenu {
+	display: none;
+	}
+
+#header .logo {
+	width: 89px !important;
+	}
+
+.mymenu {
+	display: none !important;
+	}
+
+#logo_table {
+	width: 229px !important;
+	}
+
+#logo_td {
+	width: 195px !important;
+	}
+
+#menuLine {
+	left: 229px !important;
+	}
+
+.loginDiv, .upload_button {
+	display: none !important;
+	}
+
+.mobileLogin {
+	display: block !important;
+	width: 100%;
+	height: 100%;
+	background-color: #103d8b;
+	position: fixed;
+	left: 0;
+	top: 0;
+	color: #FFF;
+	font-family: myriad;
+	font-size: 35px;
+	}
+	
+.login_form_title {
+	font-size: 31px;
+	}
+	
+.login_input {
+	background-color: #FFF;
+	font-size: 26px;
+	padding: 5px 8px;
+	border-radius: 5px;
+	border: 1px solid #FFF !important;
+	outline:none;
+	margin: 0;
+	}
+
+.login_topPadding {
+	margin-top: 20px;
+	}	
+		
+.inputError {
+	color: #FFF !important;
+	background-color: #BD7373 !important;
+	border: 1px solid #BD7373 !important;
+	}	
+
+.login_button {
+	display: inline-block;
+	color: #FFF;
+	border-radius: 5px;	
+	border: 1px solid #B5D0FF;
+	background-color: #6989BF;
+	padding: 10px 20px !important;
+	font-size: 26px !important;	
+	}
+
+.login_logo_pic {
+	height: 30px;
+	}
+
+.custom_column, .culomn {
+	display: none !important;
+	}
+
+.culomn_2 {
+	display: block !important;
+	margin-left: 10px !important;
+	width: 100% !important;
+	}
+	
+.culomn_inside {
+	font-family: myriad_bolder !important;
+	}
+
+#mobile_usermenu {
+	left: 0px !important;
+	top: 48px !important;
+	border-radius: 0px !important;
+	font-size: 22px !important;
+	width: 140px !important;
+	padding: 15px 20px;
+	}
+	
+#mobile_usermenu div {
+	line-height: 30px !important;
+	}
+	
+.oldalsor_bal {
+	display: none !important;
+	}
+
+#headerExtraLine {
+	font-size: 15px !important;
+	}
+	
+ul.nav li {	
+	font-family: myriad_reg !important;
+	}
+
+#settings_fullscreen {
+	display: none;
+	width: 100%;
+	height: 100%;
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 9999;	
+	}
+	
+#settings_title {
+	position: absolute;
+	height: 50px;
+	top: 0;
+	left: 229px;
+	width: 100%;
+	background-color: #17376E;
+	}
+	
+#settings_content {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	background-color: #3F5F96;
+	left: 0;
+	top: 50px;
+	padding: 10px;
+	box-sizing: border-box;
+	font-size: 20px;
+	line-height: 35px;
+	color: #FFF;
+	}
+	
+#settings_content select {
+	font-size: 20px;
+	}
+	
+#settings_content input {
+	margin: 0;
+	font-size: 16px;
+	}
+
+.mobileFPchoser {
+	float: left;
+	padding: 0px 3px;
+	margin-left: 5px;
+	height: 23px;
+	font-size: 13px;
+	line-height: 23px;
+	}
+
+.alterSelected {
+	background: #0D731A;
+	}
+
+#settings_content input[type="checkbox"] {
+	height: 20px;
+	width: 20px;
+	display: inline-block;
+	float: left;
+	margin-top: 9px;
+	margin-left: 5px !important;	
+	}
+	
+.panelButton {
+	width: 80px !important;
+	font-weight: normal !important;
+	//color: #FFF;
+	}
+
+.panelButton:nth-child(1) {
+	//background-color: #A8A8A8;
+	//border: 2px solid #CCCCCC;
+	}
+	
+.panelButton:nth-child(2) {
+	//background-color: #4B71B3;
+	//border: 2px solid #97A9C9;
+	}
+
+.mobilePagesButton svg {
+	width: 45px !important;
+	height: 45px !important;
+	}
+
+#fpPages {
+	display: none !important;
+	left: -999px !important;
+	}
+	
+#fpToolBox {
+	width: 40px !important;
+	left: 0px !important;
+	display: none !important;
+	}
+
+#fpFooter {
+	height: 45px !important;
+	}
+	
+.mobileToolBox {
+	float: left;
+	height: 40px;
+	display: none;
+	}
+
+#mainstatus {
+	position: initial !important;
+	float: right !important;
+	}
+	
+#content_wrapper, #fpFooter {
+	left: 0px !important;
+	}
+
+#zoomRange, #zoomdiv {
+	display: none !important;
+	}
+	
+#rightPanel {
+	width: 40px !important;
+	top: 10px !important;
+	}
+
+.rightPanelSeparator {
+	margin-top: -5px;
+	margin-bottom: 10px;
+	}
+
+.rightPanelElement svg {
+	width: 40px !important;
+	height: 40px !important;
+	}
+
+.rightPanelElement {
+	width: 40px !important;
+	height: 50px !important;
+	}
+
+#showComment {
+	height: 40px !important;
+	}
+
+.selectLeft, .selectRight {
+	width: 117px;
+	height: 187px;
+	}
+
+.pageBox .page_footer {
+	width: 116px;
+	}
+
+.pageBox .pagenr {
+	font-size: 16px;
+	height: 18px;
+	width: 116px;
+	}
+
+.pageWraper {
+	width: 192px !important;
+	height: 150px !important;
+	}
+
+.pairView {
+	width: 93px !important;
+	height: 150px !important;		
+	}
+	
+.pairView .thumb {
+	width: 93px !important;
+	height: 116px !important;
+	}
+
+.pairView .page_footer {
+	width: 93px !important;
+	}
+
+.pairView .pagenr {
+	font-size: 15px !important;
+	height: 18px !important;
+	width: 93px !important;
+	}			
+
+.selectLeft, .selectRight {
+	width: 93px !important;
+	height: 152px !important;
+	}	
+
+.status1 #pstatus {
+	text-align: left;
+	}
+
+.status2 #pstatus div {
+	position: initial !important;
+	left: auto !important;
+	float: right !important;
+	margin-right: 15px;
+	}
+
+.status2 {
+	margin-top: 2px !important;
+	left: auto !important;
+	float: right !important;
+	}
+	
+.status1 {
+	left: 0 !important;
+	margin-top: 4px !important;
+	float: right !important; 
+	}
+
+.footer_content {
+	left: 0 !important;
+	}
+	
+.mobile_single {
+	right: 3vw !important;
+	left: auto !important;
+	top: 0 !important;
+	}
+
+.status1, .status2 {
+	top: 0px !important;
+	}
+
+#pstatus {
+	width: auto !important;
+	}
+
+#pageNr {
+	height: 23px !important;
+	line-height: 23px !important;	
+	font-size: 13px !important;
+	margin-top: -7px !important;
+	}
+
+#pageInfoBox {
+	float: right !important;
+	}
+
+.pages {
+	padding-bottom: 7px !important;
+	left: auto !important;
+	position: inherit !important;
+	}
+
+.pageVer {
+	height: 23px !important;
+	line-height: 23px !important;
+	font-size: 13px !important;
+	margin-top: -7px !important;
+	}
+
+.pText {
+	font-size: 17px !important;
+	margin-top: 3px !important;
+	}
+
+.mobileDecline, .mobileAccept {
+	font-size: 28px;
+	margin-left: 4px;
+	margin-right: 8px;
+	margin-top: 4px;
+	}
+
+.mobileDecline {
+	color: #FA0505;
+	}
+
+.mobileAccept {
+	color: rgb(7, 224, 27);
+	}
+
+.mobile_single #pstatus {
+	text-align: right !important;
+	}
+	
+.mobile_singlepages {
+	position: inherit;
+	left: 0 !important;
+	}
+
+#rightArrow {
+	margin-right: 5px;
+	}
+		
+.mobile_singlepages #leftArrow, .mobile_singlepages #leftArrow_hover, .mobile_singlepages .pages, .mobile_singlepages #rightArrow, .mobile_singlepages #rightArrow_hover  {
+	float: left;
+    position: inherit !important;
+    left: auto !important;
+	}
+
+#mask {
+	height: 1px !important;
+	}
+
+#pub_table_wrapper div {
+	font-size: 18px !important;
+	}
+
+.pubDeadline, .pubSettingsDot, .pubStatus {
+	display: none !important;
+	}
+	
+#pub_table_wrapper {
+	height: calc( 100vh - 50px ) !important;
+	}
+
+.fp_left {
+	display: none !important;
+	}
+
+#menuLine li:nth-child(2) {
+	display: none !important;
+	}
+	
+@media only screen  and (max-width : 800px) {
+	.upload_button {
+		display: none;
+		}
+
+	.pageWraper {
+		width: 179px !important;
+		height: 150px !important;
+		}
+
+	.pairView {
+		width: 88px !important;
+		height: 150px !important;		
+		}
+		
+	.pairView .thumb {
+		width: 88px !important;
+		height: 122px !important;
+		}
+	
+	.pairView .page_footer {
+		width: 88px !important;
+		}
+	
+	.pairView .pagenr {
+		font-size: 15px !important;
+		height: 18px !important;
+		width: 88px !important;
+		}			
+
+	.selectLeft, .selectRight {
+		width: 88px !important;
+		height: 152px !important;
+		}
+	}
+
+@media only screen  and (max-width : 640px) {
+	#mobile_usermenu {
+		top: 50px !important;
+		font-size: 20px !important;
+		width: 120px !important;
+		}
+		
+	#mobile_usermenu div {
+		line-height: 40px !important;
+		}
+	
+	#logo_table td:nth-child(2) {
+		display: none !important;
+		}
+		
+	.logo_pic {
+		background-image: url(../images/default_logo_M_small.png) !important;
+		width: 74px !important;
+		}
+	
+	#header .logo {
+		width: 89px !important;
+		}
+	
+	#logo_table {
+		width: 89px !important;
+		}
+	
+	#logo_td {
+		width: 80px !important;
+		}
+	
+	#menuLine, #settings_title {
+		left: 89px !important;
+		}
+		
+	.login_logo_pic {
+		height: 20px !important;
+		}
+		
+	.mobileLogin {
+		font-size: 30px !important;
+		}
+		
+	.login_form_title {
+		font-size: 26px !important;
+		}
+	
+	.login_input {
+		font-size: 21px !important;
+		padding: 5px 8px !important;
+		}
+		
+	.login_button {
+		padding: 7px 20px !important;
+		font-size: 20px !important;
+		}
+
+	#settings_content {
+		font-size: 23px !important;
+		line-height: 45px !important;
+		}
+	
+	#settings_content select {
+		font-size: 23px !important;
+		}
+		
+	#settings_content input {
+		font-size: 20px !important;
+		}
+
+	#settings_content input[type="checkbox"] {
+		height: 19px !important;
+		width: 19px !important;
+		margin-top: 9px !important;
+		margin-left: 5px !important;	
+		}
+
+	.pageWraper {
+		width: 185px !important;
+		height: 150px !important;
+		}
+
+	.pairView {
+		width: 92px !important;
+		height: 150px !important;		
+		}
+		
+	.pairView .thumb {
+		width: 92px !important;
+		height: 116px !important;
+		}
+	
+	.pairView .page_footer {
+		width: 92px !important;
+		}
+	
+	.pairView .pagenr {
+		font-size: 15px !important;
+		height: 18px !important;
+		width: 92px !important;
+		}			
+
+	.selectLeft, .selectRight {
+		width: 92px !important;
+		height: 152px !important;
+		}
+	}
+				
+@media only screen  and (max-width : 500px) {
+	.culomn_1 {
+		width: 35% !important;
+		}	
+	
+	.mobileLogin {
+		font-size: 24px !important;
+		}
+		
+	.login_form_title {
+		font-size: 20px !important;
+		}
+	
+	.login_input {
+		font-size: 15px !important;
+		padding: 2px 5px !important;
+		}
+		
+	.login_button {
+		padding: 3px 7px !important;
+		font-size: 17px !important;
+		}
+	
+	#headerExtraLine {
+		font-size: 15px !important;
+		}
+	
+	ul.nav li {
+		font-size: 22px !important;
+		padding-left: 13px !important;
+		margin-left: 0px !important;
+		}
+		
+	.pub_info, .pub_info_ {
+		font-size: 18px !important;
+		line-height: 40px !important;
+		}
+		
+	.pub_listing td:not(.icons) {
+		height: 40px !important;
+		}
+	
+	.status_color, .jline {
+		height: 40px !important;
+		}
+		
+	.custom_column {
+		line-height: 40px !important;
+		}
+		
+	.culomn {
+		font-size: 16px !important;
+		}
+		
+	#job_header_texts, #job_header, #job_header_menu {
+		height: 29px !important;
+		}
+
+	.pageWraper {
+		width: 192px !important;
+		height: 150px !important;
+		}
+
+	.pairView {
+		width: 95px !important;
+		height: 155px !important;		
+		}
+		
+	.pairView .thumb {
+		width: 95px !important;
+		height: 122px !important;
+		}
+	
+	.pairView .page_footer {
+		width: 95px !important;
+		}
+	
+	.pairView .pagenr {
+		font-size: 15px !important;
+		height: 18px !important;
+		width: 95px !important;
+		}			
+
+	.selectLeft, .selectRight {
+		width: 95px !important;
+		height: 156px !important;
+		}
+	}
+
+@media only screen  and (max-width : 400px) {
+	#settings_content {
+		font-size: 19px !important;
+		line-height: 40px !important;
+		}
+	
+	#settings_content select {
+		font-size: 19px !important;
+		}
+		
+	#settings_content input {
+		font-size: 16px !important;
+		}
+
+	#settings_content input[type="checkbox"] {
+		height: 19px !important;
+		width: 19px !important;
+		margin-top: 9px !important;
+		margin-left: 5px !important;	
+		}
+
+	.selectLeft, .selectRight {
+		width: 84px !important;
+		height: 182px !important;
+		}
+	
+	.pageBox .page_footer {
+		width: 83px !important;
+		}
+	
+	.pageBox .pagenr {
+		font-size: 13px !important;
+		height: 18px !important;
+		width: 83px !important;
+		}
+
+	.pageWraper {
+		width: 172px !important;
+		height: 135px !important;
+		}
+		
+	.pairView {
+		width: 85px !important;
+		height: 138px !important;		
+		}
+		
+	.pairView .thumb {
+		width: 85px !important;
+		height: 105px !important;
+		}
+	
+	.pairView .page_footer {
+		width: 85px !important;
+		}
+	
+	.pairView .pagenr {
+		font-size: 15px !important;
+		height: 18px !important;
+		width: 85px !important;
+		}			
+
+	.selectLeft, .selectRight {
+		width: 85px !important;
+		height: 139px !important;
+		}
+	}
+
+@media only screen  and (max-width : 360px) {
+	#headerExtraLine {
+		font-size: 13px !important;
+		}
+		
+	ul.nav li {
+		font-size: 19px !important;
+		padding-left: 15px !important;
+		margin-left: 0px !important;
+		}
+
+	.selectLeft, .selectRight {
+		width: 82px !important;
+		height: 141px !important;
+		}
+	
+	.pageBox .page_footer {
+		width: 82px !important;
+		}
+	
+	.pageBox .pagenr {
+		font-size: 14px !important;
+		height: 18px !important;
+		width: 82px !important;
+		}
+		
+	.pageWraper {
+		width: 165px !important;
+		height: 127px !important;
+		}
+		
+	.pairView {
+		width: 81px !important;
+		height: 132px !important;		
+		}
+		
+	.pairView .thumb {
+		width: 81px !important;
+		height: 98px !important;
+		}
+	
+	.pairView .page_footer {
+		width: 81px !important;
+		}
+	
+	.pairView .pagenr {
+		font-size: 15px !important;
+		height: 18px !important;
+		width: 81px !important;
+		}
+	}
+
+@media only screen  and (max-width : 320px) {
+	#leftArrow, #leftArrow_hover {
+		left: 42.5px !important;
+		}
+		
+	#rightArrow, #rightArrow_hover {
+		left: 200.5px !important;
+		}
+
+	#headerExtraLine {
+		font-size: 11px !important;
+		}
+		
+	ul.nav li {
+		font-size: 17px !important;
+		padding-left: 13px !important;
+		margin-left: 0px !important;
+		}
+
+	#settings_content {
+		font-size: 17px !important;
+		}
+	
+	#settings_content select {
+		font-size: 17px !important;
+		}
+		
+	#settings_content input {
+		font-size: 14px !important;
+		}
+
+	#settings_content input[type="checkbox"] {
+		height: 18px !important;
+		width: 18px !important;
+		margin-top: 9px !important;
+		margin-left: 5px !important;	
+		}
+		
+	.selectLeft, .selectRight {
+		width: 72px !important;
+		height: 116px !important;
+		}
+	
+	.pageBox .page_footer {
+		width: 82px !important;
+		}
+	
+	.pageBox .pagenr {
+		font-size: 13px !important;
+		height: 18px !important;
+		width: 82px !important;
+		}
+		
+	.pageWraper {
+		width: 145px !important;
+		height: 110px !important;
+		}	
+		
+	.pairView {
+		width: 71px !important;
+		height: 115px !important;		
+		}
+		
+	.pairView .thumb {
+		width: 71px !important;
+		height: 81px !important;
+		}
+	
+	.pairView .page_footer {
+		width: 71px !important;
+		}
+	
+	.pairView .pagenr {
+		font-size: 13px !important;
+		height: 18px !important;
+		width: 71px !important;
+		}	
+	}
+
+@media only screen  and (max-height : 500px) {
+	.loginDiv {
+		display: none;
+		}
+	
+	.mobileLogin {
+		display: block !important;
+		width: 100%;
+		height: 100%;
+		background-color: #103d8b;
+		position: fixed;
+		left: 0;
+		top: 0;
+		color: #FFF;
+		font-family: myriad;
+		font-size: 25px;
+		}
+		
+	.login_form_title {
+		font-size: 23px;
+		}
+		
+	.login_input {
+		background-color: #FFF;
+		font-size: 16px;
+		padding: 5px 10px;
+		border-radius: 5px;
+		border: 1px solid #FFF !important;
+		outline:none;
+		margin: 0;
+		}
+
+	.login_topPadding {
+		margin-top: 13px;
+		}
+
+	.login_button {
+		padding: 5px 10px ;
+		font-size: 21px !important;
+		}
+	}
+	
+@media only screen  and (max-height : 400px) {
+	.mobileLogin {
+		font-size: 20px !important;
+		}
+		
+	.login_form_title {
+		font-size: 18px !important;
+		}
+	
+	.login_input {
+		font-size: 12px !important;
+		padding: 2px 5px !important;
+		}
+
+	.login_topPadding {
+		margin-top: 10px !important;
+		}
+		
+	.login_button {
+		padding: 3px 7px !important;
+		font-size: 17px !important;
+		}	
+	}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>93</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <place>1-2,93-94</place>
+      <color>FOGRA_51</color>
+      <size>381x677</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <place>3-92</place>
+      <color>FOGRA_51</color>
+      <size>381x677</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>ZF</code>
+  <issueCode>2308</issueCode>
+  <deadline>2023-08-01T16:00</deadline>
+  <status>approved</status>
+</issueData>

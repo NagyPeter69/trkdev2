@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <pages/>
+      <color>FOGRA_52</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <pages/>
+      <color>FOGRA_52</color>
+      <size>210x297</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>XVK75</code>
+  <issueCode>XVK75</issueCode>
+  <deadline>2023-05-10T16:00</deadline>
+  <status>active</status>
+</issueData>

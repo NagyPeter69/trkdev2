@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>52</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-198</place>
+      <color>FOGRA_45</color>
+      <size>148x210</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,199-200</place>
+      <color>FOGRA_51</color>
+      <size>148x210</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>BPH</code>
+  <issueCode>2501</issueCode>
+  <deadline>2025-10-31T16:00</deadline>
+  <status>active</status>
+</issueData>

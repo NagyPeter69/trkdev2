@@ -1,0 +1,56 @@
+.pickerBox {
+	background: url(../images/cross.png);
+	position: absolute;
+	width: 17px;
+	height: 17px;
+	pointer-events:none;
+	z-index: 30;
+	}
+
+.toggleBar {
+	float: left;
+	}
+
+#rightPanel {
+	width: 35px;
+	float: right;
+	position: absolute;
+	right: 0px;
+	top: 91px;
+	}
+	
+.rightPanelElement {
+	width: 35px;
+	float: left;
+	background-position: center center;
+	background-repeat: no-repeat;
+	}
+.rightPanelElement>img {
+	position: absolute;
+	left: 5px;
+	}
+.rightPanelElement>.hover {
+	display: none;
+	}
+	
+.kinetic-active {
+	cursor: move;
+	cursor: -webkit-grab;
+	cursor: -moz-grab;
+	}
+.kinetic-active:active {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor: -moz-grabbing;
+	}
+
+.rightPanelSeparator {
+	float: left;
+	width: 35px;
+	height: 7px;
+	text-align: center;
+	}
+.rightPanelSeparator>img {
+	float:left;
+	margin-left: 5px;
+	}

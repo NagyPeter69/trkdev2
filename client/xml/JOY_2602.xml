@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>244</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <place>2-2-244</place>
+      <color>FOGRA_51</color>
+      <size>168x223</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <place>3-242</place>
+      <color>FOGRA_45</color>
+      <size>168x223</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>JOY</code>
+  <issueCode>2602</issueCode>
+  <deadline>2026-03-20T16:00</deadline>
+  <status>approved</status>
+</issueData>

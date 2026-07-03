@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>172</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-170</place>
+      <color>FOGRA_45</color>
+      <size>168x223</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,171-172</place>
+      <color>FOGRA_51</color>
+      <size>168x223</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>JOY</code>
+  <issueCode>2503</issueCode>
+  <deadline>2025-06-05T16:00</deadline>
+  <status>approved</status>
+</issueData>

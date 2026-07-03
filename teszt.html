@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<HTML>
+
+<head>
+	<meta charset="UTF-8">
+	<link href="plugins/push/css/jquery.gritter.css"rel="stylesheet" type="text/css" />
+
+	<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <script src="plugins/push/js/jquery.gritter.min.js"></script>
+    <script src="http://js.pusher.com/1.12/pusher.min.js"></script>
+    <script src="plugins/push/js/PusherNotifier.js"></script>
+    
+    <script>
+		$(function() {
+			var pusher = new Pusher('ab9e2f2c231b0ab5d298');
+			var channel = pusher.subscribe('nyk_not');
+ 			var notifier = new PusherNotifier(channel);
+			});   	
+    </script>
+</head>
+
+<body>
+
+</body>
+
+</HTML>

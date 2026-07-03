@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eventComm>
+  <event>page_approved</event>
+  <client>Colorcom</client>
+  <jobCode>TST</jobCode>
+  <issue>1804</issue>
+  <description>56</description>
+  <remark>Nagy Péter</remark>
+  <date>2018-04-20T16:41:22</date>
+  <pageNum>056</pageNum>
+  <pageType>FIN</pageType>
+  <pageVersion>-baseversion-</pageVersion>
+</eventComm>

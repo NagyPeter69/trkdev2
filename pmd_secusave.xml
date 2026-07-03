@@ -1,0 +1,924 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Publications>
+  <Item>
+    <Name>Playboy</Name>
+    <Code>PB</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Current>1403</Current>
+    <AdAutoProof>Yes</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>200 x 272 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>g.gerse@ckm.hu;p.szanto@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 235 mm</value>
+      <value>1/2 landscape, satz: 170 x 115 mm</value>
+      <value>1/3 portrait, satz: 55 x 235 mm</value>
+      <value>1/3 landscape, satz: 170 x 75 mm</value>
+      <value>2/3 portrait, satz: 114 x 235 mm</value>
+      <value>1/4 portrait, satz: 83 x 115 mm</value>
+      <value>1/2 portrait, trim: 98 x 272 mm</value>
+      <value>1/2 landscape, trim: 200 x 134 mm</value>
+      <value>1/3 portrait, trim: 64 x 272 mm</value>
+      <value>1/3 landscape, trim: 200 x 88 mm</value>
+      <value>2/3 portrait, trim: 131 x 272 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>MensHealth</Name>
+    <Code>MEH</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>2</Period>
+    <Current/>
+    <AdAutoProof>Yes</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>200 x 272 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>r.nagy@menshealth.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 235 mm</value>
+      <value>1/2 landscape, satz: 170 x 115 mm</value>
+      <value>1/3 portrait, satz: 54 x 235 mm</value>
+      <value>1/3 landscape, satz: 170 x 75 mm</value>
+      <value>1/4 portrait, satz: 83 x 115 mm</value>
+      <value>1/2 portrait, trim: 98 x 272 mm</value>
+      <value>1/2 landscape, trim: 200 x 134 mm</value>
+      <value>1/3 portrait, trim: 64 x 272 mm</value>
+      <value>1/3 landscape, trim: 200 x 88 mm</value>
+      <value>1/4 portrait, trim: 98 x 134 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Joy</Name>
+    <Code>JOY</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Current>1403</Current>
+    <AdAutoProof>Yes</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>R_1</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>172 x 228 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>v.galgoczy@joy.hu;v.varaljai@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 67 x 196 mm</value>
+      <value>1/2 landscape, satz: 138 x 94 mm</value>
+      <value>1/3 portrait, satz: 44 x 196 mm</value>
+      <value>1/3 landscape, satz: 138 x 57 mm</value>
+      <value>2/3 portrait, satz: 90 x 196 mm</value>
+      <value>1/4 portrait, satz: 67 x 94 mm</value>
+      <value>1/2 portrait, trim: 84 x 228 mm</value>
+      <value>1/2 landscape, trim: 172 x 112 mm</value>
+      <value>1/3 portrait, trim: 60 x 228 mm</value>
+      <value>1/3 landscape, trim: 172 x 76 mm</value>
+      <value>2/3 portrait, trim: 107 x 228 mm</value>
+      <value>1/4 portrait, trim: 84 x 112 mm</value>
+      <value>1/4 portrait, trim: 107 x 165 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Joy melléklet</Name>
+    <Code>JOYMEL</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Current/>
+    <AdAutoProof>Yes</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>210 x 255 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>y.baillieul@marquardmedia.hu;m.alpek@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 85 x 215 mm</value>
+      <value>1/2 landscape, satz: 175 x 105 mm</value>
+      <value>1/2 portrait, trim: 102.5 x 255 mm</value>
+      <value>1/2 landscape, trim: 210 x 125 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Shape</Name>
+    <Code>SHP</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>3</Period>
+    <Current>0214</Current>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <AdAutoProof>No</AdAutoProof>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>172 x 228 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>t.steiner@shape.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 70 x 196 mm</value>
+      <value>1/2 landscape, satz: 145x 95 mm</value>
+      <value>1/3 portrait, satz: 46 x 196 mm</value>
+      <value>1/3 landscape, satz: 145 x 62 mm</value>
+      <value>2/3 portrait, satz: 95.5 x 196 mm</value>
+      <value>1/4 portrait, satz: 70 x 95 mm</value>
+      <value>1/2 portrait, trim: 84 x 228 mm</value>
+      <value>1/2 landscape, trim: 172 x 112 mm</value>
+      <value>1/3 portrait, trim: 60 x 228 mm</value>
+      <value>1/3 landscape, trim: 172 x 76 mm</value>
+      <value>2/3 portrait, trim: 107 x 228 mm</value>
+      <value>1/4 portrait, trim: 84 x 112 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Eva</Name>
+    <Code>EVA</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Current>0214</Current>
+    <AdAutoProof>Yes</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>200 x 245 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>m.fekete@marquardmedia.hu;evagrafika@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 82 x 221 mm</value>
+      <value>1/2 landscape, satz: 176 x 104 mm</value>
+      <value>1/3 portrait, satz: 48 x 221 mm</value>
+      <value>1/3 landscape, satz: 176 x 63 mm</value>
+      <value>2/3 portrait, satz: 111 x 221 mm</value>
+      <value>1/4 portrait, satz: 82 x 104 mm</value>
+      <value>1/2 portrait, trim: 98 x 245 mm</value>
+      <value>1/2 landscape, trim: 200 x 120 mm</value>
+      <value>1/3 portrait, trim: 63 x 245 mm</value>
+      <value>1/3 landscape, trim: 200 x 78 mm</value>
+      <value>2/3 portrait, trim: 128 x 245 mm</value>
+      <value>1/4 portrait, trim: 98 x 120 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Éva különszám</Name>
+    <Code>EVAKUL</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Current>1401</Current>
+    <AdAutoProof>Yes</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>225 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>evagrafika@marquardmedia.hu;y.baillieul@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, trim: 112 x 275 mm</value>
+      <value>1/2 landscape, trim: 225 x 132 mm</value>
+      <value>1/3 portrait, trim: 70 x 275 mm</value>
+      <value>1/3 landscape, trim: 225 x 90 mm</value>
+      <value>2/3 portrait, trim: 150 x 275 mm</value>
+      <value>1/4 portrait, trim: 112 x 132 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>InStyle</Name>
+    <Code>IS</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Current>0214</Current>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>225 x 275 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>m.alpek@instyle.hu;sz.rozsa@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, trim: 112 x 275 mm</value>
+      <value>1/2 landscape, trim: 225 x 132 mm</value>
+      <value>1/3 portrait, trim: 70 x 275 mm</value>
+      <value>1/3 landscape, trim: 225 x 90 mm</value>
+      <value>2/3 portrait, trim: 150 x 275 mm</value>
+      <value>1/4 portrait, trim: 112 x 132 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Playboy Exclusive</Name>
+    <Code>PBEX</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Current/>
+    <AdAutoProof>Yes</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>210 x 255 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>g.gerse@ckm.hu;p.szanto@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 85 x 215 mm</value>
+      <value>1/2 landscape, satz: 175 x 105 mm</value>
+      <value>1/3 portrait, satz: 55 x 215 mm</value>
+      <value>1/3 landscape, satz: 175 x 68.3 mm</value>
+      <value>2/3 portrait, satz: 115 x 215 mm</value>
+      <value>1/2 portrait, trim: 102.5 x 255 mm</value>
+      <value>1/2 landscape, trim: 210 x 125 mm</value>
+      <value>1/3 portrait, trim: 66.7 x 255 mm</value>
+      <value>1/3 landscape, trim: 210 x 81.7 mm</value>
+      <value>2/3 portrait, trim: 138.3 x 255 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Stahl magazin</Name>
+    <Code>STHL</Code>
+    <Publisher>Stahl</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>Yes</ImageRename>
+    <TrimSize>215 x 270 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>StahlOffice</RemoteStorage>
+    <SoftProof>No</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>gmyckei@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 237 mm</value>
+      <value>1/2 landscape, satz: 170 x 116 mm</value>
+      <value>1/3 portrait, satz: 55 x 237 mm</value>
+      <value>1/3 landscape, satz: 170 x 78 mm</value>
+      <value>2/3 portrait, satz: 114 x 237 mm</value>
+      <value>1/4 portrait, satz: 83 x116 mm</value>
+      <value>1/2 portrait, trim: 98 x 272 mm</value>
+      <value>1/2 landscape, trim: 200 x 134 mm</value>
+      <value>1/3 portrait, trim: 64 x 272 mm</value>
+      <value>1/3 landscape, trim: 200 x 88 mm</value>
+      <value>2/3 portrait, trim: 131 x 272 mm</value>
+      <value>1/4 portrait, trim: 98 x 134 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Stahl különszám</Name>
+    <Code>STKUL</Code>
+    <Publisher>Stahl</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>215 x 270 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>StahlOffice</RemoteStorage>
+    <SoftProof>No</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>gmyckei@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 237 mm</value>
+      <value>1/2 landscape, satz: 170 x 116 mm</value>
+      <value>1/3 portrait, satz: 55 x 237 mm</value>
+      <value>1/3 landscape, satz: 170 x 78 mm</value>
+      <value>2/3 portrait, satz: 114 x 237 mm</value>
+      <value>1/4 portrait, satz: 83 x 116 mm</value>
+      <value>1/2 portrait, trim: 98 x 272 mm</value>
+      <value>1/2 landscape, trim: 200 x 134 mm</value>
+      <value>1/3 portrait, trim: 64 x 272 mm</value>
+      <value>1/3 landscape, trim: 200 x 88 mm</value>
+      <value>2/3 portrait, trim: 131 x 272 mm</value>
+      <value>1/4 portrait, trim: 98 x 134 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Stahl ReceptRejtvény</Name>
+    <Code>STRR</Code>
+    <Publisher>Stahl</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>215 x 270 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>No</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>StahlOffice</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>gmyckei@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 237 mm</value>
+      <value>1/2 landscape, satz: 170 x 116 mm</value>
+      <value>1/3 portrait, satz: 55 x 237 mm</value>
+      <value>1/3 landscape, satz: 170 x 78 mm</value>
+      <value>2/3 portrait, satz: 114 x 237 mm</value>
+      <value>1/4 portrait, satz: 83 x 116 mm</value>
+      <value>1/2 portrait, trim: 98 x 272 mm</value>
+      <value>1/2 landscape, trim: 200 x 134 mm</value>
+      <value>1/3 portrait, trim: 64 x 272 mm</value>
+      <value>1/3 landscape, trim: 200 x 88 mm</value>
+      <value>2/3 portrait, trim: 131 x 272 mm</value>
+      <value>1/4 portrait, trim: 98 x 134 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Diéta és Fitnesz</Name>
+    <Code>DF</Code>
+    <Publisher>Geomedia</Publisher>
+    <Current>0114</Current>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>203 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>No</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>pataki.bernadett@geocom.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 237 mm</value>
+    </AdSizes>
+    <counter_parts>0</counter_parts>
+  </Item>
+  <Item>
+    <Name>Diéta különszám</Name>
+    <Code>DFKUL</Code>
+    <Publisher>Geomedia</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>203 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>IPG</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>pataki.bernadett@geocom.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 237 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Vidék Ize</Name>
+    <Code>VDK</Code>
+    <Publisher>Geomedia</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>210 x 297 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>No</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>szakal.andrea@geomedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 237 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Moha</Name>
+    <Code>MOHA</Code>
+    <Publisher>Geomedia</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS5</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>195 x 195 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>No</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>szecsenyi@artistokrats.com&gt;</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 237 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>BAV</Name>
+    <Code>BAV</Code>
+    <Publisher>BAV</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>400</Resolution>
+    <IDversion>CS55</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>225 x 283 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>info@ipixel.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>DM magazin</Name>
+    <Code>DM</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Current>0214</Current>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_46</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <TrimSize>204 x 272 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>y.baillieul@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, trim: 102 x 272 mm</value>
+      <value>1/4 portrait, trim: 102 x 136 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Tesztmagazin</Name>
+    <Code>TST</Code>
+    <Publisher>Colorcom</Publisher>
+    <Current>1405</Current>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>3</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>Yes</ImageRename>
+    <TrimSize>172 x 228 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>PrintingHouse</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <ArchiveMode>CMYK</ArchiveMode>
+    <Mails>peter@colorcom.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 67 x 196 mm</value>
+      <value>1/1 portrait, satz: 162 x 285 mm</value>
+      <value>1/4 portrait, satz: 162 x 285 mm</value>
+      <value>2/3 portrait, satz: 162 x 285 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Silver magazin</Name>
+    <Code>SLV</Code>
+    <Publisher>Marquard</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>Yes</ImageRename>
+    <TrimSize>230 x 297 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>MMprod</FinalOutput>
+    <ArchiveMode>CMYK</ArchiveMode>
+    <Mails>m.fekete@marquardmedia.hu;evagrafika@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value/>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Corvinus magazin</Name>
+    <Code>COR</Code>
+    <Publisher>Marquard</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX1</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>Yes</ImageRename>
+    <TrimSize>165 x 235 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>SmartProof</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>MMprod</FinalOutput>
+    <ArchiveMode>CMYK</ArchiveMode>
+    <Mails>r.nagy@menshealth.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value/>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Popcorn</Name>
+    <Code>POP</Code>
+    <Publisher>Meyle-Müller</Publisher>
+    <Current/>
+    <AdAutoProof>No</AdAutoProof>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>PSR_SC_PLUS_V2_PT</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX4</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>Yes</ImageRename>
+    <TrimSize>205 x 285 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>Dalim</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <ArchiveMode>CMYK</ArchiveMode>
+    <Mails>peter@colorcom.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 67 x 196 mm</value>
+      <value>1/2 landscape, satz: 138 x 94 mm</value>
+      <value>1/3 portrait, satz: 44 x 196 mm</value>
+      <value>1/3 landscape, satz: 138 x 57 mm</value>
+      <value>2/3 portrait, satz: 90 x 196 mm</value>
+      <value>1/4 portrait, satz: 67 x 94 mm</value>
+      <value>1/2 portrait, trim: 84 x 228 mm</value>
+      <value>1/2 landscape, trim: 172 x 112 mm</value>
+      <value>1/3 portrait, trim: 60 x 228 mm</value>
+      <value>1/3 landscape, trim: 172 x 76 mm</value>
+      <value>2/3 portrait, trim: 107 x 228 mm</value>
+      <value>1/4 portrait, trim: 84 x 112 mm</value>
+      <value>1/4 portrait, trim: 107 x 165 mm</value>
+    </AdSizes>
+  </Item>
+  <Item>
+    <Name>Maedchen</Name>
+    <Code>MAE</Code>
+    <Publisher>Meyle-Müller</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Current>0414</Current>
+    <AdAutoProof>No</AdAutoProof>
+    <Workflow>Hybrid</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS55</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <PDFstandard>PDFX4</PDFstandard>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>Yes</ImageRename>
+    <TrimSize>205 x 285 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <SoftProof>Dalim</SoftProof>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <ArchiveMode>CMYK</ArchiveMode>
+    <Mails>peter@colorcom.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 67 x 196 mm</value>
+      <value>1/2 landscape, satz: 138 x 94 mm</value>
+      <value>1/3 portrait, satz: 44 x 196 mm</value>
+      <value>1/3 landscape, satz: 138 x 57 mm</value>
+      <value>2/3 portrait, satz: 90 x 196 mm</value>
+      <value>1/4 portrait, satz: 67 x 94 mm</value>
+      <value>1/2 portrait, trim: 84 x 228 mm</value>
+      <value>1/2 landscape, trim: 172 x 112 mm</value>
+      <value>1/3 portrait, trim: 60 x 228 mm</value>
+      <value>1/3 landscape, trim: 172 x 76 mm</value>
+      <value>2/3 portrait, trim: 107 x 228 mm</value>
+      <value>1/4 portrait, trim: 84 x 112 mm</value>
+      <value>1/4 portrait, trim: 107 x 165 mm</value>
+    </AdSizes>
+  </Item>
+</Publications>

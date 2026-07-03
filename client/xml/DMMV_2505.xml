@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>20</numOfPages>
+  <parts>
+    <part>
+      <name>Selfcover</name>
+      <place>1-20</place>
+      <color>FOGRA_51</color>
+      <size>296x105</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>DMMV</code>
+  <issueCode>2505</issueCode>
+  <deadline>2025-04-07T16:00</deadline>
+  <status>approved</status>
+</issueData>

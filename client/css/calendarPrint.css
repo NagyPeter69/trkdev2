@@ -1,0 +1,37 @@
+@page {
+	size: landscape;
+	margin: 0px !important;
+	padding: 0px !important;
+	}
+
+#header, .colorpicker, .fp_left {
+	display: none !important;
+	}
+	
+#fp_content, #content_box, #content {
+	height: auto !important;
+	}
+
+#fp_content {
+	overflow: hidden !important;
+	}
+	
+body {
+	transform: scale(0.93);
+	-webkit-print-color-adjust: exact;
+	}
+
+#calendarTable td {
+    width: 35px;
+    min-width: 35px;
+    max-width: 35px;
+    }
+	
+#calendarTable tbody td {
+	width: 
+	height: 76px !important;
+	}
+	
+#calendarTable thead td, #calendarTable tfoot td, .lastYearBox, .monthBox, .lastMonthBox {
+	font-weight: bold;
+	}

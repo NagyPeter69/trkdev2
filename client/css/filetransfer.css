@@ -1,0 +1,377 @@
+.uploadErrorText {
+	color: #c30000;
+	padding-right: 5px;
+	}
+
+#progressBarWrap {
+	width: 140px;
+	height: 15px;
+	border: 1px solid rgb(0,0,0);
+	border-radius: 5px;
+	display: none;
+	}
+
+#progressBar {
+	width: 0%;
+    background-color: rgb( 0, 150, 0 );
+    height: 100%;
+    overflow: hidden;
+    border: 0;
+    border-radius: 5px;	
+	}
+
+.historyBox {
+	max-height: 230px; 
+	overflow: hidden; 
+	width: 650px; 
+	text-align: center; 
+	display: inline-block; 
+	background-color: #7e7f82; 
+	margin-top: 30px; 
+	border-radius: 4px;
+	}
+	
+.previewBox {
+	float: left;
+	padding-left: 15px;
+	padding-top: 15px;
+	padding-bottom: 0px; 
+	padding-right: 0px;
+	height: 251px;
+	}
+
+.previewWrap {
+	background-color: #AAA;
+	padding: 15px;
+	border-radius: 4px;
+	}
+
+#content .selected {
+	background-color: #000 !important;
+	color: #FFF !important;
+	}
+
+.preview_thumb {
+	width: 200px;
+	height: 200px;
+	background-size: contain;
+	background-position: center;
+	background-repeat: no-repeat;
+	display: inline-block;
+	pointer-events: none;
+	}
+
+.fileNameClass {
+   	height: 18px;
+   	line-height: 18px;
+   	-webkit-transition: all 0.22s ease-out;
+   	-moz-transition:    all 0.22s ease-out;
+   	-ms-transition:     all 0.22s ease-out;
+   	-o-transition:      all 0.22s ease-out;	
+   	font-size: 13px;
+	}
+	
+.largeName {
+	height: 70px;
+	line-height: 70px;
+	}
+
+#boxWrap, #anyagfeltoltes, #info {
+	width: 650px;
+	height: 200px;	
+	}
+
+#boxWrap {
+	text-align: center;
+	display: inline-block;
+	position: relative;
+	}
+
+#info, #anyagfeltoltes {
+	background-color: rgb( 175, 203, 167 ) !important;
+	display: inline-block;
+	position: absolute;	
+	position: absolute;
+	top: 0;
+	left: 50%;
+	margin-left: -325px;
+	border-radius: 4px;	
+	}
+
+#info {
+	height: 100%;
+	overflow: auto;
+	border: 0px !important;
+	z-index: 20;
+	padding: 5px !important;
+	margin-right: 0px !important;
+	color: rgb( 6, 6, 7 );
+	font-size: 15px;
+	box-sizing: border-box;
+	display: none;
+	overflow-x: hidden;
+	}
+
+#transferHistoryTable {
+	font-size: 14px;
+	}
+
+#transferTable, #transferHistoryTable, #transferHistoryTableHead {
+	width: 100%;
+	color: #FFF;
+	}
+	
+#transferTable td, #transferHistoryTableHead td {
+	width: 50%;
+	}
+
+#transferTable tr td:first-child {
+	text-align: right;
+	padding-right: 4px;
+	font-size: 14px;
+	}
+
+#transferTable tr td:nth-child(2), #transferHistoryTable tr td:nth-child(2), #transferHistoryTableHead tr td:nth-child(2) {
+	text-align: left;
+	padding-left: 4px;
+	}
+
+#transferTable tr:nth-child(4) td {
+	//padding-bottom: 20px;
+	}
+	
+#transferTable tr:nth-child(5) td {
+	//padding-bottom: 20px;
+	}
+
+#transferTable tr:nth-child(6) td {
+	//padding-bottom: 26px;
+	}
+
+#transferHistoryTable tr td:first-child, #transferHistoryTableHead tr td:first-child {
+	text-align: left;
+	padding-right: 4px;
+	width: 100%;
+	}
+
+#transferHistoryTableHead tr:nth-child(1) td {
+	text-align: center;
+	padding-bottom: 20px;
+	padding-top: 30px;
+	}
+
+#transferHistoryTable tr td:nth-child(2) {
+	width: 165px;
+	min-width: 165px;
+	max-width: 165px;
+	text-align: right !important;
+	}
+
+.fileremoveBox i {
+	border: 1px solid rgb( 72, 72, 72 );
+	padding: 0px 2px;
+	font-size: 13px;
+	color: rgb( 72, 72, 72 );
+	border-radius: 3px;
+	}
+
+.transferlog_name {
+	display: inline-block;
+	text-align: left;
+	}
+
+.box.has-advanced-upload {
+	border-radius: 4px;
+	background-color: rgb( 175, 203, 167 ) !important;
+	color: rgb( 128, 150, 125 );
+	}
+
+#anyagfeltoltes {
+	z-index: 10;
+}
+
+#info_footer {
+	padding-top: 20px;
+	}
+
+.footer_left {
+	float: left;
+	height: 28px;
+	padding-top: 5px;
+	padding-left: 1px;
+	}
+
+.button_delete {
+	text-align: center;
+	width: 90px;
+	float: right;
+	height: 28px;
+	color: #fff;
+	background: rgb( 227, 0, 11 );
+	border: 1px solid rgb( 84, 18 , 19 );
+	font-size: 20px;
+	padding-top: 5px;
+   	-webkit-transition: all 0.22s ease-out;
+   	-moz-transition:    all 0.22s ease-out;
+   	-ms-transition:     all 0.22s ease-out;
+   	-o-transition:      all 0.22s ease-out;
+   	cursor: pointer;
+   	font-weight: none;
+	}
+
+.button_delete:hover {
+	background: rgb(207, 0, 11);
+	}
+
+#button_large2:hover, #button_large3:hover, #button_large4:hover, #button_large5:hover {
+	font-family: myriad_bold;
+	background: rgb( 185, 185, 185 ) !important;
+	}
+
+.disabled {
+	background: #777 !important;
+	color: #AAA !important;
+	pointer-events: none;
+	}
+	
+#button_large3, #button_large5 {
+	border-radius: 4px;
+	display: inline-block;
+	text-align: center;
+	width: 100px;
+	height:21px;
+	color: rgb( 40 40 40 );
+	background: rgb( 210, 210, 210 );
+	//border: 2px solid rgb( 146, 148, 151 );
+	font-size: 17px;
+	padding-top: 1px;
+   	-webkit-transition: all 0.22s ease-out;
+   	-moz-transition:    all 0.22s ease-out;
+   	-ms-transition:     all 0.22s ease-out;
+   	-o-transition:      all 0.22s ease-out;
+   	cursor: pointer;
+   	font-weight: none;
+	font-family: myriad_bold;
+	line-height: 19px;
+	}
+	
+#content {
+	background-color: rgb( 128, 128, 128 ) !important
+	}
+
+.progressText {
+	display: none;
+	text-align: right;
+	color: rgb( 6, 6, 7 );
+	}
+
+.progressWrap {
+	position: relative;
+	display: none;
+	width: 70px;
+	height: 70px;
+	text-align: right;
+	}
+	
+.Progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+	}
+
+.Progress .Bar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background-color: rgb( 175, 203, 167 );
+    position: relative;
+	}
+
+.Progress .Bar .Outer {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    left: calc(50% - 35px);
+    top: calc(50% - 35px);
+    width: 70px;
+    height: 70px;
+    clip: rect(0, 70px, 70px, 35px);
+	}
+
+.Bar .Outer .Fill {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    left: calc(50% - 35px);
+    top: calc(50% - 35px);
+    width: 70px;
+    height: 70px;
+    clip: rect(0, 35px, 70px, 0);
+    background: rgb( 25, 141, 62 );
+    transform: rotate(60deg);
+	}
+
+.Progress .Bar .Draw {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    left: calc(50% - 53.84615px/2);
+    top: calc(50% - 53.84615px/2);
+    width: 53.84615px;
+    height: 53.84615px;
+    background: rgb( 175, 203, 167 );
+    text-align: center;
+    color: rgb( 6, 6, 7 );
+	}
+
+.Progress .Bar .Status {
+    display: table-cell;
+    vertical-align: middle;
+    position: absolute;
+    margin-left: -100px;
+    margin-top: -35px;
+    width: 70px;
+    height: 70px;
+    left: 144%;
+    top: 50%;
+    text-align: center;
+	}
+
+.Progress .Bar .Status > span {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgb( 6, 6, 7 );
+	}
+
+.Progress .Bar.halfway {
+    background-color: rgb( 25, 141, 62 );
+	}
+	
+.Progress .Bar.halfway .Outer {
+    clip: rect(0, 35px, 70px, 0);
+	}
+	
+.Progress .Bar.halfway .Outer .Fill {
+    clip: rect(0, 70px, 70px, 35px);
+    background: rgb( 175, 203, 167 );
+    border-radius: 0;
+	}
+
+.Progress .Bar.complete.halfway, .Progress .Bar.complete .Fill {
+    background-color: rgb( 25, 141, 62 ) !important;
+	}
+	
+@media screen and (max-height: 715px) {
+	.historyTitle {
+		font-size: 14px !important;
+		padding-bottom: 10px !important;
+		}
+	
+	#transferHistoryTable, .transferlog_name {
+		font-size: 12px !important;
+		}
+		
+	.historyBox {
+		max-height: 180px !important;
+		}
+	}

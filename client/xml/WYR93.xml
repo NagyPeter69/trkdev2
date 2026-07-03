@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>ELO</name>
+      <pages/>
+      <color>FOGRA_52</color>
+      <size>416x260</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <pages/>
+      <color>FOGRA_51</color>
+      <size>208x260</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <pages/>
+      <color>FOGRA_52</color>
+      <size>208x260</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>WYR93</code>
+  <issueCode>WYR93</issueCode>
+  <deadline>2025-08-15T16:00</deadline>
+  <status>approved</status>
+</issueData>

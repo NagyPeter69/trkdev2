@@ -1,0 +1,1575 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Publications>
+  <Item>
+    <Name>Joy</Name>
+    <Code>JOY</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>1</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>None</FinalOutput>
+    <Mails>a.javor@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 168 x 223 mm</value>
+      <value>1/2 portrait, trim: 84 x 223 mm</value>
+      <value>1/3 portrait, trim: 56 x 223 mm</value>
+      <value>1/2 landscape, trim: 168 x 111.5 mm</value>
+      <value>1/3 landscape, trim: 168 x 74 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Joy melléklet</Name>
+    <Code>JOYCAL</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+      <Images>Office</Images>
+      <PDF>Office</PDF>
+      <Packages>Office</Packages>
+    </RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>a.javor@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 85 x 215 mm</value>
+      <value>1/2 landscape, satz: 175 x 105 mm</value>
+      <value>1/2 portrait, trim: 102.5 x 255 mm</value>
+      <value>1/2 landscape, trim: 210 x 125 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Eva</Name>
+    <Code>EVA</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>1</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>None</FinalOutput>
+    <Mails/>
+    <MailComm>No</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 205 x 270 mm</value>
+      <value>1/2 portrait, trim: 100 x 270 mm</value>
+      <value>1/3 portrait, trim: 66 x 270 mm</value>
+      <value>1/2 landscape, trim: 205 x 133 mm</value>
+      <value>1/3 landscape, trim: 205 x 87 mm</value>
+      <value>1/4 portrait, trim: 98 x 131 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Éva különszám</Name>
+    <Code>EVAKUL</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>General</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+      <Images>Office</Images>
+      <PDF>Office</PDF>
+      <Packages>Office</Packages>
+    </RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails/>
+    <MailComm>No</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 205 x 270 mm</value>
+      <value>1/2 portrait, trim: 100 x 270 mm</value>
+      <value>1/3 portrait, trim: 66 x 270 mm</value>
+      <value>1/3 portrait, satz: 54 x 246 mm</value>
+      <value>1/2 portrait, satz: 86 x 246 mm</value>
+      <value>1/2 landscape, satz: 181 x 119 mm</value>
+      <value>1/3 landscape, satz: 181 x 75 mm</value>
+      <value>1/3 landscape, trim: 205 x 87 mm</value>
+      <value>1/2 landscape, trim: 205 x 133 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>InStyle</Name>
+    <Code>IS</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>1</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>None</FinalOutput>
+    <Mails>a.javor@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 204 x 276 mm</value>
+      <value>1/2 portrait, trim: 100 x 276 mm</value>
+      <value>1/3 portrait, trim: 66 x 276 mm</value>
+      <value>1/2 landscape, trim: 204 x 136 mm</value>
+      <value>1/3 landscape, trim: 204 x 90 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>BAV</Name>
+    <Code>BAV</Code>
+    <Publisher>BAV</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Jewellery</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+      <Images>Office</Images>
+      <PDF>Office</PDF>
+    </RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>None</FinalOutput>
+    <Mails/>
+    <MailComm>No</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 225 x 283 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>BAV</Client>
+  </Item>
+  <Item>
+    <Name>Tesztmagazin</Name>
+    <Code>TST</Code>
+    <Publisher>Colorcom</Publisher>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>General</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <Images>Office</Images>
+    </RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>None</FinalOutput>
+    <Mails>peter@colorcom.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 200 x 272 mm</value>
+    </AdSizes>
+    <WebImages>Yes</WebImages>
+    <Type>Regular</Type>
+    <Client>Colorcom</Client>
+  </Item>
+  <Item>
+    <Name>RunnersWorld</Name>
+    <Code>RW</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput>None</FinalOutput>
+    <Mails>a.toth@marquardmedia.hu;g.gerse@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/2 portrait, satz: 83 x 235 mm</value>
+      <value>1/2 landscape, satz: 170 x 115 mm</value>
+      <value>1/3 portrait, satz: 54 x 235 mm</value>
+      <value>1/3 landscape, satz: 170 x 75 mm</value>
+      <value>1/4 portrait, satz: 83 x 115 mm</value>
+      <value>1/2 portrait, trim: 98 x 272 mm</value>
+      <value>1/2 landscape, trim: 200 x 134 mm</value>
+      <value>1/3 portrait, trim: 64 x 272 mm</value>
+      <value>1/3 landscape, trim: 200 x 88 mm</value>
+      <value>1/4 portrait, trim: 98 x 134 mm</value>
+      <value>1/1 portrait, trim: 200 x 272 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>NewTesztMagazine</Name>
+    <Code>NTM</Code>
+    <Publisher/>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails/>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 270 x 320 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>Zöld-Fehér Magazin</Name>
+    <Code>ZF</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+      <Images>Office</Images>
+      <PDF>Office</PDF>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>g.fabian@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 200 x 245 mm</value>
+      <value>1/2 portrait, trim: 98 x 245 mm</value>
+      <value>1/2 landscape, trim: 200 x 120 mm</value>
+      <value>1/3 landscape, trim: 200 x 78 mm</value>
+      <value>1/3 landscape, trim: 63 x 245 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Otthonok</Name>
+    <Code>OTH</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Vivid</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>takacs.barnabas@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 210 x 280 mm</value>
+    </AdSizes>
+    <WebImages>Yes</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>DM különszám</Name>
+    <Code>DMKUL</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>y.baillieul@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 168 x 223 mm</value>
+      <value>1/2 portrait, trim: 82 x 223 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Spar Magazin</Name>
+    <Code>SPR</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput>MMprod</FinalOutput>
+    <Mails>l.vertes@marquardmedia.hu;i.staller@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 208 x 280 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>DM magazin</Name>
+    <Code>DM</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>hello.dora.ferenczi@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 195 x 264 mm</value>
+      <value>1/2 portrait, trim: 96 x 264 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>BÁV fotókatalógus</Name>
+    <Code>BFO</Code>
+    <Publisher>BAV</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput>None</FinalOutput>
+    <Mails>balazs.palmai@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 215 x 210 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>BAV</Client>
+  </Item>
+  <Item>
+    <Name>BÁV órakatalógus</Name>
+    <Code>BOR</Code>
+    <Publisher>BAV</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput>None</FinalOutput>
+    <Mails>balazs.palmai@gmail.com;info@ipixel.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 215 x 210 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>BAV</Client>
+  </Item>
+  <Item>
+    <Name>DMmail vegyes</Name>
+    <Code>DMMV</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput>None</FinalOutput>
+    <Mails>hello.dora.ferenczi@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 193 x 148 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Runners World naptár</Name>
+    <Code>RWNAP</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Vivid</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>m.alpek@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 360 x 285 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Runners World füzet</Name>
+    <Code>RWFU</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Vivid</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>Yes</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>m.alpek@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 200 x 272 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Spar Hiradó</Name>
+    <Code>SPA</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>General</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>R_1</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <INDD>Office</INDD>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput>MMprod</FinalOutput>
+    <Mails>g.gerse@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 165 x 235 mm</value>
+    </AdSizes>
+    <WebImages>Yes</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>BÁV kortárs</Name>
+    <Code>BKO</Code>
+    <Publisher>BAV</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>balazs.palmai@gmail.com;info@ipixel.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 215 x 210 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>BAV</Client>
+  </Item>
+  <Item>
+    <Name>Polifarbe</Name>
+    <Code>PFB</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Vivid</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>a.kapi@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 210 x 280 mm</value>
+    </AdSizes>
+    <WebImages>Yes</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Magyar Grafika</Name>
+    <Code>MGRA</Code>
+    <Publisher>Magyar Grafika</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <Images>LocalFTP</Images>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>geryon76@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 170 x 220 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Magyar Grafika</Client>
+  </Item>
+  <Item>
+    <Name>Roadster</Name>
+    <Code>ROD</Code>
+    <Publisher>Emdash</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>General</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>
+      <Images>FtpLocal</Images>
+    </RemoteStorage>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>sipos.balazs@emdash.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 200 x 265 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Emdash</Client>
+  </Item>
+  <Item>
+    <Name>BÁV különszám</Name>
+    <Code>BAVKUL</Code>
+    <Publisher>BAV</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Jewellery</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>balazs.palmai@gmail.com;info@ipixel.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 188 x 253 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>BAV</Client>
+  </Item>
+  <Item>
+    <Name>Elle Magazin</Name>
+    <Code>ELLE</Code>
+    <Publisher>Brit Media</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Temporary</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>yann.baillieul@elle.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 205 x 273 mm</value>
+      <value>1/2 portrait, trim: 99 x 273 mm</value>
+      <value>1/3 portrait, trim: 67.5 x 273 mm</value>
+      <value>1/2 landscape, trim: 205 x 127 mm</value>
+      <value>1/3 landscape, trim: 205 x 89 mm</value>
+      <value>1/4 landscape, trim: 205 x 65 mm</value>
+    </AdSizes>
+    <WebImages>Yes</WebImages>
+    <Type>Regular</Type>
+    <Client>Brit Media</Client>
+  </Item>
+  <Item>
+    <Name>EON Digiprint</Name>
+    <Code>EEON</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>General</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>hello.dora.ferenczi@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 203 x 265 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Busynesslab</Name>
+    <Code>SYNLAB</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails/>
+    <MailComm>No</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 205 x 280 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Elle Decoration</Name>
+    <Code>ELDEC</Code>
+    <Publisher>Brit Media</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>General</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Temporary</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>szonja.rozsa@elle.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 230 x 297 mm</value>
+      <value>1/2 portrait, trim: 115 x 297 mm</value>
+      <value>1/2 landscape, trim: 230 x 148.5 mm</value>
+      <value>1/4 portrait, trim: 57.5 x 297 mm</value>
+      <value>1/4 landscape, trim: 230 x 75 mm</value>
+      <value>1/3 portrait, trim: 76.5 x 297 mm</value>
+      <value>1/3 landscape, trim: 230 x 99 mm</value>
+    </AdSizes>
+    <WebImages>Yes</WebImages>
+    <Type>Regular</Type>
+    <Client>Brit Media</Client>
+  </Item>
+  <Item>
+    <Name>Fenntartható divat</Name>
+    <Code>ZKK31</Code>
+    <Publisher>Boook</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Hollywoodland</Name>
+    <Code>PVC00</Code>
+    <Publisher>Boook</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Null</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Zarah</Name>
+    <Code>HCI30</Code>
+    <Publisher>Boook</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Yalla</Name>
+    <Code>JZC77</Code>
+    <Publisher>Boook</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Szemérmetlenül jó</Name>
+    <Code>BEN93</Code>
+    <Publisher>Boook</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>General</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Pités könyv</Name>
+    <Code>OHM37</Code>
+    <Publisher>Boook</Publisher>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>virag.nemeth@boook.hu;solymos.agnes@boook.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Bolyhos szakácskönyv</Name>
+    <Code>QHL21</Code>
+    <Publisher>Boook</Publisher>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>virag.nemeth@boook.hu;solymos.agnes@boook.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Balaton 2022</Name>
+    <Code>XGR96</Code>
+    <Publisher/>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Adhoc</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>g.gerse@t-online.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>Runners konyv</Name>
+    <Code>RWB</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>2</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>a.toth@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 166 x 219 mm</value>
+    </AdSizes>
+    <WebImages>Yes</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Eurázsia 2022</Name>
+    <Code>AXQ77</Code>
+    <Publisher/>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Adhoc</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>milan@buroagency.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>Bene DLA könyv</Name>
+    <Code>FXA68</Code>
+    <Publisher/>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Minimal</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage/>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Adhoc</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>neszmelyi.reka@gmail.com</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>InStyle Men</Name>
+    <Code>ISMEN</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>a.javor@marquardmedia.hu</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 204 x 276 mm</value>
+      <value>1/2 portrait, trim: 100 x 276 mm</value>
+      <value>1/3 portrait, trim: 66 x 276 mm</value>
+      <value>1/2 landscape, trim: 204 x 136 mm</value>
+      <value>1/3 landscape, trim: 204 x 90 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Cosmopolitan</Name>
+    <Code>COS</Code>
+    <Publisher>Brit Media</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>European</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Temporary</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <ArchiveMode>RGB</ArchiveMode>
+    <Mails>alpekmonika@gmail.com;fekete.monika@gmail.com</Mails>
+    <MailComm>Yes</MailComm>
+    <AdSizes>
+      <value>1/1 portrait, trim: 205 x 273 mm</value>
+      <value>1/2 portrait, trim: 99 x 273 mm</value>
+      <value>1/3 portrait, trim: 67.5 x 273 mm</value>
+      <value>1/2 landscape, trim: 205 x 127 mm</value>
+      <value>1/3 landscape, trim: 205 x 89 mm</value>
+      <value>1/4 landscape, trim: 205 x 65 mm</value>
+    </AdSizes>
+    <WebImages>No</WebImages>
+    <Type>Regular</Type>
+    <Client>Brit Media</Client>
+  </Item>
+  <Item>
+    <Name>Növényi étrend</Name>
+    <Code>BXE78</Code>
+    <Publisher>Boook</Publisher>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage/>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Erdélyi lakoma</Name>
+    <Code>FNB75</Code>
+    <Publisher/>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Adhoc</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>hitkaviktoria@gmail.com</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>Halimádók 2</Name>
+    <Code>KEO55</Code>
+    <Publisher>Boook</Publisher>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu;virag.nemeth@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Anya kérek még bővített</Name>
+    <Code>DHD74</Code>
+    <Publisher>Boook</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu;virag.nemeth@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Zümmögés 3</Name>
+    <Code>NSK58</Code>
+    <Publisher>Boook</Publisher>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu;virag.nemeth@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Wossala Rozina</Name>
+    <Code>GHK29</Code>
+    <Publisher>Boook</Publisher>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Food</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu;virag.nemeth@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Boook</Client>
+  </Item>
+  <Item>
+    <Name>Ambrus-Vágó</Name>
+    <Code>DHH97</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>EN</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>solymos.agnes@boook.hu;virag.nemeth@boook.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Marquard</Client>
+  </Item>
+  <Item>
+    <Name>Egy város titkai</Name>
+    <Code>KTX02</Code>
+    <Publisher/>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>Original</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Adhoc</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>varaljai.nora@gmail.com</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>Ujszviccs</Name>
+    <Code>TRW23</Code>
+    <Publisher>TestCo2</Publisher>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage/>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>reprokaiser@gmail.com</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>TestCo2</Client>
+  </Item>
+  <Item>
+    <Name>Műcsarnok Wagner</Name>
+    <Code>MNZ52</Code>
+    <Publisher/>
+    <Language>HU</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage/>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Adhoc</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>sto280@gmail.com</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>Teszthoc</Name>
+    <Code>RZD19</Code>
+    <Publisher/>
+    <Language>EN</Language>
+    <Workflow>Resize</Workflow>
+    <FlatplanStages>1</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1A</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>Adhoc</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>peter.tamas@colorcom.hu;peter@colorcom.hu;miki@colorcom.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>Yes</WebImages>
+    <Type>Adhoc</Type>
+    <Client/>
+  </Item>
+  <Item>
+    <Name>TesztRegHoc</Name>
+    <Code>UAI56</Code>
+    <Publisher>Colorcom</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <FlatplanStages>3</FlatplanStages>
+    <PageNumbering>American</PageNumbering>
+    <Resolution>300</Resolution>
+    <Enhance>Skintone</Enhance>
+    <PDFstandard>PDFX1</PDFstandard>
+    <ArchiveStorage>Client Area</ArchiveStorage>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <ImageRename>No</ImageRename>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage/>
+    <Parent/>
+    <FinalOutput/>
+    <Mails>peter.tamas@colorcom.hu;peter@colorcom.hu;miki@colorcom.hu</Mails>
+    <MailComm>No</MailComm>
+    <AdSizes/>
+    <WebImages>No</WebImages>
+    <Type>Adhoc</Type>
+    <Client>Colorcom</Client>
+  </Item>
+</Publications>

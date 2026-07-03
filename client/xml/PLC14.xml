@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-46</place>
+      <color>FOGRA_51</color>
+      <size>200x272</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,47-48</place>
+      <color>FOGRA_51</color>
+      <size>200x272</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>PLC14</code>
+  <issueCode>PLC14</issueCode>
+  <deadline>2024-04-23T16:00</deadline>
+  <status>approved</status>
+</issueData>

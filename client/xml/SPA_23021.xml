@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>16</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <place>1-2,15-16</place>
+      <color>FOGRA_51</color>
+      <size>165x235</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <place>3-14</place>
+      <color>FOGRA_51</color>
+      <size>165x235</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>SPA</code>
+  <issueCode>23021</issueCode>
+  <deadline>2023-06-20T16:00</deadline>
+  <status>approved</status>
+</issueData>

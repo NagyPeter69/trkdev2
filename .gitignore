@@ -1,0 +1,15 @@
+# Disposable job/media content - never tracked, deliberately excluded from this rebuild
+client/packages/
+client/assets/
+client/temp/
+client/handout/
+client/labor/
+client/uploads/
+client/advertisements/
+dynAPI/tracker/
+dynAPI/rendered/
+dynAPI/op/rendered/
+
+# Runtime-generated
+*.log
+*.tmp

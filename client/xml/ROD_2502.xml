@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>220</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-218</place>
+      <color>FOGRA_52</color>
+      <size>210x297</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,219-220</place>
+      <color>FOGRA_51</color>
+      <size>210x297</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>ROD</code>
+  <issueCode>2502</issueCode>
+  <deadline>2025-06-02T16:00</deadline>
+  <status>approved</status>
+</issueData>

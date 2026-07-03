@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jobInfo>
+  <naming>
+    <internal>
+      <base>140102</base>
+      <variable>before</variable>
+      <delimiter>_</delimiter>
+      <padding>3</padding>
+    </internal>
+    <upload>
+      <base>140102</base>
+      <variable>before</variable>
+      <delimiter>_</delimiter>
+      <padding>3</padding>
+    </upload>
+    <output>
+      <base>140102</base>
+      <variable>before</variable>
+      <delimiter>_</delimiter>
+      <padding>3</padding>
+    </output>
+  </naming>
+  <numOfPages>148</numOfPages>
+  <parts>
+    <part>
+      <name>Borító</name>
+      <place>1-2,147-148</place>
+      <color>FOGRA_39</color>
+    </part>
+    <part>
+      <name>Belív</name>
+      <place>3-146</place>
+      <color>FOGRA_45</color>
+    </part>
+    <part>
+      <name>Gerinc</name>
+      <place>149</place>
+      <color>FOGRA_39</color>
+    </part>
+  </parts>
+  <uploadable>true</uploadable>
+  <preCounter>39</preCounter>
+  <deadline>2014-11-08T12:00:00</deadline>
+</jobInfo>

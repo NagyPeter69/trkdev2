@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <pages>200</pages>
+      <color>FOGRA_39</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>OCP40</code>
+  <issueCode>OCP40</issueCode>
+  <deadline>2023-09-15T16:00</deadline>
+  <status>stopped</status>
+</issueData>

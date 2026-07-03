@@ -1,0 +1,137 @@
+.title {
+	color: #000;
+	}
+
+.chartNames {
+	color: #5D5D5D;
+	}
+
+.indd {
+	background-color: rgb( 221, 77, 113 );
+	}
+
+.pdf {
+	background-color: rgb( 255, 58, 26 );
+	}
+
+.ads {
+	background-color: rgb( 254, 184, 0 );
+	}
+
+.adsFP {
+	background-color: rgb( 254, 144, 1 );
+	pointer-events:none;
+	}
+
+.approval {
+	background-color: rgb( 64, 195, 20 );
+	}
+
+.tlBar {
+	position: absolute;
+	bottom: 0px;
+	width: 100%;
+	}
+
+.tlHeaderBox:not(:first-child) .tlNum {
+	border-right: 1px solid transparent;
+	}
+.tlHeaderBox {
+	position: relative;
+	float:right;
+	height: 30px;
+	width: 32px;
+	line-height: 30px;
+	//background: #FFF;
+	color: #606060;
+	text-align: center;
+	content: "";
+	}
+	
+.tlNum {
+	position: relative;
+	height: 60px;
+	}
+	
+.timerow {
+	font-size: 9px;
+	}
+
+.detail:not(:first-child) {
+	border-top: 1px solid #E0E0D3;
+	}
+.detail:last-child {
+	border-bottom: 1px solid #E0E0D3;
+	}
+	
+.detail {
+	font-size: 13px;
+	padding-left: 9px;
+	height: 60px;
+	background: #FDFFBF;
+	}
+
+.detail .link {
+   	-webkit-transition: all 0.22s ease-out;
+   	-moz-transition:    all 0.22s ease-out;
+   	-ms-transition:     all 0.22s ease-out;
+   	-o-transition:      all 0.22s ease-out;
+   	text-decoration: underline;
+	}
+.detail .link:hover {
+	color: #292377;
+	cursor: pointer;
+	}
+
+.detailBox:not(:first-child) .tlNum {
+	margin-right: 1px;
+	}
+.detailBox {
+	position: relative;
+	float:right;
+	height: 60px;
+	width: 32px;
+	line-height: 30px;
+	text-align: center;
+	}
+	
+.pubDetail {
+	margin-top: 30px;
+	}
+
+.fpDetail {
+	margin-top: 20px;
+	}
+	
+.colorBox {
+	width: 12px;
+	height: 12px;
+	margin-top: 3px;
+	margin-right: 10px;
+	}
+
+.pieBorder {
+	border-radius: 50% 50%;
+	width: 100px;
+	height: 100px;
+	position: relative;
+	background-color: #EEE;
+	-webkit-box-shadow: 7px 7px 15px 0px rgba(50, 50, 50, 0.3);
+	-moz-box-shadow:    7px 7px 15px 0px rgba(50, 50, 50, 0.3);
+	box-shadow:         7px 7px 15px 0px rgba(50, 50, 50, 0.3);	
+	}
+	
+.fpBorder {
+	border-radius: 50% 50%;
+	width: 100px;
+	height: 100px;
+	position: relative;
+	background-color: #EEE;
+	-webkit-box-shadow: 7px 7px 15px 0px rgba(50, 50, 50, 0.3);
+	-moz-box-shadow:    7px 7px 15px 0px rgba(50, 50, 50, 0.3);
+	box-shadow:         7px 7px 15px 0px rgba(50, 50, 50, 0.3);	
+	}
+
+.tlFooter {
+	margin-top: 30px;
+	}

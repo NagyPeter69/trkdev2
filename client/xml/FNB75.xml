@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <pages>376</pages>
+      <color>FOGRA_52</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <pages>2</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>FNB75</code>
+  <issueCode>FNB75</issueCode>
+  <deadline>2022-09-05T16:00</deadline>
+  <status>active</status>
+</issueData>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <pages>2</pages>
+      <color>FOGRA_39</color>
+      <size>210x297</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <pages>100</pages>
+      <color>FOGRA_45</color>
+      <size>210x297</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>OTT</code>
+  <issueCode>2608</issueCode>
+  <deadline>2026-07-10T16:00</deadline>
+  <status>created</status>
+</issueData>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <pages/>
+      <color>FOGRA_51</color>
+      <size>210x297</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <pages/>
+      <color>FOGRA_52</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>ANV24</code>
+  <issueCode>ANV24</issueCode>
+  <deadline>2026-06-05T16:00</deadline>
+  <status>approved</status>
+</issueData>

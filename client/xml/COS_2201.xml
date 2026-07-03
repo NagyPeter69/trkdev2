@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>148</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <place>1-2,147-148</place>
+      <color>FOGRA_51</color>
+      <size>205x273</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <place>3-146</place>
+      <color>FOGRA_51</color>
+      <size>205x273</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>COS</code>
+  <issueCode>2201</issueCode>
+  <deadline>2022-08-26T16:00</deadline>
+  <status>approved</status>
+</issueData>

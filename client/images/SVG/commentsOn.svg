@@ -1,0 +1,13 @@
+<svg version="1.2" baseProfile="tiny" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 x="0px" y="0px" width="30px" height="30px" viewBox="0 0 30 30" xml:space="preserve">
+<g>
+	<path fill="none" stroke="#FFFFFF" stroke-miterlimit="10" d="M26.25,17.25c0,1.657-1.344,3-3,3H21L14.25,25v-4.75h-7
+		c-1.657,0-3-1.343-3-3v-9c0-1.657,1.343-3,3-3h16c1.656,0,3,1.343,3,3V17.25z"/>
+	<g>
+		<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="8" x2="21" y2="8"/>
+		<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="11.166" x2="24.25" y2="11.166"/>
+		<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="14.334" x2="22.5" y2="14.334"/>
+		<line fill="none" stroke="#FFFFFF" stroke-miterlimit="10" x1="7.25" y1="17.5" x2="19.75" y2="17.5"/>
+	</g>
+</g>
+</svg>

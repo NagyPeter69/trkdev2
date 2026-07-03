@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <pages>194</pages>
+      <color>FOGRA_51</color>
+      <size>270x180</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <pages>2</pages>
+      <color>FOGRA_51</color>
+      <size>554x180</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>SBG36</code>
+  <issueCode>SBG36</issueCode>
+  <deadline/>
+  <status>approved</status>
+</issueData>

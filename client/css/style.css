@@ -1,0 +1,496 @@
+.mevent {
+	font-size: 10px;
+	}
+
+.thinnerTitle {
+	display:inline-block;
+	transform:scale(0.8,1); 
+    -webkit-transform:scale(0.8,1);
+    margin-left: -2px;
+	}
+
+.currentDay {
+	color: #04428D !important;
+	}
+
+.currentDayBox {
+	background: #9DD8EB !important;
+	}
+	
+.eventBox {
+	height: 14px;
+	font-size: 11px;
+	text-align: center;
+	border: 1px solid #000;
+	line-height: 1.4;
+	position: absolute;
+	background-color: #FFF;
+	}
+
+.magGroupName {
+	font-family: r_bold;
+	font-size: 13px;
+	padding-top: 10px;
+	}
+
+.colorpicker_new_color,
+.colorpicker_current_color,
+.colorpicker_hex,
+.colorpicker_field, 
+.colorpicker_submit {
+	visibility: hidden;	
+}
+
+.msettings {
+	left: 213px;
+	top: 13px;
+	color: #FFF;
+	position: absolute;
+	font-size: 12px;
+	}
+
+i {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+
+.arrow-right {
+  width: 0; 
+  height: 0; 
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid #000;
+  
+  position: absolute;
+  right: 13px;
+  top: 50%; 
+  margin-top: -9px;
+  cursor: pointer;
+}
+
+.arrow-left {
+  width: 0; 
+  height: 0; 
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent; 
+  border-right:6px solid #000; 
+  
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  margin-top: -9px;
+  cursor: pointer;
+}
+
+.fp_left {
+	box-sizing: border-box;
+	}
+
+.allselect {
+	display: inline-block;
+	}
+	
+.calendarYearBox {
+	float: right;
+	display: inline-block;
+	text-align: center;
+	width: 85px;
+	margin: 3px;
+	position: relative;
+	margin-right: -7px;
+	}
+	
+.calendarYear {
+	font-size: 16px;
+	padding: 5px;
+	padding-top: 0px;
+	color: #000;;
+	}
+
+.magazines {
+	font-size: 12px;
+	transition: all 0.3s ease-in-out 0s;
+	}
+
+#magtable td {
+	transition: all 0.3s ease-in-out 0s;
+	}
+	
+.highlight td {
+	background-color: #f7ff9e;
+	}
+
+.specdate {
+	height: 18px;
+	white-space: initial;
+	}
+
+.boxFullDate {
+	display: none;
+	font-size: 6px;
+	}
+
+.draggable {
+	cursor: pointer;
+	}
+
+.salesOrder::after {
+    width: 0px;
+    height: 0px;
+    background: transparent;
+    content: '';
+    position: absolute;
+    top: 0;
+}
+
+.salesOrder::after {
+    right: 0;
+    border-top: 3px solid white;
+    border-right: 3px solid white;
+    border-left: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+}
+
+.printOrder, .salesOrder {
+	font-size:7px;
+	position: absolute;
+	bottom: 0px;
+	left: 0px;
+	width: 100%;
+	//height: 16px;
+	font-weight: bold;
+	font-family: sans-serif;
+	transition: all 0.3s ease-in-out 0s;
+	z-index: 100;
+	}
+
+.boxType {
+	display: none;
+	}
+
+.boxCN {
+	display: none;
+	font-size: 7px;
+	text-align: center;
+	font-weight: lighter;
+	}
+
+.zooming {
+	transform: scale( 2.5 ) rotate(0deg);
+	height: auto;
+	z-index: 120;
+	}
+
+.orderTitle, .boxFullDate {
+	font-weight: normal;
+	}
+
+#calendarTable td {
+	width: 40px;
+	min-width: 40px;
+	max-width: 40px;
+	background: #FFF;
+	}
+
+
+.day {
+	position: absolute;
+	top: 50%;
+	left: 0px;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	margin-top: -12px;
+	font-size: 22px;
+	color: #999;
+	}
+
+.overDrop {
+	background-color: lightblue !important;
+	border: 2px dashed red !important;
+	box-sizing: border-box;
+	}
+
+.altercolorbox {
+	cursor: default !important;
+	}
+	
+.colorBox, .altercolorBox {
+	margin-left: 10px;
+	margin-top: 1px;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	cursor: pointer;
+	}
+
+.lastYearBox {
+	position: absolute;
+	top: 0px;
+	font-size: 9px;
+	text-align: center;
+	width: 80%;
+	background-color: #b13f82;
+	margin: 3px;
+	border: 1px solid #000;
+	}
+
+.dayBox {
+	position: relative;
+	box-sizing: border-box;
+	}
+
+.internalTable .day {
+	color: #103d8b;
+	}
+
+.internalTable .dayBox {
+	background-color: #cde0ff;
+	}
+
+.internalTable .printOrder {
+	font-size: 14px !important;
+	}
+
+.internalTable tbody td {
+	height: 80px !important;
+	}
+
+.internalTable td {
+	width: 100px !important;
+	min-width: 100px !important;
+	max-width: 100px !important;
+	}
+
+#calendarTable tbody td {
+	border: 1px solid #acacac;
+	height: 64px;
+	font-size: 18px;
+	}
+
+.extrawork .day {
+	color: #429fda !important;
+	}
+
+.mwholiday {
+	background: #b9c4f0 !important;
+	}
+
+.extraholiday {
+	background: #ffddd2 !important;
+	}
+
+.holiday .day {
+	color: #FF0000 !important;
+	}
+
+.holiday {
+	background: #ffddd2 !important;
+	}
+
+.szombat {
+	background: #ffe6f4 !important;
+	}
+
+.vasarnap {
+	color: #000;
+	background: #dcc0d0 !important;	
+	}
+
+.lastMonthBox {
+	color: #FFF;
+	background: #fbe7f2 !important;
+	}
+
+.monthBox {
+	color: #FFF;
+	background: #dcc0d0 !important;
+	}
+	
+#calendarTable thead td, #calendarTable tfoot td {
+	border: 1px solid #000;
+	font-weight: normal;
+	padding: 0;
+	color: #FFF;
+	background: #b13f82;
+	font-size: 12px;
+	padding: 5px 0px;
+	text-transform: uppercase;
+	}
+
+table.calendar {
+  border-collapse: collapse;
+}
+
+table.calendar thead {
+  background-color: #5A5A5A;
+  color: white;
+  margin-bottom: 3px;
+  border-bottom: 2px solid white
+}
+
+
+table.calendar thead th {
+  font-weight: normal;
+  padding: 10px 3px;
+}
+
+table.calendar thead th.bolder {
+  font-weight: bold;
+}
+
+table.calendar tbody {
+  font-size: 0.8em;
+}
+
+table.calendar td {
+  text-align: center;
+  padding: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(185, 185, 185, 0.13);
+  background-color: white;
+  min-width: 15px;
+}
+
+table.calendar tr:last-child td {
+  border-bottom: none;
+}
+
+table.calendar td.month-name {
+  font-weight: bold;
+  text-align: left;
+  cursor: default;
+  border-left: none;
+}
+
+table.calendar td.prev-month,
+table.calendar td.next-month {
+  color: transparent;
+  cursor: default;
+  pointer-events: none;
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAABZJREFUCB1jYEADmzdv/o8iRA0BoIEAKngPeSAlnXcAAAAASUVORK5CYII=');
+}
+
+table.calendar td.week-separator {
+  pointer-events: none;
+  padding: 0;
+  width: 8px;
+  min-width: 0;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAABZJREFUCB1jYEADmzdv/o8iRA0BoIEAKngPeSAlnXcAAAAASUVORK5CYII=');
+}
+
+table.calendar td.bolder {
+  font-weight: bold;
+}
+
+/* Single selected day */
+table.calendar td.selected {
+  background-color: orangered;
+  color: white;
+  font-weight: bold;
+}
+
+/* Selected range */
+table.calendar td.range {
+  background-color: rgba(255,69,0, 0.7);
+  font-weight: bold;
+  color: white;
+}
+
+table.calendar td.range-left {
+  border-top-left-radius: 15px;
+  border-bottom-left-radius: 15px;
+  overflow: hidden;
+  background: orangered;
+}
+
+table.calendar td.range-right {
+  border-top-right-radius: 15px;
+  border-bottom-right-radius: 15px;
+  overflow: hidden;
+  background: orangered;
+}
+
+div.calendar-controls {
+  margin: 5px auto;
+  display: table;
+  font-size: 25px;
+  line-height: 35px;
+}
+
+div.calendar-controls div {
+  display: inline;
+}
+
+div.calendar-controls .current-year {
+  margin: 0 30px;
+}
+
+div.calendar-controls .control {
+  font-weight: bolder;
+  color: #323232;
+  font-size: 0.8em;
+  cursor: pointer;
+}
+
+div.calendar-controls .today {
+  position: absolute;
+  right: 15px;
+  line-height: 35px;
+  font-size: 0.6em;
+  text-transform: uppercase;
+}
+
+/* Demo */
+
+div#calendar {
+  position: relative;
+  border-radius: 5px;
+  border: 1px solid #5A5A5A;
+  background-color: white;
+  overflow: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+div#root {
+  display: table;
+  margin: 50px auto;
+}
+
+h2,h3,h4,h5 {
+  text-align: center;
+  color: #404040;
+}
+
+h1 {
+  text-align: center;
+  color: #B10909;
+}
+
+#content a {
+  color: #B10909;
+  font-weight: bolder;
+  text-decoration: none;
+}
+
+a.demoLink {
+  text-decoration: underline;
+}
+
+div.options {
+  border: 1px solid #B9B9B9;
+  border-radius: 5px;
+  padding: 10px 15px;
+  margin-top: 30px;
+}
+
+div.options select {
+  margin-left: 10px;
+}

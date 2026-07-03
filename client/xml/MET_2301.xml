@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>48</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <place>1-2,44-48</place>
+      <color>FOGRA_51</color>
+      <size>210x210</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <place>3-44</place>
+      <color>FOGRA_51</color>
+      <size>210x210</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>MET</code>
+  <issueCode>2301</issueCode>
+  <deadline>2023-03-27T16:00</deadline>
+  <status>created</status>
+</issueData>

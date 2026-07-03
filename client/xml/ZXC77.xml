@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <pages>4</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <pages>300</pages>
+      <color>FOGRA_51</color>
+      <size>x</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>true</uploadable>
+  <code>ZXC77</code>
+  <issueCode>ZXC77</issueCode>
+  <deadline>2025-05-16T16:00</deadline>
+  <status>approved</status>
+</issueData>

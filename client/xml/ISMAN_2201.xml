@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>196</numOfPages>
+  <parts>
+    <part>
+      <name>BEL</name>
+      <place>3-194</place>
+      <color>FOGRA_51</color>
+      <size>204x276</size>
+    </part>
+    <part>
+      <name>BOR</name>
+      <place>1-2,195-196</place>
+      <color>FOGRA_45</color>
+      <size>204x276</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>ISMAN</code>
+  <issueCode>2201</issueCode>
+  <deadline>2022-10-28T16:00</deadline>
+  <status>stopped</status>
+</issueData>

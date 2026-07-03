@@ -1,0 +1,1144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Publications>
+  <Names>
+    <value>Eva</value>
+    <value>EVA</value>
+    <value>CKM</value>
+    <value>CKM</value>
+    <value>MensHealth</value>
+    <value>MEH</value>
+    <value>Éva különszám</value>
+    <value>EVAKUL</value>
+    <value>InStyle</value>
+    <value>IS</value>
+    <value>Joy</value>
+    <value>JOY</value>
+    <value>Joy melléklet</value>
+    <value>JOYMEL</value>
+    <value>Playboy</value>
+    <value>PB</value>
+    <value>Playboy Exclusive</value>
+    <value>PBEX</value>
+    <value>Saturn</value>
+    <value>SAT</value>
+    <value>Shape</value>
+    <value>SHP</value>
+    <value>FittMama</value>
+    <value>FIM</value>
+    <value>Stahl</value>
+    <value>STHL</value>
+    <value>Stahl különszám</value>
+    <value>STKUL</value>
+    <value>Stahl ReceptRejtvény</value>
+    <value>STRR</value>
+    <value>Amelie</value>
+    <value>AME</value>
+    <value>Diéta és Fitnesz</value>
+    <value>DF</value>
+    <value>Diéta különszám</value>
+    <value>DFKUL</value>
+    <value>Extra Frizura</value>
+    <value>EFR</value>
+    <value>HRM</value>
+    <value>HRM</value>
+    <value>Moha</value>
+    <value>MOHA</value>
+    <value>Vidék Ize</value>
+    <value>VDK</value>
+    <value>Meyle-Mueller</value>
+    <value>OZ</value>
+    <value>BÁV</value>
+    <value>BAV</value>
+    <value>Bumeráng</value>
+    <value>BUM</value>
+    <value>DM magazin</value>
+    <value>DM</value>
+    <value>Tesztmagazin</value>
+    <value>TST</value>
+    <value>Silver magazin</value>
+    <value>SLV</value>
+    <value>Corvinus magazin</value>
+    <value>COR</value>
+    <value>Popcorn</value>
+    <value>POP</value>
+    <value>Maedchen</value>
+    <value>MAE</value>
+  </Names>
+  <PB>
+    <Name>Playboy</Name>
+    <Code>PB</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintones</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>200 x 272 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>g.gerse@ckm.hu;p.szanto@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 200 x 272 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 235 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 115 mm</value>
+        <value>1/3 álló, tükör: 55 x 235 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 75 mm</value>
+        <value>2/3 álló, tükör: 114 x 235 mm</value>
+        <value>1/4 álló, tükör: 83 x 115 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 134 mm</value>
+        <value>1/3 álló, vágott: 64 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 88 mm</value>
+        <value>2/3 álló, vágott: 131 x 272 mm</value>
+        <value>1/4 álló, vágott: 98 x 134 mm</value>
+      </partial>
+    </AdSizes>
+  </PB>
+  <CKM>
+    <Name>CKM</Name>
+    <Code>CKM</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>200 x 272 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>b.varga@ckm.hu;g.gerse@ckm.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 200 x 272 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 119 mm</value>
+        <value>1/3 álló, tükör: 55 x 237 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 81 mm</value>
+        <value>2/3 álló, tükör: 121 x 237 mm</value>
+        <value>1/4 álló, tükör: 83 x 119 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 133 mm</value>
+        <value>1/3 álló, vágott: 68 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 96 mm</value>
+        <value>2/3 álló, vágott: 134 x 272 mm</value>
+        <value>1/4 álló, vágott: 98 x 133 mm</value>
+      </partial>
+    </AdSizes>
+  </CKM>
+  <MEH>
+    <Name>MensHealth</Name>
+    <Code>MEH</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>2</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>200 x 272 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>r.nagy@menshealth.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 200 x 272 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 235 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 115 mm</value>
+        <value>1/3 álló, tükör: 54 x 235 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 75 mm</value>
+        <value>1/4 álló, tükör: 83 x 115 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 134 mm</value>
+        <value>1/3 álló, vágott: 64 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 88 mm</value>
+        <value>1/4 álló, vágott: 98 x 134 mm</value>
+      </partial>
+    </AdSizes>
+  </MEH>
+  <JOY>
+    <Name>Joy</Name>
+    <Code>JOY</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>R_1</CustomCode>
+    <TrimSize>172 x 228 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>v.galgoczy@joy.hu;v.varaljai@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 172 x 228 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 67 x 196 mm</value>
+        <value>1/2 fekvő, tükör: 138 x 94 mm</value>
+        <value>1/3 álló, tükör: 44 x 196 mm</value>
+        <value>1/3 fekvő, tükör: 138 x 57 mm</value>
+        <value>2/3 álló, tükör: 90 x 196 mm</value>
+        <value>1/4 álló, tükör: 67 x 94 mm</value>
+        <value>1/2 álló, vágott: 84 x 228 mm</value>
+        <value>1/2 fekvő, vágott: 172 x 112 mm</value>
+        <value>1/3 álló, vágott: 60 x 228 mm</value>
+        <value>1/3 fekvő, vágott: 172 x 76 mm</value>
+        <value>2/3 álló, vágott: 107 x 228 mm</value>
+        <value>1/4 álló, vágott: 84 x 112 mm</value>
+        <value>1/4 álló, vágott: 107 x 165 mm</value>
+      </partial>
+    </AdSizes>
+  </JOY>
+  <JOYMEL>
+    <Name>Joy melléklet</Name>
+    <Code>JOYMEL</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>210 x 255 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>JOY</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>y.baillieul@marquardmedia.hu;m.alpek@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 210 x 255 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 85 x 215 mm</value>
+        <value>1/2 fekvő, tükör: 175 x 105 mm</value>
+        <value>1/2 álló, vágott: 102.5 x 255 mm</value>
+        <value>1/2 fekvő, vágott: 210 x 125 mm</value>
+      </partial>
+    </AdSizes>
+  </JOYMEL>
+  <SHP>
+    <Name>Shape</Name>
+    <Code>SHP</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>3</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>172 x 228 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>t.steiner@shape.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 172 x 228 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 70 x 196 mm</value>
+        <value>1/2 fekvő, tükör: 145x 95 mm</value>
+        <value>1/3 álló, tükör: 46 x 196 mm</value>
+        <value>1/3 fekvő, tükör: 145 x 62 mm</value>
+        <value>2/3 álló, tükör: 95.5 x 196 mm</value>
+        <value>1/4 álló, tükör: 70 x 95 mm</value>
+        <value>1/2 álló, vágott: 84 x 228 mm</value>
+        <value>1/2 fekvő, vágott: 172 x 112 mm</value>
+        <value>1/3 álló, vágott: 60 x 228 mm</value>
+        <value>1/3 fekvő, vágott: 172 x 76 mm</value>
+        <value>2/3 álló, vágott: 107 x 228 mm</value>
+        <value>1/4 álló, vágott: 84 x 112 mm</value>
+      </partial>
+    </AdSizes>
+  </SHP>
+  <EVA>
+    <Name>Eva</Name>
+    <Code>EVA</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>200 x 245 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>m.fekete@marquardmedia.hu;evagrafika@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 200 x 245 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 82 x 221 mm</value>
+        <value>1/2 fekvő, tükör: 176 x 104 mm</value>
+        <value>1/3 álló, tükör: 48 x 221 mm</value>
+        <value>1/3 fekvő, tükör: 176 x 63 mm</value>
+        <value>2/3 álló, tükör: 111 x 221 mm</value>
+        <value>1/4 álló, tükör: 82 x 104 mm</value>
+        <value>1/2 álló, vágott: 98 x 245 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 120 mm</value>
+        <value>1/3 álló, vágott: 63 x 245 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 78 mm</value>
+        <value>2/3 álló, vágott: 128 x 245 mm</value>
+        <value>1/4 álló, vágott: 98 x 120 mm</value>
+        <value>ez már saját érték</value>
+      </partial>
+    </AdSizes>
+  </EVA>
+  <EVAKUL>
+    <Name>Éva különszám</Name>
+    <Code>EVAKUL</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>225 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Eva</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>evagrafika@marquardmedia.hu;y.baillieul@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 225 x 275 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, vágott: 112 x 275 mm</value>
+        <value>1/2 fekvő, vágott: 225 x 132 mm</value>
+        <value>1/3 álló, vágott: 70 x 275 mm</value>
+        <value>1/3 fekvő, vágott: 225 x 90 mm</value>
+        <value>2/3 álló, vágott: 150 x 275 mm</value>
+        <value>1/4 álló, vágott: 112 x 132 mm</value>
+      </partial>
+    </AdSizes>
+  </EVAKUL>
+  <IS>
+    <Name>InStyle</Name>
+    <Code>IS</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>R_1</CustomCode>
+    <TrimSize>225 x 275 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>m.alpek@instyle.hu;sz.rozsa@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 225 x 275 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, vágott: 112 x 275 mm</value>
+        <value>1/2 fekvő, vágott: 225 x 132 mm</value>
+        <value>1/3 álló, vágott: 70 x 275 mm</value>
+        <value>1/3 fekvő, vágott: 225 x 90 mm</value>
+        <value>2/3 álló, vágott: 150 x 275 mm</value>
+        <value>1/4 álló, vágott: 112 x 132 mm</value>
+      </partial>
+    </AdSizes>
+  </IS>
+  <FIM><Name>FittMama</Name><Code>FIM</Code><Publisher>Marquard</Publisher><Workflow>Full</Workflow><Resolution>300</Resolution><IDversion>CS3</IDversion><Language>HU</Language><Period>undefined</Period>Full
+		<Enhance>Skintone</Enhance><ColorManagement><Cover>FOGRA_39</Cover><Content>FOGRA_45</Content><Insert>FOGRA_39</Insert></ColorManagement><OutputFormat>TIFF</OutputFormat><CustomCode>No</CustomCode><TrimSize>186 x 248 mm</TrimSize><LocalStorage>Root</LocalStorage><RemoteStorage>Office</RemoteStorage><Parent>Self</Parent><FinalOutput>IPG</FinalOutput><Mails>t.steiner@shape.hu</Mails><AdSizes><fullpage><value>vágott méret: 186 x 248 mm</value></fullpage><partial><value>1/2 álló, tükör: 73 x 216 mm</value><value>1/2 fekvő, tükör: 152 x 105 mm</value><value>1/3 álló, tükör: 47 x 216 mm</value><value>1/3 fekvő, tükör: 152 x 68 mm</value><value>2/3 álló, tükör: 90 x 216 mm</value><value>1/4 álló, tükör: 73 x 105 mm</value><value>1/2 álló, vágott: 90 x 248 mm</value><value>1/2 fekvő, vágott: 186 x 121 mm</value><value>1/3 álló, vágott: 64 x 248 mm</value><value>1/3 fekvő, vágott: 186 x 84 mm</value><value>2/3 álló, vágott: 124 x 248 mm</value><value>1/4 álló, vágott: 90 x 121 mm</value></partial></AdSizes></FIM>
+  <SAT>
+    <Name>Saturn</Name>
+    <Code>SAT</Code>
+    <Publisher>Marquard</Publisher>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>200 x 272 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>r.nagy@ckm.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 200 x 272 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 116 mm</value>
+        <value>1/3 álló, tükör: 55 x 237 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 78 mm</value>
+        <value>2/3 álló, tükör: 114 x 237 mm</value>
+        <value>1/4 álló, tükör: 83 x 116 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 134 mm</value>
+        <value>1/3 álló, vágott: 64 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x88 mm</value>
+        <value>2/3 álló, vágott: 131 x 272 mm</value>
+        <value>1/4 álló, vágott: 98 x 134 mm</value>
+      </partial>
+    </AdSizes>
+  </SAT>
+  <PBEX>
+    <Name>Playboy Exclusive</Name>
+    <Code>PBEX</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>210 x 255 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Playboy</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>g.gerse@ckm.hu;p.szanto@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 210 x 255 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 85 x 215 mm</value>
+        <value>1/2 fekvő, tükör: 175 x 105 mm</value>
+        <value>1/3 álló, tükör: 55 x 215 mm</value>
+        <value>1/3 fekvő, tükör: 175 x 68.3 mm</value>
+        <value>2/3 álló, tükör: 115 x 215 mm</value>
+        <value>1/2 álló, vágott: 102.5 x 255 mm</value>
+        <value>1/2 fekvő, vágott: 210 x 125 mm</value>
+        <value>1/3 álló, vágott: 66.7 x 255 mm</value>
+        <value>1/3 fekvő, vágott: 210 x 81.7 mm</value>
+        <value>2/3 álló, vágott: 138.3 x 255 mm</value>
+      </partial>
+    </AdSizes>
+  </PBEX>
+  <STHL>
+    <Name>Stahl magazin</Name>
+    <Code>STHL</Code>
+    <Publisher>Stahl</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>215 x 270 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>StahlOffice</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <Mails>gmyckei@gmail.com</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 215 x 270 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 116 mm</value>
+        <value>1/3 álló, tükör: 55 x 237 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 78 mm</value>
+        <value>2/3 álló, tükör: 114 x 237 mm</value>
+        <value>1/4 álló, tükör: 83 x116 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 134 mm</value>
+        <value>1/3 álló, vágott: 64 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 88 mm</value>
+        <value>2/3 álló, vágott: 131 x 272 mm</value>
+        <value>1/4 álló, vágott: 98 x 134 mm</value>
+      </partial>
+    </AdSizes>
+  </STHL>
+  <STKUL>
+    <Name>Stahl különszám</Name>
+    <Code>STKUL</Code>
+    <Publisher>Stahl</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>215 x 270 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>StahlOffice</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <Mails>gmyckei@gmail.com</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 215 x 270 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 116 mm</value>
+        <value>1/3 álló, tükör: 55 x 237 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 78 mm</value>
+        <value>2/3 álló, tükör: 114 x 237 mm</value>
+        <value>1/4 álló, tükör: 83 x 116 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 134 mm</value>
+        <value>1/3 álló, vágott: 64 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 88 mm</value>
+        <value>2/3 álló, vágott: 131 x 272 mm</value>
+        <value>1/4 álló, vágott: 98 x 134 mm</value>
+      </partial>
+    </AdSizes>
+  </STKUL>
+  <STRR>
+    <Name>Stahl ReceptRejtvény</Name>
+    <Code>STRR</Code>
+    <Publisher>Stahl</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>undefined</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>215 x 270 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>StahlOffice</FinalOutput>
+    <Mails>gmyckei@gmail.com</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 215 x 270 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 116 mm</value>
+        <value>1/3 álló, tükör: 55 x 237 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 78 mm</value>
+        <value>2/3 álló, tükör: 114 x 237 mm</value>
+        <value>1/4 álló, tükör: 83 x 116 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 134 mm</value>
+        <value>1/3 álló, vágott: 64 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 88 mm</value>
+        <value>2/3 álló, vágott: 131 x 272 mm</value>
+        <value>1/4 álló, vágott: 98 x 134 mm</value>
+      </partial>
+    </AdSizes>
+  </STRR>
+  <DF>
+    <Name>Diéta és Fitnesz</Name>
+    <Code>DF</Code>
+    <Publisher>Geomedia</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>203 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <Mails>pataki.bernadett@geocom.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 203 x 275 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+      </partial>
+    </AdSizes>
+  </DF>
+  <DFKUL>
+    <Name>Diéta különszám</Name>
+    <Code>DFKUL</Code>
+    <Publisher>Geomedia</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS5</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>203 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <Mails>pataki.bernadett@geocom.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 203 x 275 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+      </partial>
+    </AdSizes>
+  </DFKUL>
+  <AME>
+    <Name>Amelie</Name>
+    <Code>AME</Code>
+    <Publisher>Geomedia</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>203 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <Mails>pataki.bernadett@geocom.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 203 x 275 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+      </partial>
+    </AdSizes>
+  </AME>
+  <EFR>
+    <Name>Extra Frizura</Name>
+    <Code>EFR</Code>
+    <Publisher>Geomedia</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>203 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <Mails>kobor.szilvia@bumerangmagazin.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 203 x 275 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+      </partial>
+    </AdSizes>
+  </EFR>
+  <VDK>
+    <Name>Vidék Ize</Name>
+    <Code>VDK</Code>
+    <Publisher>Geomedia</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>210 x 297 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <Mails>szakal.andrea@geomedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 210 x 297 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+      </partial>
+    </AdSizes>
+  </VDK>
+  <MOHA>
+    <Name>Moha</Name>
+    <Code>MOHA</Code>
+    <Publisher>Geomedia</Publisher>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS5</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Vivid</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>195 x 195 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <Mails>szecsenyi@artistokrats.com&gt;</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 195 x 195 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 237 mm</value>
+      </partial>
+    </AdSizes>
+  </MOHA>
+  <BAV>
+    <Name>BAV</Name>
+    <Code>BAV</Code>
+    <Publisher>BAV</Publisher>
+    <Language>HU</Language>
+    <Period/>
+    <Workflow>Full</Workflow>
+    <Resolution>450</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Jewellery</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>225 x 283 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>Office</FinalOutput>
+    <Mails>info@ipixel.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 225 x 283 mm</value>
+      </fullpage>
+      <partial>
+        <value/>
+      </partial>
+    </AdSizes>
+  </BAV>
+  <BUM>
+    <Name>Bumeráng</Name>
+    <Code>BUM</Code>
+    <Publisher>Geomedia</Publisher>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Workflow>Resize</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintones</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>JPEG</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>200 x 275 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>undefined</FinalOutput>
+    <Mails>nemeth.mihaly@bumerangmagazin.hu;szilvia.kobor@gmail.com</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 200 x 275 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 83 x 235 mm</value>
+        <value>1/2 fekvő, tükör: 170 x 115 mm</value>
+        <value>1/3 álló, tükör: 55 x 235 mm</value>
+        <value>1/3 fekvő, tükör: 170 x 75 mm</value>
+        <value>2/3 álló, tükör: 114 x 235 mm</value>
+        <value>1/4 álló, tükör: 83 x 115 mm</value>
+        <value>1/2 álló, vágott: 98 x 272 mm</value>
+        <value>1/2 fekvő, vágott: 200 x 134 mm</value>
+        <value>1/3 álló, vágott: 64 x 272 mm</value>
+        <value>1/3 fekvő, vágott: 200 x 88 mm</value>
+        <value>2/3 álló, vágott: 131 x 272 mm</value>
+        <value>1/4 álló, vágott: 98 x 134 mm</value>
+      </partial>
+    </AdSizes>
+  </BUM>
+  <DM>
+    <Name>DM magazin</Name>
+    <Code>DM</Code>
+    <Publisher>Marquard</Publisher>
+    <Language>HU</Language>
+    <Period>quarterly</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_46</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>204 x 272 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>IPG</FinalOutput>
+    <Mails>y.baillieul@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 204 x 272 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, vágott: 102 x 272 mm</value>
+        <value>1/4 álló, vágott: 102 x 136 mm</value>
+      </partial>
+    </AdSizes>
+  </DM>
+  <TST>
+    <Name>Tesztmagazin</Name>
+    <Code>TST</Code>
+    <Publisher>Colorcom</Publisher>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS5</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Food</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>172 x 228 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>PrintingHouse</FinalOutput>
+    <Mails>peter@colorcom.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 172 x 228 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 67 x 196 mm</value>
+        <value>1/2 fekvő, tükör: 138 x 94 mm</value>
+        <value>1/3 álló, tükör: 44 x 196 mm</value>
+        <value>1/3 fekvő, tükör: 138 x 57 mm</value>
+        <value>2/3 álló, tükör: 90 x 196 mm</value>
+        <value>1/4 álló, tükör: 67 x 94 mm</value>
+        <value>1/2 álló, vágott: 84 x 228 mm</value>
+        <value>1/2 fekvő, vágott: 172 x 112 mm</value>
+        <value>1/3 álló, vágott: 60 x 228 mm</value>
+        <value>1/3 fekvő, vágott: 172 x 76 mm</value>
+        <value>2/3 álló, vágott: 107 x 228 mm</value>
+        <value>1/4 álló, vágott: 84 x 112 mm</value>
+        <value>1/4 álló, vágott: 107 x 165 mm</value>
+      </partial>
+    </AdSizes>
+  </TST>
+  <SLV>
+    <Name>Silver magazin</Name>
+    <Code>SLV</Code>
+    <Publisher>Marquard</Publisher>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS3</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>230 x 297 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>MMprod</FinalOutput>
+    <Mails>m.fekete@marquardmedia.hu;evagrafika@marquardmedia.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 230 x 297 mm</value>
+      </fullpage>
+      <partial>
+			</partial>
+    </AdSizes>
+  </SLV>
+  <COR>
+    <Name>Corvinus magazin</Name>
+    <Code>COR</Code>
+    <Publisher>Marquard</Publisher>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Language>HU</Language>
+    <Period>1</Period>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_39</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>No</CustomCode>
+    <TrimSize>165 x 235 mm</TrimSize>
+    <LocalStorage>PubFolder</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>MMprod</FinalOutput>
+    <Mails>r.nagy@menshealth.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 165 x 235 mm</value>
+      </fullpage>
+      <partial>
+			</partial>
+    </AdSizes>
+  </COR>
+  <POP>
+    <Name>Popcorn</Name>
+    <Code>POP</Code>
+    <Publisher>Meyle-Müller</Publisher>
+    <Language>DE</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>R_1</CustomCode>
+    <TrimSize>205 x 285 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>Dalim</FinalOutput>
+    <Mails>peter@colorcom.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 205 x 285 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 67 x 196 mm</value>
+        <value>1/2 fekvő, tükör: 138 x 94 mm</value>
+        <value>1/3 álló, tükör: 44 x 196 mm</value>
+        <value>1/3 fekvő, tükör: 138 x 57 mm</value>
+        <value>2/3 álló, tükör: 90 x 196 mm</value>
+        <value>1/4 álló, tükör: 67 x 94 mm</value>
+        <value>1/2 álló, vágott: 84 x 228 mm</value>
+        <value>1/2 fekvő, vágott: 172 x 112 mm</value>
+        <value>1/3 álló, vágott: 60 x 228 mm</value>
+        <value>1/3 fekvő, vágott: 172 x 76 mm</value>
+        <value>2/3 álló, vágott: 107 x 228 mm</value>
+        <value>1/4 álló, vágott: 84 x 112 mm</value>
+        <value>1/4 álló, vágott: 107 x 165 mm</value>
+      </partial>
+    </AdSizes>
+  </POP>
+  <MAE>
+    <Name>Maedchen</Name>
+    <Code>MAE</Code>
+    <Publisher>Meyle-Müller</Publisher>
+    <Language>DE</Language>
+    <Period>1</Period>
+    <Workflow>Full</Workflow>
+    <Resolution>300</Resolution>
+    <IDversion>CS6</IDversion>
+    <Enhance>Skintone</Enhance>
+    <ColorManagement>
+      <Cover>FOGRA_39</Cover>
+      <Content>FOGRA_45</Content>
+      <Insert>FOGRA_39</Insert>
+    </ColorManagement>
+    <OutputFormat>TIFF</OutputFormat>
+    <CustomCode>R_1</CustomCode>
+    <TrimSize>205 x 285 mm</TrimSize>
+    <LocalStorage>Root</LocalStorage>
+    <RemoteStorage>Office</RemoteStorage>
+    <Parent>Self</Parent>
+    <FinalOutput>Dalim</FinalOutput>
+    <Mails>peter@colorcom.hu</Mails>
+    <AdSizes>
+      <fullpage>
+        <value>vágott méret: 205 x 285 mm</value>
+      </fullpage>
+      <partial>
+        <value>1/2 álló, tükör: 67 x 196 mm</value>
+        <value>1/2 fekvő, tükör: 138 x 94 mm</value>
+        <value>1/3 álló, tükör: 44 x 196 mm</value>
+        <value>1/3 fekvő, tükör: 138 x 57 mm</value>
+        <value>2/3 álló, tükör: 90 x 196 mm</value>
+        <value>1/4 álló, tükör: 67 x 94 mm</value>
+        <value>1/2 álló, vágott: 84 x 228 mm</value>
+        <value>1/2 fekvő, vágott: 172 x 112 mm</value>
+        <value>1/3 álló, vágott: 60 x 228 mm</value>
+        <value>1/3 fekvő, vágott: 172 x 76 mm</value>
+        <value>2/3 álló, vágott: 107 x 228 mm</value>
+        <value>1/4 álló, vágott: 84 x 112 mm</value>
+        <value>1/4 álló, vágott: 107 x 165 mm</value>
+      </partial>
+    </AdSizes>
+  </MAE>
+</Publications>

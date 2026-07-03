@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>0</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <pages/>
+      <color>FOGRA_47</color>
+      <size>210x297</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <pages/>
+      <color>FOGRA_47</color>
+      <size>210x297</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>DHH97</code>
+  <issueCode>DHH97</issueCode>
+  <deadline>2022-09-14T16:00</deadline>
+  <status>approved</status>
+</issueData>

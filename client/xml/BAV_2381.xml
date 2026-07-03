@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issueData>
+  <numOfPages>320</numOfPages>
+  <parts>
+    <part>
+      <name>BOR</name>
+      <place>1-2,319-320</place>
+      <color>FOGRA_51</color>
+      <size>225x283</size>
+    </part>
+    <part>
+      <name>BEL</name>
+      <place>3-318</place>
+      <color>FOGRA_51</color>
+      <size>225x283</size>
+    </part>
+  </parts>
+  <specificName/>
+  <uploadable>false</uploadable>
+  <code>BAV</code>
+  <issueCode>2381</issueCode>
+  <deadline>2023-04-27T16:00</deadline>
+  <status>approved</status>
+</issueData>

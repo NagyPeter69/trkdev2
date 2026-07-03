@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eventComm>
+  <client>Brit Media</client>
+  <jobCode>ELDEC</jobCode>
+  <issue>2604</issue>
+  <event>ad_check_result</event>
+  <description>BRUSTOR</description>
+  <remark>1_1</remark>
+  <results>
+    <dimensions>460 x 297 mm</dimensions>
+    <size>wrong_size</size>
+    <bleed>bleed_ok</bleed>
+    <lowres>false</lowres>
+    <fontmissing>false</fontmissing>
+    <truesize>false</truesize>
+  </results>
+</eventComm>

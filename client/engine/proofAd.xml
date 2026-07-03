@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eventComm>
+  <client>Colorcom</client>
+  <jobCode>TST</jobCode>
+  <issue>1420</issue>
+  <event>proof</event>
+  <description>VALAMI</description>
+  <size>1_1</size>
+  <pageNum>NA</pageNum>
+  <pageType>AD</pageType>
+</eventComm>

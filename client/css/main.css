@@ -1,0 +1,95 @@
+.container {
+    overflow:hidden;
+    width:960px;
+    margin:20px auto;
+}
+.contr {
+    background-color:#212121;
+    padding:10px 0;
+    text-align:center;
+
+    border-radius:10px 10px 0 0;
+    -moz-border-radius:10px 10px 0 0;
+    -webkit-border-radius:10px 10px 0 0;
+}
+
+.upload_form_cont {
+    background: -moz-linear-gradient(#ffffff, #f2f2f2);
+    background: -ms-linear-gradient(#ffffff, #f2f2f2);
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #ffffff), color-stop(100%, #f2f2f2));
+    background: -webkit-linear-gradient(#ffffff, #f2f2f2);
+    background: -o-linear-gradient(#ffffff, #f2f2f2);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#f2f2f2');
+    -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#f2f2f2')";
+    background: linear-gradient(#ffffff, #f2f2f2);
+
+    color:#000;
+    overflow:hidden;
+}
+#upload_form {
+    float:left;
+    padding:20px;
+    width:700px;
+}
+#preview {
+    background-color:#fff;
+    display:block;
+    float:right;
+    width:200px;
+}
+#upload_form > div {
+    margin-bottom:10px;
+}
+#speed,#remaining {
+    float:left;
+    width:100px;
+}
+#b_transfered {
+    float:right;
+    text-align:right;
+}
+.clear_both {
+    clear:both;
+}
+
+#image_file {
+    width:370px;
+}
+#progress_info {
+	margin-left: 10px;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	margin-top: 10px;
+	background: #D6D6D6;
+	height: 15px;
+	display:none;
+	padding: 4px;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;	
+}
+#fileinfo,#error,#error2,#abort,#warnsize {
+    color:#aaa;
+    display:none;
+    font-size:10pt;
+    font-style:italic;
+    margin-top:10px;
+}
+#progress {
+	width: 240px;
+	height: 15px;
+ 	background-color: #66cc00;
+	background: -webkit-gradient(linear, left top, right top, from(#66cc00), to(#4b9500));
+	background: -webkit-linear-gradient(left, #66cc00, #4b9500);
+	background: -moz-linear-gradient(left, #66cc00, #4b9500);
+	background: -ms-linear-gradient(left, #66cc00, #4b9500);
+	background: -o-linear-gradient(left, #66cc00, #4b9500);
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;	
+	}
+#progress_percent {
+	display: none;
+	float: right;
+	color: #000000;
+	}
