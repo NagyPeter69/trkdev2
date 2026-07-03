@@ -18,6 +18,8 @@ function SwitchLogin() {
 	$data = "username=".$username."&password=".$password;
 	
 	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 	curl_setopt($ch, CURLOPT_URL, SWITCHLOGINURL );
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
@@ -84,6 +86,8 @@ function SwitchASend( $datas, $file = "" ) {
 	$data["file[0][file]"] = new CurlFile( realpath( $file ), $mime, $doc_name );
 		 
 	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 	curl_setopt($ch, CURLOPT_URL, SWITCHURL );
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
@@ -141,6 +145,8 @@ function SwitchAnyagSend( $datas, $file = "" ) {
 	$data["file[0][file]"] = new CurlFile( realpath( $file ), $mime, $doc_name );
 		 
 	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 	curl_setopt($ch, CURLOPT_URL, SWITCHURL );
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
@@ -244,6 +250,8 @@ function SwitchSend( $datas, $file = "" ) {
 	$data["file[0][file]"] = new CurlFile( realpath( $file ), $mime, $doc_name );
 		 
 	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 	curl_setopt($ch, CURLOPT_URL, SWITCHURL );
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
@@ -359,6 +367,8 @@ function SwitchSend_TESZT( $datas, $file = "" ) {
 	$data["file[0][file]"] = new CurlFile( realpath( $file ), $mime, $doc_name );
 		
 	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 	curl_setopt($ch, CURLOPT_URL, SWITCHURL );
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
@@ -476,6 +486,8 @@ function SwitchSend_Rename( $datas, $file, $newname ) {
 	$data["file[0][file]"] = new CurlFile( realpath( $newpath ), $mime, $newname );
 		
 	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 	curl_setopt($ch, CURLOPT_URL, SWITCHURL );
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
@@ -516,12 +528,14 @@ function metadata( $id, $name, $value, $parent = "" ) {
 
 function SwitchGetSubmitPonts( $target = NULL ) {
 	global $token;
-	
+
 	$headers = array(
 		"Authorization: ".$token."",
 		);
-	
+
 	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 	curl_setopt($ch, CURLOPT_URL, "http://192.168.1.8:51088/api/v1/submitpoints/" );
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);

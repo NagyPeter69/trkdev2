@@ -187,7 +187,7 @@
 				if( $_POST['o_pass'] != '' && $_POST['u_pass'] != '' && $_POST['u_pass2'] != '' ) {
 					$pass = sql_get( 'accounts', 'id=\''.$_SESSION['intra_user'].'\'', 'pass' );
 					
-					if( md5( $_POST['o_pass'] ) == $pass[0][0] ) {
+					if( checkPassword( $_POST['o_pass'], $pass[0][0], $_SESSION['intra_user'] ) ) {
 						if( $_POST['u_pass'] == $_POST['u_pass2'] ) {
 							$pass_change = 1;
 							}
@@ -229,7 +229,7 @@
 				}
 				
 			if( $pass_change == 1 ) {
-				$command .= ', pass=\''.md5($_POST['u_pass']).'\'';
+				$command .= ', pass=\''.password_hash($_POST['u_pass'], PASSWORD_DEFAULT).'\'';
 				}
 			
 			sql_update( 'accounts', $command, 'id=\''.$_SESSION['intra_user'].'\'' );	
@@ -268,7 +268,7 @@
 				
 				//error_log( print_r( $_POST["userMails"], true ) );
 				//error_log( $code );
-				if( in_array( $code, $_POST["userMails"] ) ) {
+				if( in_array( $code, $_POST["userMails"] ?? array() ) ) {
 					if( !in_array( $user[0][5] , $pmdmails ) ) {
 						error_log( "bentvagyok") ;
 						$pmdmails[] = trim( $user[0][5] );
