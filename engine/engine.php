@@ -119,6 +119,27 @@ function checkPassword( $plain, $hash, $accountId = null ) {
 	return false;
 	}
 
+// Persistent "remember me" login. The intra_user cookie used to hold the
+// raw account id, which any client could set unverified to impersonate any
+// user. Instead we issue a random unguessable token, store only its hash
+// server-side, and put the raw token in the cookie - presenting the cookie
+// proves nothing unless it matches a stored hash.
+function issueRememberToken( $accountId ) {
+	$token = bin2hex( random_bytes( 32 ) );
+	sql_update( 'accounts', "remember_token='".hash( 'sha256', $token )."'", "id='".(int) $accountId."'" );
+	setcookie( 'intra_user', $token, time() + (106400), "/" );
+	}
+
+function resolveRememberToken( $token ) {
+	$hash = hash( 'sha256', $token );
+	$check = sql_get( 'accounts', "remember_token='".$hash."'", 'id' );
+	return !empty( $check[0][0] ) ? $check[0][0] : null;
+	}
+
+function clearRememberToken( $accountId ) {
+	sql_update( 'accounts', "remember_token=NULL", "id='".(int) $accountId."'" );
+	}
+
 function securityAlert( $uname, $pass ) {
 	$subject = "Sikertelen Tracker bejelentkezés";
 	

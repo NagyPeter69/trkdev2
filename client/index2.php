@@ -13,6 +13,7 @@ include_once('../engine/xml_handler.php');
 $login_error = "";
 if( $_GET['page'] == 'logout' ) {
 	sql_update( "accounts", "logged_in='0'", 'id=\''.$_SESSION['intra_user'].'\'' );
+	clearRememberToken( $_SESSION['intra_user'] );
   	setcookie('intra_user', null, -1, '/' );
   	unset($_COOKIE['intra_user']);
 	unset( $_SESSION['intra_user'] );
@@ -35,8 +36,7 @@ if( $_GET["hash"] != "" ) {
 		$check = sql_get( "adhoc_hotlinks", "hash='".$_GET["hash"]."'", "*" );
 		if( $check[0][0] != "" ) {
 			$_SESSION['intra_user'] = $check[0][1];
-			setcookie('intra_user', $check[0][1], time() + (106400), "/");
-			$_COOKIE["intra_user"] = $check[0][1];
+			issueRememberToken( $check[0][1] );
 			$_SESSION['intra_timer'] = time();
 			
 			
@@ -64,9 +64,16 @@ if( $_GET["hash"] != "" ) {
 	}
 
 if( isset( $_COOKIE["intra_user"] ) && $_COOKIE["intra_user"] != "" ) {
-	$_SESSION['intra_user'] = $_COOKIE["intra_user"];
-	$_SESSION['intra_timer'] = time();
-	sql_update( "accounts", "logged_in='1'", 'id=\''.$_SESSION['intra_user'].'\'' );
+	$resolvedId = resolveRememberToken( $_COOKIE["intra_user"] );
+	if( $resolvedId !== null ) {
+		$_SESSION['intra_user'] = $resolvedId;
+		$_SESSION['intra_timer'] = time();
+		sql_update( "accounts", "logged_in='1'", 'id=\''.$resolvedId.'\'' );
+		}
+	else {
+		setcookie( 'intra_user', null, -1, '/' );
+		unset( $_COOKIE['intra_user'] );
+		}
 	}
 
 elseif( isset($_GET['username'] ) && isset($_GET['password'] ) ) {
@@ -75,7 +82,7 @@ elseif( isset($_GET['username'] ) && isset($_GET['password'] ) ) {
 	if( !empty( $user[0][0] ) && checkPassword( $_GET['password'], $user[0][2], $user[0][0] ) ) {
 		session_regenerate_id( true );
 		$logged_in = 1;
-		setcookie('intra_user', $user[0][0], time() + (106400), "/");
+		issueRememberToken( $user[0][0] );
 		$_SESSION['intra_user'] = $user[0][0];
 		$_SESSION['intra_timer'] = time();
 
@@ -95,7 +102,7 @@ elseif( isset($_POST['username'] ) && isset($_POST['password'] ) ) {
 		if( $user[0][18] == 0 or $user[0][27] == "1" ) {
 			session_regenerate_id( true );
 			$logged_in = 1;
-			setcookie('intra_user', $user[0][0], time() + (106400), "/");
+			issueRememberToken( $user[0][0] );
 			$_SESSION['intra_user'] = $user[0][0];
 			$_SESSION['intra_timer'] = time();
 			sql_update( 'accounts', 'logged_in=\'1\'', 'id=\''.$user[0][0].'\'' );
