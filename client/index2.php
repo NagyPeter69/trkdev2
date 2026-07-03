@@ -70,57 +70,64 @@ if( isset( $_COOKIE["intra_user"] ) && $_COOKIE["intra_user"] != "" ) {
 	}
 
 elseif( isset($_GET['username'] ) && isset($_GET['password'] ) ) {
-	$user = sql_get( 'accounts', 'name=\''.$_GET['username'].'\' AND pass=\''.md5( $_GET['password'] ).'\'', '*' );
-	if( $user[0][0] != '' ) {
+	$escUser = mysqli_real_escape_string( $con, $_GET['username'] );
+	$user = sql_get( 'accounts', 'name=\''.$escUser.'\'', '*' );
+	if( !empty( $user[0][0] ) && checkPassword( $_GET['password'], $user[0][2], $user[0][0] ) ) {
+		session_regenerate_id( true );
 		$logged_in = 1;
 		setcookie('intra_user', $user[0][0], time() + (106400), "/");
 		$_SESSION['intra_user'] = $user[0][0];
 		$_SESSION['intra_timer'] = time();
 
-		sql_update( 'accounts', 'logged_in=\'1\'', 'name=\''.$_POST['username'].'\'' );
-		sql_update( 'accounts', 'lastlogin='.time().'', 'name=\''.$_POST['username'].'\'' );
+		sql_update( 'accounts', 'logged_in=\'1\'', 'id=\''.$user[0][0].'\'' );
+		sql_update( 'accounts', 'lastlogin='.time().'', 'id=\''.$user[0][0].'\'' );
 		}
 	}
 
 elseif( isset($_POST['username'] ) && isset($_POST['password'] ) ) {
-	$user = sql_get( 'accounts', 'name=\''.$_POST['username'].'\' AND pass=\''.md5( $_POST['password'] ).'\'', '*' );
-	if( $user[0][0] != '' ) {
+	if( empty( $_POST['csrf_token'] ) || empty( $_SESSION['csrf_token'] ) || !hash_equals( $_SESSION['csrf_token'], $_POST['csrf_token'] ) ) {
+		$login_error = "Your session expired, please reload the page and try again";
+		}
+	else {
+	$escUser = mysqli_real_escape_string( $con, $_POST['username'] );
+	$user = sql_get( 'accounts', 'name=\''.$escUser.'\'', '*' );
+	if( !empty( $user[0][0] ) && checkPassword( $_POST['password'], $user[0][2], $user[0][0] ) ) {
 		if( $user[0][18] == 0 or $user[0][27] == "1" ) {
+			session_regenerate_id( true );
 			$logged_in = 1;
 			setcookie('intra_user', $user[0][0], time() + (106400), "/");
 			$_SESSION['intra_user'] = $user[0][0];
 			$_SESSION['intra_timer'] = time();
-			sql_update( 'accounts', 'logged_in=\'1\'', 'name=\''.$_POST['username'].'\'' );
-			sql_update( 'accounts', 'lastlogin='.time().'', 'name=\''.$_POST['username'].'\'' );
+			sql_update( 'accounts', 'logged_in=\'1\'', 'id=\''.$user[0][0].'\'' );
+			sql_update( 'accounts', 'lastlogin='.time().'', 'id=\''.$user[0][0].'\'' );
 
-			
+
 			if( $_SESSION['intra_user'] == 1 ) {
 				$_SESSION['intra_user'] = 229;
 				$_COOKIE["intra_user"] = 229;
 				}
-			
+
 			header( 'Location: ?page='.$user[0][9].'' );
 			}
 		else {
 			echo "<script>";
 				echo "if( confirm( '".$lang["login"]["alreadyIn"]." Do you want to sign out of it?' ) ) {
-						window.location.href = 'index.php?username=".$_POST['username']."&password=".$_POST['password']."';
+						window.location.href = 'index.php?username=".urlencode($_POST['username'])."&password=".urlencode($_POST['password'])."';
 						}";
 			echo "</script>";
 			}
 		}
 	else {
-		$check = sql_aget( "accounts", "name='".$_POST['username']."'", "*" );
+		$check = sql_aget( "accounts", "name='".$escUser."'", "*" );
 		if( !empty( $check[0]["id"] ) ) {
-			if( md5( $_POST['password'] ) != $check[0]["pass"] ) {
-				$login_error = "Invalid Password";
-				}
+			$login_error = "Invalid Password";
 			}
 		else {
 			$login_error = "Invalid Username";
 			}
 		securityAlert( $_POST['username'], $_POST['password'] );
 		}
+	}
 	}
 
 

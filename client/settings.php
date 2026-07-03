@@ -46,7 +46,7 @@
 			if( $_POST['o_pass'] != '' && $_POST['u_pass'] != '' && $_POST['u_pass2'] != '' ) {
 				$pass = sql_get( 'accounts', 'id=\''.$_SESSION['intra_user'].'\'', 'pass' );
 			
-				if( md5( $_POST['o_pass'] ) == $pass[0][0] ) {
+				if( checkPassword( $_POST['o_pass'], $pass[0][0], $_SESSION['intra_user'] ) ) {
 					if( $_POST['u_pass'] == $_POST['u_pass2'] ) {
 						$pass_change = 1;
 						}
@@ -87,7 +87,7 @@
 				}
 				
 			if( $pass_change == 1 ) {
-				$command .= ', pass=\''.md5($_POST['u_pass']).'\'';
+				$command .= ', pass=\''.password_hash($_POST['u_pass'], PASSWORD_DEFAULT).'\'';
 				}
 		
 			sql_update( 'accounts', $command, 'id=\''.$_SESSION['intra_user'].'\'' );

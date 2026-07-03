@@ -37,7 +37,7 @@ class tAPI {
 		if( empty( $check[0]["id"] ) ) {
 			$showMagazines = "";
 			$names = array( 'name', 'pass', 'publisher', 'group', 'email', 'full_name', 'showMagazines' );
-			$values = array( $this->post['newusername'], md5($this->post['newuserpass']), $this->pub["id"], $this->post['group'], $this->post[ "email" ], $this->post[ "fullname" ], $showMagazines );			
+			$values = array( $this->post['newusername'], password_hash($this->post['newuserpass'], PASSWORD_DEFAULT), $this->pub["id"], $this->post['group'], $this->post[ "email" ], $this->post[ "fullname" ], $showMagazines );
 			$id = sql_add( 'accounts', $names, $values );
 
 			$names = array( 'user' );
@@ -219,8 +219,12 @@ Colorcom Media<br>
 		}
 	
 	public function login( $user, $pass ) {
-		$sql = sql_aget( "accounts", "name='".$user."' AND pass='".md5( $pass )."'", "*" );
-		
+		global $con;
+		$sql = sql_aget( "accounts", "name='".mysqli_real_escape_string( $con, $user )."'", "*" );
+		if( !empty( $sql[0]["id"] ) && !checkPassword( $pass, $sql[0]["pass"], $sql[0]["id"] ) ) {
+			$sql = array();
+			}
+
 		if( !empty( $sql[0]["id"] ) ) {
 			$this->user = $sql[0];
 			

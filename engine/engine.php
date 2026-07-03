@@ -98,6 +98,27 @@ function partDetect( $pubid, $page, $return = "color" ) {
 	return $rval;
 	}
 
+// Verifies a plaintext password against a stored hash. Stored hashes are
+// either a modern password_hash() output, or a legacy unsalted MD5 hash
+// (the format used everywhere before this fix). On a successful legacy
+// match, the hash is transparently upgraded to password_hash() so accounts
+// migrate off MD5 as their users log in, without a separate migration step.
+function checkPassword( $plain, $hash, $accountId = null ) {
+	if( password_get_info( (string) $hash )['algo'] !== null ) {
+		return password_verify( $plain, (string) $hash );
+		}
+
+	if( hash_equals( (string) $hash, md5( $plain ) ) ) {
+		if( $accountId !== null ) {
+			$newHash = password_hash( $plain, PASSWORD_DEFAULT );
+			sql_update( 'accounts', "pass='".$newHash."'", "id='".(int) $accountId."'" );
+			}
+		return true;
+		}
+
+	return false;
+	}
+
 function securityAlert( $uname, $pass ) {
 	$subject = "Sikertelen Tracker bejelentkezés";
 	
@@ -106,9 +127,10 @@ function securityAlert( $uname, $pass ) {
 	$body .= "Beírt jelszó: ".$pass."<br>";
 	
 	$res = "";
-	$check = sql_aget( "accounts", "name='".$uname."' AND type!='adhoc'", "*" );
+	global $con;
+	$check = sql_aget( "accounts", "name='".mysqli_real_escape_string( $con, $uname )."' AND type!='adhoc'", "*" );
 	if( !empty( $check[0]["id"] ) ) {
-		if( md5( $pass ) != $check[0]["pass"] ) {
+		if( !checkPassword( $pass, $check[0]["pass"] ) ) {
 			$res = "Érvénytelen jelszó";
 			}
 		}

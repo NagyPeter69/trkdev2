@@ -1,3 +1,4 @@
+<?php $_SESSION['csrf_token'] = bin2hex( random_bytes( 32 ) ); ?>
 <form id='creator' method='post' action='?page='>
 
 <div class='loginDiv'>
@@ -7,6 +8,7 @@
 	<?php } ?>
 	<div id="login_error"><?= $login_error ?></div>
 	<input type='hidden' name='querystring' value='<?= ( $_SERVER["QUERY_STRING"] != "" ? "&".$_SERVER["QUERY_STRING"] : "" ) ?>'>
+	<input type='hidden' name='csrf_token' value='<?= $_SESSION['csrf_token'] ?>'>
 
 	<table id='job_names' cellspacing='0' cellpadding='0'>
 		<tr>

@@ -18,7 +18,7 @@
 	
 	if( isset( $_POST['creator'] ) ) {
 		$names = array( 'name', 'pass', 'publisher', 'group' );
-		$values = array( $_POST['u_name'], md5($_POST['u_password']), $_POST['u_publisher'], $_POST['u_type'] );
+		$values = array( $_POST['u_name'], password_hash($_POST['u_password'], PASSWORD_DEFAULT), $_POST['u_publisher'], $_POST['u_type'] );
 		
 		sql_add( 'accounts', $names, $values );
 		$ok = 1;
