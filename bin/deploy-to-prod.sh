@@ -207,10 +207,25 @@ fi
 ssh "$HOST" "chown -R www-data:www-data '$WEBROOT'"
 
 echo "== Verifying on target =="
-ssh "$HOST" "find '$WEBROOT' -iname '*.php' -print0 | xargs -0 -n1 -P4 php -l 2>&1 | grep -v 'No syntax errors detected'" && {
-	echo "ERROR: parse errors detected on target after deploy. Consider --rollback immediately." >&2
+# Exit-code based, not text-matching: php -l on 8.4 can emit deprecation
+# notices (e.g. from bundled third-party libraries) alongside a clean
+# compile - those aren't failures and grepping for "not the success line"
+# would wrongly treat them as one. Only a non-zero exit code means the
+# file actually failed to parse.
+REMOTE_LINT_FAILS=$(ssh "$HOST" '
+	fails=0
+	while IFS= read -r -d "" f; do
+		if ! php -l "$f" > /dev/null 2>/dev/null; then
+			fails=$((fails + 1))
+		fi
+	done < <(find '"'$WEBROOT'"' -iname "*.php" -print0)
+	echo $fails
+')
+if [ "$REMOTE_LINT_FAILS" -gt 0 ]; then
+	echo "ERROR: $REMOTE_LINT_FAILS file(s) have parse errors on target after deploy. Consider --rollback immediately." >&2
 	exit 1
-} || true
+fi
+echo "Target verified clean ($REMOTE_LINT_FAILS parse errors)."
 
 echo ""
 echo "== Deploy complete: $REF ($RESOLVED_COMMIT) is now live on $HOST:$WEBROOT =="
