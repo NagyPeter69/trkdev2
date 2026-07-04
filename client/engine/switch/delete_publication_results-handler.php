@@ -26,16 +26,7 @@ if( $result == "success" ) {
 			$issue = sql_get( 'publications', 'id="'.$pubs[$p][0].'"', '*' );
 			$publisher = sql_get( 'publishers', 'id="'.$issue[0][1].'"', '*' );
 
-			sql_delete( 'ads', 'pub_id="'.$issue[0][0].'"' );
-			sql_delete( 'parts', 'pub_id="'.$issue[0][0].'"' );
-			$packs = sql_get( 'packages', 'publication_id="'.$issue[0][0].'"', '*' );
-			for( $y = 0; $y < count( $packs ); $y++ ) {
-				sql_delete( 'package_info', 'package_id="'.$packs[$y][0].'"' );
-				}
-			sql_delete( 'packages', 'publication_id="'.$issue[0][0].'"' );
-			if( is_dir( '../packages/'.$magazine[0][3].'/'.$issue[0][10] ) ) {
-				delTree('../packages/'.$magazine[0][3].'/'.$issue[0][10] );
-				}
+			cleanupPublicationRemnants( $issue[0][0], $magazine[0][3], $issue[0][10] );
 
 			sql_delete( 'publications', 'id="'.$pubs[$p][0].'"' );
 

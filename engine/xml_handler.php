@@ -3,8 +3,91 @@
 
 	include_once( 'connect.php' );
 	include_once( 'engine.php' );
-	
-	function changeIssueStatus( $file, $value, $data ) {	
+
+	// Full mop-up for one deleted publication/issue: every table and
+	// on-disk directory known to reference it. Called from the Switch
+	// delete-confirmation handlers (delete_issue_results-handler.php,
+	// delete_publication_results-handler.php) at the moment Switch
+	// confirms the delete, so space frees up immediately rather than
+	// waiting for the daily cron's orphan sweep - that sweep (assets and
+	// the log tables) stays in place as a safety net, not a replacement.
+	// Must be called before the caller's own `ads` cleanup, since
+	// partial_ads has to be looked up by ad id while the ads rows still
+	// exist.
+	function cleanupPublicationRemnants( $pubId, $magazineCode, $issueCode ) {
+		$adIds = sql_aget( 'ads', "pub_id='".$pubId."'", "id" );
+		for( $i = 0; $i < count( $adIds ); $i++ ) {
+			sql_delete( 'partial_ads', "ads_id='".$adIds[$i]["id"]."'" );
+			}
+		sql_delete( 'ads', "pub_id='".$pubId."'" );
+
+		sql_delete( 'parts', "pub_id='".$pubId."'" );
+
+		$packs = sql_get( 'packages', 'publication_id="'.$pubId.'"', '*' );
+		for( $i = 0; $i < count( $packs ); $i++ ) {
+			sql_delete( 'package_info', 'package_id="'.$packs[$i][0].'"' );
+			}
+		sql_delete( 'packages', "publication_id='".$pubId."'" );
+		if( is_dir( TRKPATH.'/packages/'.$magazineCode.'/'.$issueCode ) ) {
+			delTree( TRKPATH.'/packages/'.$magazineCode.'/'.$issueCode );
+			}
+		if( is_dir( '/var/www/switchReports/'.$magazineCode.'/'.$issueCode ) ) {
+			delTree( '/var/www/switchReports/'.$magazineCode.'/'.$issueCode );
+			}
+
+		sql_delete( 'pageinfo', 'issue="'.$issueCode.'" AND code="'.$magazineCode.'"' );
+		sql_delete( 'comments', "pub_id='".$pubId."'" );
+
+		// Planner-uploaded files - unlink the actual files before dropping rows.
+		$files = sql_aget( 'flatplan_files', "pubid='".$pubId."'", "*" );
+		for( $i = 0; $i < count( $files ); $i++ ) {
+			if( !empty( $files[$i]["path"] ) && !empty( $files[$i]["filename"] ) ) {
+				@unlink( $files[$i]["path"]."/".$files[$i]["filename"] );
+				}
+			}
+		sql_delete( 'flatplan_files', "pubid='".$pubId."'" );
+
+		sql_delete( 'flatplan_planner', "pub_id='".$pubId."'" );
+
+		$handouts = sql_aget( 'flatplan_handout', "pub_id='".$pubId."'", "*" );
+		for( $i = 0; $i < count( $handouts ); $i++ ) {
+			sql_delete( 'flatplan_handout_hotlink', "handoutid='".$handouts[$i]["id"]."'" );
+			if( !empty( $handouts[$i]["filename"] ) && is_file( TRKPATH.'/handout/'.$handouts[$i]["filename"] ) ) {
+				@unlink( TRKPATH.'/handout/'.$handouts[$i]["filename"] );
+				}
+			}
+		sql_delete( 'flatplan_handout', "pub_id='".$pubId."'" );
+
+		sql_delete( 'image_map', "pub_id='".$pubId."'" );
+		sql_delete( 'deliver_table', "pub_id='".$pubId."'" );
+
+		$hotlinkIds = sql_aget( 'hotlinks', "publication='".$pubId."'", "id" );
+		for( $i = 0; $i < count( $hotlinkIds ); $i++ ) {
+			sql_delete( 'hotlinks_log', "hotlink_id='".$hotlinkIds[$i]["id"]."'" );
+			}
+		sql_delete( 'hotlinks', "publication='".$pubId."'" );
+
+		sql_delete( 'adhoc_hotlinks', "pubid='".$pubId."'" );
+
+		// Assets - cleaned immediately here rather than waiting for the
+		// daily cron's orphan sweep.
+		if( is_dir( TRKPATH.'/assets/'.$pubId ) ) {
+			delTree( TRKPATH.'/assets/'.$pubId );
+			}
+		sql_delete( 'assets', "pub_id='".$pubId."'" );
+
+		// Deliberately NOT touching action_log/comment_log/error_log/
+		// system_log here: these are audit trails, not job data, and one
+		// of them (action_log) is where the caller just recorded *this
+		// deletion itself* - wiping it here would erase the very audit
+		// record the deletion was supposed to leave behind. The daily
+		// cron's separate orphan sweep already prunes comment_log/
+		// error_log/system_log for long-gone publications on its own
+		// slower schedule; that's a deliberate, distinct decision from
+		// this function's job (freeing disk space), left as-is.
+		}
+
+	function changeIssueStatus( $file, $value, $data ) {
 		if( $value == "remove" ) {
 			return true;
 			}

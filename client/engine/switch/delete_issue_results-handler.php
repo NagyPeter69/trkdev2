@@ -12,40 +12,15 @@ if( $status == "success" ) {
 	$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'"', '*' );
 	
 	if( $issue[0][0] != "" ) {
-		sql_delete( 'ads', 'pub_id="'.$issue[0][0].'"' );
-		sql_delete( 'parts', 'pub_id="'.$issue[0][0].'"' );
-		
-		$packs = sql_get( 'packages', 'publication_id="'.$issue[0][0].'"', '*' );
-		for( $y = 0; $y < count( $packs ); $y++ ) {
-			sql_delete( 'package_info', 'package_id="'.$packs[$y][0].'"' );
-			}
-			
-		sql_delete( 'packages', 'publication_id="'.$issue[0][0].'"' );
-		if( is_dir( TRKPATH.'/packages/'.$magazine[0][3].'/'.$issue[0][10] ) ) {
-			delTree( TRKPATH.'/packages/'.$magazine[0][3].'/'.$issue[0][10] );
-			}
-		
-		if( is_dir( '/var/www/switchReports/'.$magazine[0][3].'/'.$issue[0][10] ) ) {
-			delTree( '/var/www/switchReports/'.$magazine[0][3].'/'.$issue[0][10] );
-			}
-			
-		$pages = sql_get( 'pageinfo', 'issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'"', '*' );
-		for( $y = 0; $y < count( $pages ); $y++ ) {
-			sql_delete( 'pageinfo', 'id="'.$pages[$y][0].'"' );
-			}
-			
-		$comments = sql_get( 'comments', 'pub_id="'.$issue[0][0].'"', '*' );
-		for( $y = 0; $y < count( $comments ); $y++ ) {
-			sql_delete( 'comments', 'id="'.$comments[$y][0].'"' );
-			}					
-		
+		cleanupPublicationRemnants( $issue[0][0], $magazine[0][3], $issue[0][10] );
+
 		$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status' );
 		$values = array( $user, 'deleteIssue', $p_id[0][1], $magazine[0][0],  $p_id[0][10], '', time(), '' );
 		sql_add( 'action_log', $names, $values );
 
 		sql_delete( 'publications', 'id="'.$p_id[0][0].'"' );
 		removeTempUsers( $p_id[0][0] );
-		}	
+		}
 	}
 	
 else {
