@@ -1,4 +1,10 @@
 <?PHP
+// Set per-host (php-fpm pool config / cron env file), never committed:
+// "dev" on trkdev2, unset (=> production) everywhere else. Governs the
+// Switch client whitelist in client/engine/switchAPI.php - see
+// switchClientAllowed().
+define( "IS_DEV_ENVIRONMENT", getenv( "TRKDEV_ENVIRONMENT" ) === "dev" );
+
 define( "FPUPLOAD_PATH", "/var/www/html/client/flatplan_uploads" );
 define( "PENZUGY", "ugyvitel@colorcom.hu" );
 define( "TRKPATH", "/var/www/html/client" );

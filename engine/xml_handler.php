@@ -310,6 +310,11 @@
 	function SendPmdXmlToSwitch( $realFile, $switchLabel, $connectTimeout = 2, $totalTimeout = 5 ) {
 		global $token;
 
+		if( !switchBulkSyncAllowed() ) {
+			error_log( "SendPmdXmlToSwitch blocked: DEV environment restricts Switch communication to Colorcom/TestCo, and the local dataset currently references another publisher." );
+			return false;
+			}
+
 		$filePath = TRKPATH.'/xml/'.$realFile;
 		if( !is_file( $filePath ) ) {
 			return false;

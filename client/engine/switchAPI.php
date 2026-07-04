@@ -4,6 +4,56 @@ include_once('/var/www/html/engine/connect.php');
 include_once('/var/www/html/engine/engine.php');
 include_once('/var/www/html/engine/xml_handler.php');
 
+// DEV-environment gate: while IS_DEV_ENVIRONMENT is true (trkdev2 only -
+// see constans.php), no outgoing Switch call is allowed unless it's on
+// behalf of Colorcom or TestCo, our two test clients. This exists so the
+// hard iptables block on Switch connectivity can be lifted for real-world
+// testing without risking a call reaching Switch for a real production
+// client/job. Resolves the client from the DB via jobCode/Code rather
+// than trusting a caller-supplied "client" string, since at least one
+// call site (advertisement.php) hardcodes that string as a placeholder
+// rather than deriving it, which makes it unreliable as a source of truth
+// for something a safety gate depends on.
+function switchClientAllowed( $datas ) {
+	if( !IS_DEV_ENVIRONMENT ) return true;
+
+	$allowed = array( 'colorcom', 'testco' );
+
+	$code = '';
+	if( !empty( $datas['jobCode'] ) ) $code = $datas['jobCode'];
+	elseif( !empty( $datas['Code'] ) ) $code = $datas['Code'];
+
+	if( $code == '' ) return false;
+
+	$magazine = sql_aget( 'magazines', "code='".$code."'", 'publisher_id' );
+	if( empty( $magazine[0]['publisher_id'] ) ) return false;
+
+	$publisher = sql_aget( 'publishers', "id='".$magazine[0]['publisher_id']."'", 'name' );
+	if( empty( $publisher[0]['name'] ) ) return false;
+
+	return in_array( strtolower( $publisher[0]['name'] ), $allowed );
+	}
+
+// Same DEV gate as switchClientAllowed(), for the one Switch call that
+// isn't scoped to a single job/client: the whole-PMD-dataset upload
+// (SendPmdXmlToSwitch() in engine/xml_handler.php) uploads every magazine
+// in one shot, so it's only safe to send while every magazine in the
+// local DB belongs to Colorcom or TestCo.
+function switchBulkSyncAllowed() {
+	if( !IS_DEV_ENVIRONMENT ) return true;
+
+	$allowed = array( 'colorcom', 'testco' );
+	$magazinePublishers = sql_aget( 'magazines', '1=1', 'DISTINCT publisher_id' );
+	for( $i = 0; $i < count( $magazinePublishers ); $i++ ) {
+		$pid = $magazinePublishers[$i]['publisher_id'];
+		if( empty( $pid ) ) continue;
+		$publisher = sql_aget( 'publishers', "id='".$pid."'", 'name' );
+		if( empty( $publisher[0]['name'] ) || !in_array( strtolower( $publisher[0]['name'] ), $allowed ) ) {
+			return false;
+			}
+		}
+	return true;
+	}
 
 function SwitchLogin() {
 	global $token;
@@ -37,6 +87,11 @@ function SwitchLogin() {
 
 function SwitchASend( $datas, $file = "" ) {
 	global $token;
+
+	if( !switchClientAllowed( $datas ) ) {
+		error_log( "SwitchASend blocked: DEV environment restricts Switch calls to Colorcom/TestCo (Code='".($datas['Code'] ?? $datas['jobCode'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		}
 
 	$doc_name = ( !empty( $file["name"] ) ) ? $file["name"] : time().'.pdf';
 	$login = SwitchLogin();
@@ -106,6 +161,11 @@ function SwitchASend( $datas, $file = "" ) {
 function SwitchAnyagSend( $datas, $file = "" ) {
 	global $token;
 
+	if( !switchClientAllowed( $datas ) ) {
+		error_log( "SwitchAnyagSend blocked: DEV environment restricts Switch calls to Colorcom/TestCo (Code='".($datas['Code'] ?? $datas['jobCode'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		}
+
 	$doc_name = ( !empty( $file["name"] ) ) ? $file["name"] : time().'.pdf';
 	$login = SwitchLogin();
 	
@@ -163,6 +223,11 @@ function SwitchAnyagSend( $datas, $file = "" ) {
 
 function SwitchSend( $datas, $file = "" ) {
 	global $token;
+
+	if( !switchClientAllowed( $datas ) ) {
+		error_log( "SwitchSend blocked: DEV environment restricts Switch calls to Colorcom/TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		}
 
 	$doc_name = ( !empty( $file["name"] ) ) ? $file["name"] : time().'.pdf';
 	error_log( $doc_name );
@@ -268,7 +333,12 @@ function SwitchSend( $datas, $file = "" ) {
 
 function SwitchSend_TESZT( $datas, $file = "" ) {
 	global $token;
-	
+
+	if( !switchClientAllowed( $datas ) ) {
+		error_log( "SwitchSend_TESZT blocked: DEV environment restricts Switch calls to Colorcom/TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		}
+
 	error_log("Description: ".$datas["description"] );
 	error_log( "switch-send: ".$file["name"] );
 	
@@ -387,7 +457,12 @@ function SwitchSend_TESZT( $datas, $file = "" ) {
 
 function SwitchSend_Rename( $datas, $file, $newname ) {
 	global $token;
-	
+
+	if( !switchClientAllowed( $datas ) ) {
+		error_log( "SwitchSend_Rename blocked: DEV environment restricts Switch calls to Colorcom/TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		}
+
 	error_log("Description: ".$datas["description"] );
 	error_log( "switch-send: ".$file["name"] );
 	
