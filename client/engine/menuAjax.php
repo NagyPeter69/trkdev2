@@ -886,7 +886,14 @@
 					}
 				}
 			}
-		
+
+		// Version/build info - admin-only (same gate as System Log above),
+		// shown at the bottom of the hamburger menu.
+		if( $rights["sys_log"] ) {
+			$txt .= "<div style='margin-top: 6px; margin-bottom: 2px; border-top: 1px solid #636363;'></div>";
+			$txt .= "<div style='padding: 4px 0; font-size: 11px; color: #888; cursor: default;'>v".APP_VERSION." (".APP_BUILD.", ".APP_BUILD_DATE.")</div>";
+			}
+
 		$result = $txt;
 		}
 	

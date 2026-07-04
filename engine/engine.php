@@ -2,6 +2,7 @@
 header('Content-Type: text/html; charset=utf-8');
 include("/var/www/server_constans.php");
 include("/var/www/html/engine/constans.php");
+include_once("/var/www/html/engine/build_info.php");
 
 function GetHighestPageNumber( $xml, $pub ) {
 	$pn = 0;
