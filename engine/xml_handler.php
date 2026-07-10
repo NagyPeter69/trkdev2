@@ -377,23 +377,26 @@
 
 	function XMLUpload2( $file ) {
 		$realFile = $file;
-		$switchLabel = $file;
+		// Confirmed directly against Switch's "commands" flow: on an
+		// xml_data event it writes the received file straight to disk
+		// under the name it's given - so this label is not cosmetic, it's
+		// the actual enforcement keeping a dev upload from landing on top
+		// of production's live Publications_Master_Data.xml. The name
+		// Switch actually uses for that file is PMD_LONG (Publications_
+		// Master_Data), not PMD (pmd - that's only the local on-disk
+		// short name this app reads/writes for itself), so the label sent
+		// to Switch must be built from PMD_LONG regardless of what local
+		// filename was passed in as $file.
+		$switchLabel = PMD_LONG.'.xml';
 
-		// Safety net: never let a non-production system upload the PMD
-		// dataset to Switch under the same filename production uses. If
-		// the machine's hostname contains "dev" (case-insensitive, e.g.
-		// "trkdev2"), tag the uploaded file with a _DEV suffix so Switch
-		// can never mistake it for the real dataset. Only the label sent
-		// to Switch changes - $realFile (what we read from disk) never
-		// does, since no _DEV-suffixed copy actually exists.
+		// Hardcoded, governed by hostname alone: if this machine's
+		// hostname contains "dev" (case-insensitive, e.g. "trkdev2"), the
+		// uploaded file must be tagged Publications_Master_Data_DEV.xml.
+		// $realFile (what we read from disk) never changes - no
+		// _DEV-suffixed copy actually exists locally.
 		if( stripos( gethostname(), 'dev' ) !== false ) {
 			$dot = strrpos( $switchLabel, '.' );
-			if( $dot !== false ) {
-				$switchLabel = substr( $switchLabel, 0, $dot ) . '_DEV' . substr( $switchLabel, $dot );
-				}
-			else {
-				$switchLabel .= '_DEV';
-				}
+			$switchLabel = substr( $switchLabel, 0, $dot ) . '_DEV' . substr( $switchLabel, $dot );
 			}
 
 		// Fast path: try synchronously with a short timeout, so the common
