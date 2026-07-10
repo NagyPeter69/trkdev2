@@ -244,6 +244,78 @@ DynaPDF/DynaForms is needed before this is usable for anything real** — check
 `https://www.dynaforms.com` account/support for licensing options (this was where the v8.4
 build itself came from).
 
+## R3 (PDF rendering / color management)
+
+A second, separate PDF-rasterization tool from DynaPDF — a closed-source CLI (`r3`, plus a
+worker binary `r3render` that `r3` execs via `/bin/sh -c`) that does color-managed PDF→JPEG
+rendering (`-mode:RENDER`), box/metadata extraction (`-mode:GETDATA`), and spot-color
+measurement (`-mode:MEASURE`), using ICC profiles for source/target color spaces. It backs
+`r3API/*.php` and every `PDFtoImage*()` variant in `engine.php` — including the live
+"compare" (redline/proofing) feature, not just the two test scripts below.
+
+**This was not part of the original engine migration** — being a standalone binary +
+resource bundle rather than PHP code, it fell outside the "copy the engine, not the media"
+split and was simply absent from trkdev2 initially. It was later copied in manually to
+`/var/www/html/r3API/r3/` (binaries, ICC profiles, sample PDFs).
+
+**Tests**: `pdftoimage_test.php` (webroot root) is the real one — renders a bundled sample
+PDF end-to-end and is safe to hit directly (`GET /pdftoimage_test.php`). `r3API/teszt.php`
+is mostly commented-out/WIP and references a `spot.pdf` that was never part of what got
+copied in — not a real test, don't read anything into it failing.
+
+**Three things had to be true simultaneously for this to work, all non-obvious and all
+required together** — if R3 silently produces empty output again after any system-level
+change (OS upgrade, new VM, restoring `/etc/group` or a backup, re-copying the `r3API/r3/`
+binaries from an archive), check all three:
+
+1. **Execute bit + ownership** on `r3API/r3/r3` and `r3API/r3/r3render` — `www-data:www-data`,
+   mode `755`. Trivial, but the files as originally copied in were `644 root:root`.
+2. **`cap_sys_rawio` capability on *both* `r3` and `r3render`** — not just `r3`. `r3`
+   internally execs `/bin/sh -c './r3render ...'`, and Linux file capabilities do **not**
+   propagate across an exec of a different file that doesn't itself carry them. `r3render`
+   is the one that actually does the `open("/dev/mem", O_RDONLY)` call (almost certainly
+   reading the motherboard/DMI UUID for a hardware-bound license check — that's the vendor's
+   own explanation, not something inferred from the binary). Set via:
+   ```
+   setcap cap_sys_rawio+ep /var/www/html/r3API/r3/r3
+   setcap cap_sys_rawio+ep /var/www/html/r3API/r3/r3render
+   ```
+   `cap_sys_rawio` bypasses `/dev/mem`'s *driver-level* `capable()` check inside the kernel
+   (`open_port()` in `drivers/char/mem.c`) — but does **not** bypass the device node's own
+   Unix file permissions. That's the next point.
+3. **`www-data` must be a member of the `kmem` group.** `/dev/mem` is `crw-r----- root:kmem`
+   — a *stock* Debian udev rule (`/lib/udev/rules.d/50-udev-default.rules:44`,
+   `SUBSYSTEM=="mem", KERNEL=="mem|kmem|port", GROUP="kmem", MODE="0640"`), not anything
+   custom. Without group membership, the open fails with `EACCES` *before* the kernel ever
+   reaches the capability check, regardless of what `cap_sys_rawio` is set to. Set via:
+   ```
+   usermod -aG kmem www-data
+   ```
+   then restart php-fpm (existing worker processes keep whatever supplementary groups they
+   had at spawn time — a running php-fpm won't pick up a new group membership until it
+   restarts): `systemctl restart php8.4-fpm`.
+
+**Persistence across reboot — confirmed empirically, not just in theory** (2026-07-10):
+rebooted trkdev2 cold and re-ran `pdftoimage_test.php` over HTTP with zero manual
+re-application of anything, and it produced a correct, non-empty rendered JPEG on the first
+attempt. This holds together on a fresh boot because none of the three things above are
+runtime/kernel state — they're all persistent, on-disk facts: `cap_sys_rawio` is stored in
+each binary's `security.capability` extended attribute (survives like any other file
+property on ext4), `kmem` group membership is a line in `/etc/group`, and `/dev/mem`'s
+permissions are reapplied by the stock udev rule every boot the same way. php-fpm's systemd
+unit (`/usr/lib/systemd/system/php8.4-fpm.service`) also has no sandboxing directives
+(`PrivateDevices`, `NoNewPrivileges`, `CapabilityBoundingSet`, etc.) that could strip this on
+a service restart. **The one way to lose this silently**: re-copying `r3`/`r3render` from a
+fresh archive/backup will produce new files without the capability xattr — the two `setcap`
+lines above need to be re-run any time the binaries themselves are replaced, this doc's
+existence is the only thing that will remind you.
+
+Granting `cap_sys_rawio` to a binary invoked by a web-facing PHP process is a real,
+deliberate widening of what that process can do if ever compromised (full physical memory
+read, not narrowly scoped to the DMI table this specific binary wants) — accepted here on
+the basis that this box sits behind a dedicated firewall gateway (Sophos) and isn't exposed
+to raw internet. Worth re-litigating if this system's network exposure ever changes.
+
 ## SSL
 
 Current cert: `*.colorcom.hu` wildcard, valid through 2026-10-06, installed at

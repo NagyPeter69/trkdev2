@@ -1,5 +1,6 @@
 <?php
 header('Content-type: text/html; charset=UTF-8');
+include( "engine/connect.php" );
 include( "engine/engine.php" );
 
 define( "SFOLDER", "/var/www/html/r3API/source");

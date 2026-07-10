@@ -13,3 +13,11 @@ dynAPI/op/rendered/
 # Runtime-generated
 *.log
 *.tmp
+
+# R3 (PDF rendering) binary + ICC profile bundle - a licensed third-party tool,
+# same category as DynaPDF's .so: not application code, not tracked here.
+# See SYSTEM_STATE.md's "R3" section for what has to be present at r3API/r3/
+# and the permission/capability setup needed for it to actually work.
+r3API/r3/
+rendertest.pdf
+rendertest.jpg
