@@ -196,7 +196,14 @@ Tracker<br>";
 			}		
 
 		if( $_POST["PageNumbering"] == "European" ) {
-			for( $i = 0; $i < count( $_POST["parttype"] ); $i++ ) {
+			// Regular-type publications don't collect parts at creation
+			// time (create.php's loadPub/Regular branch has no parttype
+			// fields at all - Regular parts are configured afterward via
+			// jobsettings.php), so $_POST["parttype"] is legitimately
+			// absent here; only Adhoc submits it. count(null) is a
+			// PHP 8 TypeError, so guard with ?? [] rather than assume
+			// it's always set.
+			for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
 				$pos = explode( ",", $_POST["position"][$i] );
 				for( $p = 0; $p < count( $pos ); $p++ ) {
 					$pages = explode( "-", $pos[$p] );
@@ -204,16 +211,16 @@ Tracker<br>";
 						$error[] = "position_".$i;
 						break;
 						}
-						
+
 					if( !preg_match("/^[0-9-]+$/", $pos[$p] ) ) {
 						$error[] = "position_".$i;
 						}
 					}
 				}
 			}
-			
+
 		if( $_POST["PageNumbering"] == "American" ) {
-			for( $i = 0; $i < count( $_POST["parttype"] ); $i++ ) {
+			for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
 				$pos = explode( ",", $_POST["position"][$i] );
 				for( $p = 0; $p < count( $pos ); $p++ ) {
 					$pages = explode( "-", $pos[$p] );

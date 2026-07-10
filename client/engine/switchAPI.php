@@ -339,6 +339,15 @@ function SwitchSend_TESZT( $datas, $file = "" ) {
 		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
 		}
 
+	// Several callers (e.g. pubsApply.php's publication_created event) call
+	// this with no $file at all, leaving it at its default "". PHP 8 throws
+	// a hard TypeError ("Cannot access offset of type string on string") on
+	// a raw $file["name"]-style access when $file is a string - unlike
+	// !empty($file["name"]), which stays safe either way. Normalizing to an
+	// array up front makes every access below behave the same regardless of
+	// what the caller passed.
+	if( !is_array( $file ) ) $file = array();
+
 	error_log("Description: ".$datas["description"] );
 	error_log( "switch-send: ".$file["name"] );
 	
@@ -462,6 +471,11 @@ function SwitchSend_Rename( $datas, $file, $newname ) {
 		error_log( "SwitchSend_Rename blocked: DEV environment restricts Switch calls to Colorcom/TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
 		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
 		}
+
+	// Same defensive normalization as SwitchSend_TESZT - a raw $file["name"]
+	// access is a hard TypeError in PHP 8 if $file is ever not an array,
+	// unlike !empty($file["name"]), which stays safe either way.
+	if( !is_array( $file ) ) $file = array();
 
 	error_log("Description: ".$datas["description"] );
 	error_log( "switch-send: ".$file["name"] );
