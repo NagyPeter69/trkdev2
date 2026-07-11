@@ -289,18 +289,6 @@
 		file_put_contents( $xml2, $dom->saveXML() );
 		}
 
-	function XMLPMDUP( $file ) {
-		$array = array(
-			"event" => "xml_data",
-			);
-					
-		$file = array( 
-			"name" => PMD_LONG.".xml",
-			"path" => "xml",
-			);
-		$response = SwitchSend_TESZT( $array, $file );	
-		}
-		
 	// Delivers the PMD XML to Switch. $realFile is the actual filename on
 	// disk under xml/ and must never be modified - the fast lookup by
 	// SwitchLogin/curl depends on it existing. $switchLabel is only the
@@ -375,29 +363,33 @@
 			);
 		}
 
+	// Confirmed directly against Switch's "commands" flow: on an xml_data
+	// event it writes the received file straight to disk under the name
+	// it's given - so this suffix is not cosmetic, it's the actual
+	// enforcement keeping a dev upload from landing on top of production's
+	// live Publications_Master_Data.xml. Every local write and every
+	// Switch-facing label derived from PMD_LONG must go through this, so
+	// an unsuffixed copy can never be produced (or sent) from a dev host -
+	// not "shouldn't", structurally can't, because there's no other path
+	// that builds this filename.
+	function pmdDevSafeName( $base ) {
+		if( stripos( gethostname(), 'dev' ) !== false ) {
+			$dot = strrpos( $base, '.' );
+			$base = substr( $base, 0, $dot ) . '_DEV' . substr( $base, $dot );
+			}
+		return $base;
+		}
+
 	function XMLUpload2( $file ) {
 		$realFile = $file;
-		// Confirmed directly against Switch's "commands" flow: on an
-		// xml_data event it writes the received file straight to disk
-		// under the name it's given - so this label is not cosmetic, it's
-		// the actual enforcement keeping a dev upload from landing on top
-		// of production's live Publications_Master_Data.xml. The name
-		// Switch actually uses for that file is PMD_LONG (Publications_
-		// Master_Data), not PMD (pmd - that's only the local on-disk
-		// short name this app reads/writes for itself), so the label sent
-		// to Switch must be built from PMD_LONG regardless of what local
-		// filename was passed in as $file.
-		$switchLabel = PMD_LONG.'.xml';
-
-		// Hardcoded, governed by hostname alone: if this machine's
-		// hostname contains "dev" (case-insensitive, e.g. "trkdev2"), the
-		// uploaded file must be tagged Publications_Master_Data_DEV.xml.
+		// The name Switch actually uses for this file is PMD_LONG
+		// (Publications_Master_Data), not PMD (pmd - that's only the
+		// local on-disk short name this app reads/writes for itself), so
+		// the label sent to Switch must be built from PMD_LONG regardless
+		// of what local filename was passed in as $file.
+		$switchLabel = pmdDevSafeName( PMD_LONG.'.xml' );
 		// $realFile (what we read from disk) never changes - no
 		// _DEV-suffixed copy actually exists locally.
-		if( stripos( gethostname(), 'dev' ) !== false ) {
-			$dot = strrpos( $switchLabel, '.' );
-			$switchLabel = substr( $switchLabel, 0, $dot ) . '_DEV' . substr( $switchLabel, $dot );
-			}
 
 		// Fast path: try synchronously with a short timeout, so the common
 		// case (Switch healthy) is exactly as immediate as before. Only on
@@ -644,6 +636,24 @@
 				break;
 				
 			case 'add':
+				// Guarantee at most one <Item> per Code before adding the
+				// new one. Without this, a publication removed at the DB
+				// level without a matching XML-side delete (e.g. a manual
+				// cleanup that only touched the DB) leaves a stale <Item>
+				// behind, and a later 'add' for the same Code - reusing
+				// that same code, as dev-box testing does - produces two
+				// entries for one publication instead of replacing the
+				// stale one.
+				$xpath = $xml->xpath('/Publications');
+				foreach( $xpath as $temp ) {
+					for( $i = count( $temp->Item ) - 1; $i >= 0; $i-- ) {
+						if( (string) $temp->Item[$i]->Code == $values['Code'] ) {
+							$dupDom = dom_import_simplexml( $temp->Item[$i] );
+							$dupDom->parentNode->removeChild( $dupDom );
+							}
+						}
+					}
+
 				if( $values["Type"] == "Adhoc" ) {
 					$code = $xml->addChild( 'Item' );
 					$code->addChild( 'Name', $values['Name'] );
@@ -710,18 +720,19 @@
 		$dom->loadXML($xml->asXML());
 		$dom->formatOutput = true;
 		file_put_contents( $xml2, $dom->saveXML() );
-		file_put_contents( str_replace( PMD.".xml", PMD_LONG.".xml", $xml2 ), $dom->saveXML() );
-		//file_put_contents( str_replace( PMD.".xml", "Publications_Master_Data_NT.xml", $xml2 ), $dom->saveXML() );
-		
-		$array = array(
-			"event" => "xml_data",
-			);
-			
-		$file = array( 
-			"name" => PMD_LONG.".xml",
-			"path" => "xml",
-			);
-		$response = SwitchSend_TESZT( $array, $file );
+
+		// Every call to changeXmlDatabase() changes the on-disk dataset, so
+		// every call must push it to Switch - this used to be an inline
+		// SwitchSend_TESZT() call here, bypassing both switchBulkSyncAllowed()
+		// (it used switchClientAllowed() instead, which requires a jobCode/
+		// Code and so silently returned "blocked" for this dataset-wide,
+		// no-single-job event - every call here was being dropped) and the
+		// dev-hostname _DEV suffix (it hardcoded PMD_LONG.".xml" with no
+		// suffix logic at all). XMLUpload2() already has both fixed
+		// correctly and already has the durable retry-queue fallback, so
+		// route through it instead of maintaining a second, divergent copy
+		// of the same upload logic.
+		XMLUpload2( PMD.'.xml' );
 		}
 	
 	function toSwitch( $type, $job, $saveTo, $root ) {

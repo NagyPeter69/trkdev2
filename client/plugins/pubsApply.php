@@ -409,15 +409,15 @@ Tracker<br>";
 		$dom->formatOutput = true;
 	
 		file_put_contents( '../xml/'.PMD.'.xml', $dom->saveXML() );
-		file_put_contents( "../xml/".PMD_LONG.".xml", $dom->saveXML() );
-		file_put_contents( "../xml/".PMD_LONG."_NT.xml", $dom->saveXML() );		
+		$pmdName = pmdDevSafeName( PMD_LONG.'_NT.xml' );
+		file_put_contents( "../xml/".$pmdName, $dom->saveXML() );
 
 		$array = array(
 			"event" => "xml_data",
 			);
-				
-		$file = array( 
-			"name" => PMD_LONG."_NT.xml",
+
+		$file = array(
+			"name" => $pmdName,
 			"path" => "xml",
 			);
 		$response = SwitchSend_TESZT( $array, $file );

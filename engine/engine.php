@@ -205,8 +205,8 @@ function removeUserMailPMD( $email ) {
 		$dom->loadXML($xml->asXML());
 		$dom->formatOutput = true;
 		file_put_contents( $xml_path, $dom->saveXML() );
-		XMLPMDUP( PMD.'.xml' );
-		}	
+		XMLUpload2( PMD.'.xml' );
+		}
 	}
 
 function systemCurl($url, $post_array, $headers=null, $check_ssl=true) {
