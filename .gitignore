@@ -14,13 +14,16 @@ dynAPI/op/rendered/
 *.log
 *.tmp
 
-# Per-issue XML snapshots (client/xml/{magazineCode}_{issueCode}.xml),
-# regenerated on every issue create/delete and pushed to Switch - MariaDB
-# is the ground truth, these are disposable outbound artifacts. pmd.xml
-# itself IS tracked (it's the whole-dataset export, kept in a known-good
-# state deliberately, unlike these per-issue ones).
-client/xml/*_*.xml
-!client/xml/Publications_Master_Data*.xml
+# Per-issue/per-publication XML snapshots in client/xml/ - regenerated on
+# every issue or Adhoc-publication create/modify/status-change and pushed
+# to Switch. MariaDB is the ground truth, these are disposable outbound
+# artifacts. Naming isn't consistent enough to pattern-match (Regular
+# issues: {magCode}_{issueCode}.xml: Adhoc publications: just {code}.xml,
+# no underscore) so this whitelists the two files that ARE meant to be
+# tracked instead of trying to exclude every generated variant.
+client/xml/*
+!client/xml/pmd.xml
+!client/xml/re-generateXML.php
 
 # R3 (PDF rendering) binary + ICC profile bundle - a licensed third-party tool,
 # same category as DynaPDF's .so: not application code, not tracked here.

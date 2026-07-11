@@ -19,9 +19,16 @@ function switchClientAllowed( $datas ) {
 
 	$allowed = array( 'colorcom', 'testco' );
 
+	// Different callers build this array with different key casing -
+	// toSwitch()'s 'new_publication' case (the per-issue snapshot upload)
+	// uses lowercase 'code', everything else uses 'jobCode'. Missing this
+	// meant every per-issue snapshot upload was silently blocked
+	// regardless of client, since $code always stayed empty - confirmed
+	// via the test protocol, not a hypothetical.
 	$code = '';
 	if( !empty( $datas['jobCode'] ) ) $code = $datas['jobCode'];
 	elseif( !empty( $datas['Code'] ) ) $code = $datas['Code'];
+	elseif( !empty( $datas['code'] ) ) $code = $datas['code'];
 
 	if( $code == '' ) return false;
 

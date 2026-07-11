@@ -85,7 +85,7 @@
 
 			$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
 			sql_delete( "parts", "pub_id='".$pub[0][0]."'" );
-			for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 				$values = array( $pub[0][0], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'] );
 				sql_add( "parts", $names, $values );
 				}
@@ -288,7 +288,7 @@ Tracker<br>";
 				sql_add( "adhoc_hotlinks", $names, $values );
 				
 				$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
-				for( $i = 0; $i < count( $_POST["parttype"] ); $i++ ) {
+				for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
 					if( $_POST["Workflow"] != "Full" && $_POST["Workflow"] != "Hybrid" ) {
 						$_POST["trim_x"][$i] = "";
 						$_POST["trim_y"][$i] = "";
@@ -431,7 +431,7 @@ Tracker<br>";
 		parse_str($_POST['settings'], $_POST);
 		
 		if( $_POST["pn"] == "European" ) {
-			for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 				$pos = explode( ",", $_POST["position"][$i] );
 				for( $p = 0; $p < count( $pos ); $p++ ) {
 					$pages = explode( "-", $pos[$p] );
@@ -480,12 +480,12 @@ Tracker<br>";
 				$pub = sql_aget( "publications", "magazine_id='".$_POST["magazine"]."' AND code='".$_POST["code"]."'", "*" );
 				sql_delete( "parts", "pub_id='".$pub[0]["id"]."'" );
 				$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
-				
-				for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+
+				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 					$values = array( $pub[0]["id"], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"] );
 					sql_add( "parts", $names, $values );
 					}
-				
+
 				sql_update( "publications", "pages='".$_POST["numOfPages"]."'", "id='".$pub[0]["id"]."'" );
 				
 				if( $pub[0]["publisher_id"] == "0" ) {
@@ -495,9 +495,9 @@ Tracker<br>";
 			
 			if( $mag[0]["type"] == "Regular" ) {
 				sql_delete( "parts", "pub_id='0' AND mag_id='".$mag[0]["id"]."'" );
-				
+
 				$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
-				for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 					$values = array( "0", $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"] );
 					sql_add( "parts", $names, $values );
 					}
@@ -831,12 +831,15 @@ Tracker<br>";
 			$id = sql_add( "publications", $names, $values );			
 			
 			$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
-			
-			for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+
+			// A Regular magazine with no parts template configured yet
+			// (via jobsettings.php) submits no type[] rows at all, not an
+			// empty array - count(null) is a PHP 8 TypeError.
+			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 				$values = array( $id, $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'] );
 				sql_add( "parts", $names, $values );
 				}
-			
+
 			$mag = sql_get( 'magazines', 'id="'.$_POST['magazine'].'"', 'code, name' );
 			toSwitch( 'new_publication' , 'publications|'.$id, 'C_database/'.$mag[0][0].'_'.$_POST['job_code'].''.ISSUEPOSTFIX.'', 'issueData' );
 

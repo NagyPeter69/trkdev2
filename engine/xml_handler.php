@@ -92,6 +92,18 @@
 			return true;
 			}
 		else {
+			// The per-issue snapshot is regenerated wholesale on every
+			// issue create/modify, so it can legitimately be missing (not
+			// yet created, or removed by a cleanup pass) when a status
+			// change comes through a different path. simplexml_load_file()
+			// on a missing file returns false with a warning, and false->
+			// status = $value is a hard PHP 8 fatal, not a warning -
+			// confirmed via the test protocol, not hypothetical.
+			if( !is_file( "../xml/".$file ) ) {
+				error_log( "changeIssueStatus: missing snapshot ../xml/".$file." - status change to '".$value."' not synced to Switch" );
+				return false;
+				}
+
 			$xml = simplexml_load_file(  "../xml/".$file );
 			$xml->status = $value;
 
@@ -856,13 +868,23 @@
 		$dom = new DOMDocument();
 		$dom->loadXML($myxml);
 		$dom->formatOutput = true;
-		
+
 		if( $type == 'new_publication' ) {
-			file_put_contents( "../xml/".$name.".xml", $dom->saveXML() );	
+			file_put_contents( "../xml/".$name.".xml", $dom->saveXML() );
 			}
 
+		// $array gets rebuilt from scratch here as just the upload's event
+		// wrapper - the rich per-issue data above (client, parts, etc.) only
+		// ever went into the XML file content, never into what's passed to
+		// SwitchSend_TESZT() as $datas. Confirmed via the test protocol:
+		// that meant switchClientAllowed() always saw an empty jobCode and
+		// blocked every per-issue snapshot upload outright, regardless of
+		// client - not a hypothetical, every call was silently dropped.
+		// $magazine was resolved at the top of this function from the same
+		// job/publication this snapshot is for.
 		$array = array(
 			"event" => "xml_data",
+			"jobCode" => $magazine[0][0],
 			);
 			
 		$file = array( 
