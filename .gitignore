@@ -14,6 +14,14 @@ dynAPI/op/rendered/
 *.log
 *.tmp
 
+# Per-issue XML snapshots (client/xml/{magazineCode}_{issueCode}.xml),
+# regenerated on every issue create/delete and pushed to Switch - MariaDB
+# is the ground truth, these are disposable outbound artifacts. pmd.xml
+# itself IS tracked (it's the whole-dataset export, kept in a known-good
+# state deliberately, unlike these per-issue ones).
+client/xml/*_*.xml
+!client/xml/Publications_Master_Data*.xml
+
 # R3 (PDF rendering) binary + ICC profile bundle - a licensed third-party tool,
 # same category as DynaPDF's .so: not application code, not tracked here.
 # See SYSTEM_STATE.md's "R3" section for what has to be present at r3API/r3/
