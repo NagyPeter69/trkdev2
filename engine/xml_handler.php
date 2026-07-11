@@ -76,6 +76,20 @@
 			}
 		sql_delete( 'assets', "pub_id='".$pubId."'" );
 
+		// The per-issue Switch snapshot (toSwitch()'s 'new_publication'
+		// case writes client/xml/{magazineCode}_{issueCode}.xml on every
+		// create/modify/status-change) isn't cleaned up anywhere else -
+		// confirmed orphaned via the test protocol after a real issue
+		// delete. Regular issues use the magCode_issueCode name; Adhoc
+		// publications use just their own code with no separator, since
+		// they're their own single "issue" - try both.
+		if( is_file( TRKPATH.'/xml/'.$magazineCode.'_'.$issueCode.'.xml' ) ) {
+			@unlink( TRKPATH.'/xml/'.$magazineCode.'_'.$issueCode.'.xml' );
+			}
+		if( is_file( TRKPATH.'/xml/'.$issueCode.'.xml' ) ) {
+			@unlink( TRKPATH.'/xml/'.$issueCode.'.xml' );
+			}
+
 		// Deliberately NOT touching action_log/comment_log/error_log/
 		// system_log here: these are audit trails, not job data, and one
 		// of them (action_log) is where the caller just recorded *this
