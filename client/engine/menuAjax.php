@@ -738,9 +738,10 @@
 			}
 		
 		if( $rights["sys_log"] ) {
+			$main[] = "colorstandards";
 			$main[] = "switchflow";
 			$main[] = "syslog";
-			}	
+			}
 			
 		$sub = array(
 				"ftp" => array(	"create", "modify", "delete" ),
@@ -783,7 +784,12 @@
 			$show = false;
 			$onclick = "";
 			$addLine = false;
-			switch( $main[$i] ) {					
+			switch( $main[$i] ) {
+				case 'colorstandards':
+					$onclick = "settingsPanel( 'colorstandards_list' )";
+					$show = true;
+					break;
+
 				case 'switchflow':
 					$onclick = "settingsPanel( 'switch_flow' )";
 					$show = true;
