@@ -242,11 +242,20 @@ function codeGen( $word = 3, $number = 2 ) {
 		}		
 	
 	$id = implode( "", $temp );
-	
+
+	// Checked against both tables: an Adhoc job's magazine and publication
+	// share the same code (see sub=create's Adhoc branch), but a Regular
+	// magazine's issue codes only live in publications, not magazines - a
+	// generated code needs to avoid colliding with either. The recursive
+	// retry used to call codeGen( $length, $word ) - $length was never a
+	// real parameter (only $word/$number are), so a retry after a
+	// collision silently generated a wrong-shaped code (0 letters, 3
+	// digits, not 3 letters + 2 digits) instead of trying again properly.
 	$check = sql_aget( "magazines", "code='".$id."' LIMIT 1", "*" );
-	if( !empty( $check[0]["id"] ) ) {
-		$id = codeGen( $length, $word );
-		}	
+	$checkPub = sql_aget( "publications", "code='".$id."' LIMIT 1", "*" );
+	if( !empty( $check[0]["id"] ) || !empty( $checkPub[0]["id"] ) ) {
+		$id = codeGen( $word, $number );
+		}
 	return $id;
 	}
 

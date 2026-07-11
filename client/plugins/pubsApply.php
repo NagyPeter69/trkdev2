@@ -177,13 +177,31 @@ Tracker<br>";
 			if( $_POST["ClientType"] == "unknown" ) {
 				if( $_POST["Mails"] == "" ) $error[] = "Mails";
 				}
-				
+
 			if( $_POST["Name"] == "Adhoc" ) {
 				 $error[] = "Adhoc";
 				}
-				
+
 			if( empty( $_POST["Name"] ) ) {
 				 $error[] = "Name";
+				}
+
+			// codeGen() (engine.php) suggests a unique code when this
+			// form's panel first opens, but that's a display-time check
+			// only - nothing previously re-verified it at submission time,
+			// unlike the Regular branch just below. A collision here is a
+			// real risk given the code is 3 random letters + 2 random
+			// digits (~1 in 6.7 million combinations, small enough for a
+			// stale suggestion or two concurrent submissions to collide) -
+			// and unlike Regular, Adhoc's magazine and publication rows
+			// share this same code, so both tables need checking.
+			if( empty( $_POST["Code"] ) ) {
+				$error[] = "Code";
+				}
+			else {
+				$checker = sql_get( "magazines", "code='".$_POST["Code"]."'", "*" );
+				$checkerPub = sql_get( "publications", "code='".$_POST["Code"]."'", "*" );
+				if( $checker[0][0] != "" || $checkerPub[0][0] != "" ) $error[] = "Code";
 				}
 			}
 		
