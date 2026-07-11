@@ -542,6 +542,7 @@
 							"colorstandard_name" => 'Név',
 							"colorstandard_profile" => 'ICC profil',
 							"colorstandard_icc" => 'ICC fájl',
+							"colorstandard_original" => 'eredeti név',
 							"colorstandard_add" => 'Hozzáadás',
 							"colorstandard_delete" => 'Törlés',
 							"colorstandard_none" => 'Még nincs színszabvány felvéve.',

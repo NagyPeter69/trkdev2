@@ -35,8 +35,10 @@
 			}
 
 		$iccFile = "";
+		$originalFilename = "";
 		if( !empty( $_FILES["icc_file"]["name"] ) ) {
-			$full_type = explode( '.', $_FILES["icc_file"]["name"] );
+			$originalFilename = $_FILES["icc_file"]["name"];
+			$full_type = explode( '.', $originalFilename );
 			$ext = strtolower( $full_type[ count( $full_type )-1 ] );
 			$allowed = array( 'icc', 'icm' );
 
@@ -48,6 +50,10 @@
 			// r3API/r3 is where every render command already resolves ICC
 			// profile filenames from (relative cwd at render time), so a
 			// standard is immediately usable as soon as it's uploaded here.
+			// The upload gets renamed to match the standard name so the
+			// render pipeline can find it predictably - the original
+			// filename is kept in its own column purely for reference,
+			// since it can carry real provenance (vendor, revision).
 			$iccFile = $name.".".$ext;
 			if( !move_uploaded_file( $_FILES["icc_file"]["tmp_name"], "/var/www/html/r3API/r3/".$iccFile ) ) {
 				print json_encode( array( "error" => "Failed to save the ICC file" ) );
@@ -55,8 +61,8 @@
 				}
 			}
 
-		$names = array( "name", "profile_label", "icc_file" );
-		$values = array( $name, $profile, $iccFile );
+		$names = array( "name", "profile_label", "icc_file", "original_filename" );
+		$values = array( $name, $profile, $iccFile, $originalFilename );
 		sql_add( "color_standards", $names, $values );
 
 		print json_encode( array( "success" => true ) );

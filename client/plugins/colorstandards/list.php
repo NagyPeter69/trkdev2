@@ -15,7 +15,11 @@
 				echo "<tr>";
 					echo "<td height='23px' align='left'>".htmlspecialchars( $standards[$i][1] )."</td>";
 					echo "<td align='left'>".htmlspecialchars( $standards[$i][2] )."</td>";
-					echo "<td align='left'>".htmlspecialchars( $standards[$i][3] )."</td>";
+					echo "<td align='left'>".htmlspecialchars( $standards[$i][3] );
+					if( !empty( $standards[$i][4] ) && $standards[$i][4] != $standards[$i][3] ) {
+						echo "<br><span style='color: #888; font-size: 11px;'>".$lang["settings"]["colorstandard_original"].": ".htmlspecialchars( $standards[$i][4] )."</span>";
+						}
+					echo "</td>";
 					echo "<td align='right'><div class='panelButton' style='padding: 2px 8px; display: inline-block;' onclick=\"deleteColorStandard(".$standards[$i][0].")\">".$lang["settings"]["colorstandard_delete"]."</div></td>";
 				echo "</tr>";
 				}

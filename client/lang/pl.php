@@ -347,6 +347,7 @@
 							"colorstandard_name" => 'Name',
 							"colorstandard_profile" => 'ICC Profile',
 							"colorstandard_icc" => 'ICC File',
+							"colorstandard_original" => 'originally',
 							"colorstandard_add" => 'Add',
 							"colorstandard_delete" => 'Delete',
 							"colorstandard_none" => 'No color standards defined yet.',
