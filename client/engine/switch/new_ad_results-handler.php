@@ -35,7 +35,7 @@ $dom->formatOutput = true;
 
 if( $ad[0][0] != '' ) {
 	$dir2 = '/var/www/html/client/advertisements';
-	$checker = strtoupper( $ad[0][2] ).'_'.$code.'_'.$issue.'_'.$type;
+	$checker = strtoupper( $ad[0][2] ).'_'.$code.'_'.$issue.'_'.( $type ?? "" );
 
 	$ad_files = load_dir_files( $dir2, $checker );
 	for( $y = 0; $y < count( $ad_files ); $y++ ) {
@@ -105,6 +105,11 @@ if( $ad[0][0] != '' ) {
 		$data["sbox"] = array();
 		$data["sbox"] = json_encode($sbox);
 		$data["pdf"] = file_get_contents($target.'/'.$name);
+
+		$headers = array(
+			"Content-Type: multipart/form-data",
+			"Connection: Keep-Alive",
+			);
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/ad_check.php" );
@@ -178,7 +183,7 @@ if( $ad[0][0] != '' ) {
 		//$color = partDetect( $p_id[0][0], $page );
 		adThumbCreate2( "advertisements", $file_name.".pdf", $file_name."_thumb.jpg" );
 		//die();
-		for( $y = 0; $y < count( $files ); $y++ ) {
+		for( $y = 0; $y < count( $files ?? array() ); $y++ ) {
 			if( $files[$y] == $file_name."_thumb.jpg" ) {
 				copy( $from.'/'.$files[$y], $to.'/'.$file_name."_thumb.jpgBackup" );
 				}
