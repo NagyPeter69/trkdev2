@@ -515,7 +515,7 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 <?
 
 $check = sql_get( "pageinfo", "(type='ad' OR type='magazine') AND code='".$magazine[0][3]."' AND issue='".$pub[0][10]."' AND fin='1'", "id" );
-$allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
+$allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
 /*if( $magazine[0][3] == "BAV" ) {
 	$allowedOpt = "";
 	}*/
@@ -656,7 +656,7 @@ function loadArticles() {
 	
 var pubLength = parseInt( "<?= $pub[0][6] ?>" );
 function rebuildManageBox( value ) {
-	switch( value ) {
+	switch( value ) {
 		case 'insert':
 		case 'remove':
 			$("#text1").html( "<?= $lang['flatplan']['slots'] ?>" );
@@ -742,7 +742,7 @@ function submitManage() {
 	
 	console.log( options );
 	
-	if( $.isNumeric( options.slotnumber ) && $.isNumeric( options.target ) && options.slotnumber > 0 && allowed ) {
+	if( $.isNumeric( options.slotnumber ) && $.isNumeric( options.target ) && options.slotnumber > 0 && allowed ) {
 		$.ajax	({
 			url:"engine/manageFP.php?id=<?= $_GET['id'] ?>",
 			type: "POST",
@@ -1061,7 +1061,7 @@ function Redirect( val ) {
 var enableContext = 1;
 var contextWidth = $(".custom-menu").width();
 $(document).bind("contextmenu", function (event) {
-    if( $( "#"+currentplace+" input:checked" ).length > 0 ) {
+    if( $( "#"+currentplace+" input:checked" ).length > 0 ) {
 		event.preventDefault();
 		
 		if( $("#"+currentplace+" input[type='checkbox'][name='pageSelector[]']:checked").length > 1 ) {
@@ -1083,7 +1083,7 @@ $(document).bind("contextmenu", function (event) {
 
 				if( $( "#"+currentplace+" input:checked" ).length == 0 ) {
 					var target = $(event.target).closest(".pageBox");
-					if( target.length > 0 ) {
+					if( target.length > 0 ) {
 						target = target.children(".pagenr")[0];
 						thumbClick( target, 'single' );
 						}

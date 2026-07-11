@@ -554,8 +554,9 @@
 		if( $page == 1 )
 			$txt .= "<div class='pageBox' style='border-left: 1px solid #ADADAD; position: relative; width: ".$w."px; height: ".($h+34)."px;'>";
 		else
-			$txt .= "<div class='pageBox' style='position: relative; width: ".$w."px; height: ".($h+34)."px;'>";				
-				
+			$txt .= "<div class='pageBox' style='position: relative; width: ".$w."px; height: ".($h+34)."px;'>";
+
+		$alterPage = array();
 		if( $fPage[0][0] != "" ) {
 			if( $alterP[$page]!= "" && in_array( $fPage[0][6], $acceptType ) )
 				$alterPage = sql_get( 'pageinfo', $typeSelect.' AND page="'.$page.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'"', '*' );
@@ -998,8 +999,9 @@
 				break;
 			}
 			
-		$txt .= "<div class='pageBox' style='position: relative; width: ".$w."px; height: ".($h+34)."px;'>";				
-				
+		$txt .= "<div class='pageBox' style='position: relative; width: ".$w."px; height: ".($h+34)."px;'>";
+
+		$alterPage = array();
 		if( $fPage[0][0] != "" ) {
 			if( $alterP[$page]!= "" && in_array( $fPage[0][6], $acceptType ) )
 				$alterPage = sql_get( 'pageinfo', $typeSelect.' AND page="'.$page.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'"', '*' );
@@ -1009,7 +1011,7 @@
 				$alterPage = sql_get( 'pageinfo', $typeSelect.' AND page="'.$page.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'"', '*' );
 				}
 			}
-						
+
 		$Counter = count( $alterPage );
 		$txt .= "<input type='hidden' id='".$page."_current' name='".$page."_current' value='0'><input type='hidden' id='".$page."_max' name='".$page."_max' value='".$Counter."'>";
 		if( $Counter > 0 ) {
