@@ -190,3 +190,42 @@ wouldn't have hit.
 per-issue snapshots at all, and once more to a whitelist approach
 (`client/xml/*` with `pmd.xml`/`re-generateXML.php` excepted) after the
 pattern-based version missed Adhoc's `{code}.xml` naming (no underscore).
+
+8. **Adhoc job-code collisions were possible**: `codeGen()`'s recursive
+   retry called itself with an undefined parameter name (`$length`
+   instead of `$word`), so a retry after a collision silently produced a
+   malformed code (wrong letter/digit shape) instead of a valid fresh
+   one. Its uniqueness check also only looked at `magazines`, missing
+   `publications` (Adhoc rows share one code across both tables). Separately,
+   `sub=create`'s Adhoc branch never re-validated the suggested `Code` at
+   submission time - `codeGen()` only runs once, display-side, when the
+   form panel opens, so a stale suggestion or two concurrent submissions
+   could collide silently; the Regular branch already had this check,
+   Adhoc didn't. Fixed both, verified: a seeded `rand()` collision test
+   confirms `codeGen()`'s retry now produces a correctly-shaped code, and
+   submitting a known-colliding `Code` is now rejected with an error
+   where it was previously accepted. — `3329ddc`
+
+## Open question: Switch-side snapshot deletion (not resolved from this codebase)
+
+Investigated after a remnant issue XML (`AGV.xml`) was found still present
+on Switch's own server despite the associated issue/publication having
+been deleted on the Tracker side. Confirmed from this side:
+
+- Tracker-host cleanup is correct: `cleanupPublicationRemnants()` deletes
+  the local per-issue snapshot file (finding 6 above already fixed the
+  general case).
+- The `delete_issue`/`delete_publication` event sent to Switch does carry
+  the same `jobCode` that was used when the snapshot was originally
+  uploaded, so Switch receives everything it needs to correlate the two.
+- There is no code path anywhere in this codebase that explicitly tells
+  Switch "delete this previously-uploaded file" - `changeIssueStatus()`
+  has a `$value=="remove"` branch but nothing ever calls it with that
+  value, so it's dead code, not a real mechanism.
+
+Whether Switch's own flow (external, configured in Enfocus Switch
+Designer, not part of this repo) correlates an incoming `delete_*` event
+with a previously-uploaded snapshot and removes it is outside what can be
+verified or fixed from the Tracker side. If snapshots are meant to be
+removed from Switch on delete, that logic - if it doesn't already exist -
+would need to be added in the Switch flow itself.
