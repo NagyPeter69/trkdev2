@@ -228,7 +228,21 @@
 		$sftp->put( $saveTo.'.xml', $dom->saveXML()  );	*/
 		
 		sql_update( 'publications', 'status="archiving"', 'id="'.$_GET['id'].'"' );
-		
+
+		// Unlike stopIssue/restartIssue/approveIssue, this handler never
+		// synced the per-issue Switch snapshot's <status> - confirmed
+		// stale via the test protocol (DB said "archiving", the snapshot
+		// still said "created"). Same changeIssueStatus() mechanism as
+		// the other three, for the same reason: Switch and anyone reading
+		// the snapshot should see the current status, not whatever it was
+		// when the issue was created.
+		if( $magazine[0][10] == "Adhoc" ) {
+			changeIssueStatus( $issue[0][10].".xml", "archiving", $_GET['id'] );
+			}
+		else {
+			changeIssueStatus( $magazine[0][3]."_".$issue[0][10].".xml", "archiving", $_GET['id'] );
+			}
+
 		$p_id = sql_get( 'publications', 'id="'.$_GET['id'].'"', '*' );
 		$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status' );
 		$values = array( $_SESSION['intra_user'], 'archivingIssue', $p_id[0][1], $p_id[0][2],  $p_id[0][10], '', time(), '' );
