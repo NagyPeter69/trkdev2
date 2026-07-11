@@ -14,6 +14,32 @@ include_once('/var/www/html/engine/xml_handler.php');
 // call site (advertisement.php) hardcodes that string as a placeholder
 // rather than deriving it, which makes it unreliable as a source of truth
 // for something a safety gate depends on.
+// Resolves the real publisher name for a magazine code, from MariaDB only -
+// never from the PMD/issue XML, which are one-way exports, not a source of
+// truth (see SYSTEM_STATE.md). Regular magazines carry their publisher on
+// magazines.publisher_id directly. Adhoc magazines always have
+// publisher_id=0 by convention regardless of client - a *known* Adhoc
+// client (ClientType=known) is recorded on the matching publications row's
+// `owner` column instead, so that's the fallback. A genuinely *unknown*
+// Adhoc client (ClientType=unknown, no owner) has no DB-resolvable
+// publisher at all, and correctly returns '' - there's nothing to verify,
+// so callers should treat that as not-allowed, not as an error.
+function resolveJobPublisherName( $code ) {
+	$magazine = sql_aget( 'magazines', "code='".$code."'", 'id, publisher_id' );
+	if( empty( $magazine[0]['id'] ) ) return '';
+
+	$publisherId = $magazine[0]['publisher_id'];
+	if( empty( $publisherId ) || $publisherId == '0' ) {
+		$pub = sql_aget( 'publications', "magazine_id='".$magazine[0]['id']."' AND code='".$code."'", 'owner' );
+		$publisherId = $pub[0]['owner'] ?? '';
+		}
+
+	if( empty( $publisherId ) ) return '';
+
+	$publisher = sql_aget( 'publishers', "id='".$publisherId."'", 'name' );
+	return $publisher[0]['name'] ?? '';
+	}
+
 function switchClientAllowed( $datas ) {
 	if( !IS_DEV_ENVIRONMENT ) return true;
 
@@ -32,13 +58,10 @@ function switchClientAllowed( $datas ) {
 
 	if( $code == '' ) return false;
 
-	$magazine = sql_aget( 'magazines', "code='".$code."'", 'publisher_id' );
-	if( empty( $magazine[0]['publisher_id'] ) ) return false;
+	$name = resolveJobPublisherName( $code );
+	if( $name == '' ) return false;
 
-	$publisher = sql_aget( 'publishers', "id='".$magazine[0]['publisher_id']."'", 'name' );
-	if( empty( $publisher[0]['name'] ) ) return false;
-
-	return in_array( strtolower( $publisher[0]['name'] ), $allowed );
+	return in_array( strtolower( $name ), $allowed );
 	}
 
 // Same DEV gate as switchClientAllowed(), for the one Switch call that
@@ -49,13 +72,19 @@ function switchClientAllowed( $datas ) {
 function switchBulkSyncAllowed() {
 	if( !IS_DEV_ENVIRONMENT ) return true;
 
+	// Was DISTINCT publisher_id with a skip on empty/0 - which meant every
+	// Adhoc magazine (publisher_id is always 0 by convention, known client
+	// or not) was silently exempted from this check entirely, regardless
+	// of what its real client actually was. Not just a block-Adhoc
+	// limitation like switchClientAllowed() had - this let unverified
+	// Adhoc data ride along in the whole-dataset upload. Resolving per
+	// magazine via resolveJobPublisherName() (which knows to fall back to
+	// publications.owner for Adhoc) closes that.
 	$allowed = array( 'colorcom', 'testco' );
-	$magazinePublishers = sql_aget( 'magazines', '1=1', 'DISTINCT publisher_id' );
-	for( $i = 0; $i < count( $magazinePublishers ); $i++ ) {
-		$pid = $magazinePublishers[$i]['publisher_id'];
-		if( empty( $pid ) ) continue;
-		$publisher = sql_aget( 'publishers', "id='".$pid."'", 'name' );
-		if( empty( $publisher[0]['name'] ) || !in_array( strtolower( $publisher[0]['name'] ), $allowed ) ) {
+	$magazines = sql_aget( 'magazines', '1=1', 'code' );
+	for( $i = 0; $i < count( $magazines ); $i++ ) {
+		$name = resolveJobPublisherName( $magazines[$i]['code'] );
+		if( $name == '' || !in_array( strtolower( $name ), $allowed ) ) {
 			return false;
 			}
 		}

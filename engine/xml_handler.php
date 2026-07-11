@@ -810,10 +810,14 @@
 				// own PMD entry, so this isn't load-bearing - but it doesn't
 				// hurt to carry it here too, DB-sourced rather than read back
 				// from the XML, so it can't drift the way Publisher/Client
-				// can on the whole-dataset Item. publisher_id "0" is the
-				// Adhoc-unknown-client convention (no real publishers row to
-				// look up), matching the same case elsewhere in this function.
-				$array['client'] = ( $job[0][1] == "0" ) ? "" : sql_get( 'publishers', 'id="'.$job[0][1].'"', 'name' )[0][0];
+				// can on the whole-dataset Item. resolveJobPublisherName()
+				// (in switchAPI.php) falls back to the publication's `owner`
+				// for Adhoc jobs, where publisher_id is always "0" by
+				// convention even for a known client - using publisher_id
+				// alone here used to silently produce an empty client for
+				// every known-client Adhoc job, not just genuinely unknown
+				// ones.
+				$array['client'] = resolveJobPublisherName( $magazine[0][0] );
 
 				if( $job[0][1] == "0" ) {
 					$array['numOfPages'] = $job[0][6];
