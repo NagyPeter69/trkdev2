@@ -155,18 +155,14 @@
 	if( $_GET['op'] == 'deleteComment' ) {
 		$comments = sql_get( 'comments', 'id="'.$_GET['id'].'"', '*' );
 		for( $c = 0; $c < count( $comments ); $c++ ) {
-			$subcomments = sql_get( 'comments', 'parent="'.$comments[$c][0].'"', '*' );
-			for($sub = 0; $sub < count( $subcomments ); $sub++ ) {
-				sql_delete( 'comments', 'id="'.$subcomments[$sub][0].'"' );
-				}
-			sql_delete( 'comments', 'id="'.$comments[$c][0].'"' );
+			sql_delete( 'comments', 'id="'.$comments[$c][0].'" OR parent="'.$comments[$c][0].'"' );
 
 			$p_id = sql_get( 'publications', 'id="'.$comments[$c][1].'"', '*' );
 			$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status' );
 			$values = array( $_GET['intra_user'], 'deleteComment', $p_id[0][1], $p_id[0][2],  $p_id[0][10], $comments[$c][7], time(), '' );
 			sql_add( 'comment_log', $names, $values );
 			}
-		
+
 		$result = 'success';
 		}
 	

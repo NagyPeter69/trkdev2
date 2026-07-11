@@ -56,24 +56,6 @@
 				
 				}
 			for( $c = 0; $c < count( $sqlComments ); $c++ ) {
-				$checkPub = sql_get( 'comments', 'parent="'.$sqlComments[$c][0].'"', '*' );
-				if( count($checkPub) > 0 ) {
-					$checker = $checkPub[count($checkPub)-1][10];
-					}
-				else {
-					$checker = $sqlComments[$c][10];
-					}
-					
-				$checkPub = sql_get( 'accounts', 'id="'.$checker.'"', '*' );
-				$checkPub = sql_get( 'publishers', 'id="'.$checkPub[0][4].'"', '*' );
-				if( $checkPub[0][0] != $myPublisher[0][0] && $sqlComments[$c][12] != "approved" )
-					$sqlComments[$c][] = "comment3";
-				else
-					$sqlComments[$c][] = "";
-				
-				$user = sql_get( "accounts", "id='".$sqlComments[$c][10]."'", "full_name" );
-
-				$haveAuto = false;
 				$check_last_comment = sql_get( 'comments', 'parent="'.$sqlComments[$c][0].'" ORDER BY `id` DESC LIMIT 1', '*' );
 				if( count( $check_last_comment ) > 0 ) {
 					$checker = $check_last_comment[count($check_last_comment)-1][10];
@@ -83,18 +65,26 @@
 					}
 
 				$checkPub = sql_get( 'accounts', 'id="'.$checker.'"', 'publisher, id' );
-				//error_log( $checkPub[0][0]." != ".$myPublisher[0][0] );
+
+				if( $checkPub[0][0] != $myPublisher[0][0] && $sqlComments[$c][12] != "approved" )
+					$sqlComments[$c][] = "comment3";
+				else
+					$sqlComments[$c][] = "";
+
+				$user = sql_get( "accounts", "id='".$sqlComments[$c][10]."'", "full_name" );
+
+				$haveAuto = false;
 				if( $checkPub[0][0] != $myPublisher[0][0] ) {
 					$result["red"]++;
 					}
 				elseif( $checkPub[0][0] == $myPublisher[0][0] ) {
 					$result["green"]++;
-					}		
-				
+					}
+
 				if( $result["red"] > 0 ) {
 					$haveAuto = true;
 					}
-				
+
 
 				$sqlComments[$c][8] = "<table cellspacing='0' cellpadding='0'><tr><td><div style='margin-bottom:3px;' onclick='selectAllText( this )' class='ctext'>".$sqlComments[$c][8]."</div>
 										<div style='font-size:9px; color: rgb( 255, 234, 0 );'><i>".$user[0][0]."</i></div>

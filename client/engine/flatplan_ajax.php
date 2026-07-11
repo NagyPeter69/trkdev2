@@ -83,9 +83,79 @@
 		return array( $w, $h );
 		}
 
-	function commentMark( $pageInfo, $id, $part="" ) {
+	function preloadCommentMarks( $id ) {
 		global $myPublisher;
-		
+
+		$marks = array();
+		$comments = sql_get( 'comments', 'pub_id="'.$id.'"', '*' );
+		if( count( $comments ) == 0 ) return $marks;
+
+		$roots = array();
+		$latestReplyUser = array();
+		foreach( $comments as $c ) {
+			if( $c[2] == "0" ) {
+				$roots[] = $c;
+				}
+			elseif( !isset( $latestReplyUser[ $c[2] ] ) || $c[0] > $latestReplyUser[ $c[2] ]['id'] ) {
+				$latestReplyUser[ $c[2] ] = array( 'id' => $c[0], 'user' => $c[10] );
+				}
+			}
+		if( count( $roots ) == 0 ) return $marks;
+
+		$rootChecker = array();
+		$checkerIds = array();
+		foreach( $roots as $r ) {
+			if( $r[12] == "approved" ) continue;
+			$checker = isset( $latestReplyUser[ $r[0] ] ) ? $latestReplyUser[ $r[0] ]['user'] : $r[10];
+			$rootChecker[ $r[0] ] = $checker;
+			$checkerIds[ $checker ] = true;
+			}
+
+		$checkerPub = array();
+		if( count( $checkerIds ) > 0 ) {
+			$ids = implode( ',', array_map( function( $v ) { return '"'.$v.'"'; }, array_keys( $checkerIds ) ) );
+			$accs = sql_get( 'accounts', 'id IN ('.$ids.')', 'id, publisher' );
+			foreach( $accs as $a ) {
+				$checkerPub[ $a[0] ] = $a[1];
+				}
+			}
+
+		$byKey = array();
+		foreach( $roots as $r ) {
+			$key = $r[7].'|'.$r[13].'|'.$r[14].'|'.$r[16];
+			if( !isset( $byKey[ $key ] ) ) {
+				$byKey[ $key ] = array( "red" => 0, "green" => 0, "blue" => 0 );
+				}
+			if( $r[12] == "approved" ) {
+				$byKey[ $key ]["blue"]++;
+				}
+			else {
+				$checker = $rootChecker[ $r[0] ];
+				$pub = isset( $checkerPub[ $checker ] ) ? $checkerPub[ $checker ] : "";
+				if( $pub != $myPublisher[0][0] ) {
+					$byKey[ $key ]["red"]++;
+					}
+				else {
+					$byKey[ $key ]["green"]++;
+					}
+				}
+			}
+
+		foreach( $byKey as $key => $result ) {
+			if( $result["red"] > 0 )
+				$marks[ $key ] = "<div class='commentRed'></div>";
+			elseif( $result["green"] > 0 )
+				$marks[ $key ] = "<div class='commentGreen'></div>";
+			else
+				$marks[ $key ] = "<div class='commentBlue'></div>";
+			}
+
+		return $marks;
+		}
+
+	function commentMark( $pageInfo, $id, $part="" ) {
+		global $commentMarks;
+
 		switch( $pageInfo[6] ) {
 			case 'ad':
 			case 'magazine':
@@ -94,42 +164,12 @@
 			default :
 				$pageType = $pageInfo[6];
 				break;
-			} 
+			}
 
 		if( $pageInfo[11] == 1) $pageType = "FIN";
-		$comments = sql_get( 'comments', 'pub_id="'.$id.'" AND parent="0" AND page="'.$pageInfo[5].'" AND pageType="'.$pageType.'" AND pageVersion="'.$pageInfo[8].'" AND part="'.$part.'"', '*' );
-		if( count( $comments ) == 0 ) return "";
-		
-		$result = array( "red" => 0, "green" => 0, "blue"=> 0 );
-		foreach( $comments as $comment ) {
-			if( $comment[12] == "approved" ) {
-				$result["blue"]++;
-				}
-			else {
-				$checkPub = sql_get( 'comments', 'parent="'.$comment[0].'" ORDER BY `id` DESC LIMIT 1', '*' );
-				if( count($checkPub) > 0 ) {
-					$checker = $checkPub[count($checkPub)-1][10];
-					}
-				else {
-					$checker = $comment[10];
-					}
-				
-				$checkPub = sql_get( 'accounts', 'id="'.$checker.'"', 'publisher' );
-				if( $checkPub[0][0] != $myPublisher[0][0] ) {
-					$result["red"]++;
-					}
-				else {
-					$result["green"]++;
-					}
-				}
-			}
-		
-		if( $result["red"] > 0 )
-			return "<div class='commentRed'></div>";
-		elseif( $result["green"] > 0 )
-			return "<div class='commentGreen'></div>";
-		else
-			return "<div class='commentBlue'></div>";
+
+		$key = $pageInfo[5].'|'.$pageType.'|'.$pageInfo[8].'|'.$part;
+		return isset( $commentMarks[ $key ] ) ? $commentMarks[ $key ] : "";
 		}
 
 	function drawPlannerPage( $id, $page, $class, $i ) {
@@ -1227,10 +1267,11 @@
 		$text = '';
 		$imghash = $_GET['cache'];
 
-		$myPublisher = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', 'publisher' );	
+		$myPublisher = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', 'publisher' );
 		$issue = sql_get( 'publications', 'id="'.$_GET['id'].'" LIMIT 1', '*' );
-		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'" LIMIT 1', '*' );		
+		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'" LIMIT 1', '*' );
 		$path = "../packages/".$magazine[0][3]."/".$issue[0][10];
+		$commentMarks = preloadCommentMarks( $_GET['id'] );
 
 		if( $_GET["opt"] == "" or $_GET["opt"] == "FIN" ) {
 			$typeSelect = 'type!="PRE" AND type!="PSTR"';
