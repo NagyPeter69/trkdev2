@@ -288,7 +288,7 @@
 							echo "Rectangle( ".$sizes["Left"].", ".$sizes["Bottom"].", ".( $sizes["Right"] - $sizes["Left"] ).", ".( $sizes["Top"] - $sizes["Bottom"] )."";
 							
 						$pdf->EndPage();
-						$pdf->AddOutputIntent( "../engine/ISOcoated_v2_eci.icc" );
+						$pdf->AddOutputIntent( "/var/www/html/r3API/r3/".resolveIccProfileByName( "FOGRA_39" ) );
 						$pdf->CloseFile();
 
 						$terminalPath = "/var/www/intra/client";
@@ -300,7 +300,7 @@
 
 						
 						echo implode( " | ", $sizes );
-						$command = './r3 -binary -mode:RENDER -left:0 -right:'.( $sizes["Right"] - $sizes["Left"] ).' -bottom:0 -top:'.( $sizes["Top"] - $sizes["Bottom"] ).' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$from_.' $@ >'.$to_.' 2>&1';
+						$command = './r3 -binary -mode:RENDER -left:0 -right:'.( $sizes["Right"] - $sizes["Left"] ).' -bottom:0 -top:'.( $sizes["Top"] - $sizes["Bottom"] ).' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from_.' $@ >'.$to_.' 2>&1';
 						echo "<br>".$command;
 						
 						$command = shell_exec('
@@ -365,7 +365,7 @@
 			
 							$pdf->SetJPEGQuality( 100 );	
 						
-							$pdf->AddOutputIntent( "../engine/ISOcoated_v2_eci.icc" );	
+							$pdf->AddOutputIntent( "/var/www/html/r3API/r3/".resolveIccProfileByName( "FOGRA_39" ) );	
 							$pdf->RenderPageToImage(1, $file_name.'_lowres.jpg', 150, $width, $height, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfJPEG, dynapdf::ifmJPEG);
 							$pdf->CloseFile();
 							}			

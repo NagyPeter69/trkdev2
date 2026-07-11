@@ -195,7 +195,7 @@ function newLine() {
 	text += '</select></span>';
 	text += '<span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span>';
 	text += '<span class="trimsize" style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span>';
-	text += '<span style="padding-left: 10px;">Color standard: <select name="color[]"><option value="FOGRA_29">FOGRA 29</option><option selected value="FOGRA_39">FOGRA 39</option><option value="FOGRA_41">FOGRA 41</option><option value="FOGRA_45">FOGRA 45</option><option value="FOGRA_46">FOGRA 46</option><option value="FOGRA_47">FOGRA 47</option><option value="FOGRA_51">FOGRA 51</option><option value="FOGRA_52">FOGRA 52</option><option value="IFRA_26">IFRA 26</option><option value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span>';
+	text += '<span style="padding-left: 10px;">Color standard: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?></select></span>';
 	text += '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
 	$("#partContent").append(text);
 	setParts();

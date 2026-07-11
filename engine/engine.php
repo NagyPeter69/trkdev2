@@ -94,9 +94,55 @@ function partDetect( $pubid, $page, $return = "color" ) {
 		}
 	else {
 		$rval = "FOGRA_39";
-		}		
-		
+		}
+
 	return $rval;
+	}
+
+// Resolves the actual ICC profile filename R3 should use for a given page:
+// partDetect() finds which Part the page belongs to and returns that
+// Part's color standard name (e.g. "FOGRA_51"); this then looks up the
+// matching file in color_standards, the single source of truth for
+// standard-name -> ICC-file mappings (see client/plugins/
+// colorstandardsApply.php). Falls back to "<name>.icc" if the standard
+// isn't in the table yet, so a Part referencing a not-yet-defined standard
+// doesn't hard-fail.
+function resolveIccProfile( $pubId, $page ) {
+	$colorName = partDetect( $pubId, $page, "color" );
+	return resolveIccProfileByName( $colorName );
+	}
+
+function resolveIccProfileByName( $colorName ) {
+	if( empty( $colorName ) ) {
+		$colorName = "FOGRA_39";
+		}
+
+	$standard = sql_get( "color_standards", 'name="'.$colorName.'"', "icc_file" );
+	if( !empty( $standard[0][0] ) ) {
+		return $standard[0][0];
+		}
+
+	return $colorName.".icc";
+	}
+
+// <option> list for every defined color standard, for the various
+// Part/Publication color-standard dropdowns across the app - color_standards
+// is the one place new standards get added, so every dropdown should render
+// from this instead of keeping its own hardcoded list.
+// Double-quoted HTML attributes on purpose: several call sites embed this
+// inside a single-quoted JS string literal, and single-quoted attributes
+// here would terminate that string early.
+function colorStandardOptions( $selected = "", $class = "" ) {
+	$txt = "";
+	$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+	for( $i = 0; $i < count( $standards ); $i++ ) {
+		$txt .= "<option ";
+		if( $class != "" ) $txt .= "class=\"".$class."\" ";
+		$txt .= "value=\"".$standards[$i][0]."\"";
+		if( $standards[$i][0] == $selected ) $txt .= " selected";
+		$txt .= ">".str_replace( "_", " ", $standards[$i][0] )."</option>";
+		}
+	return $txt;
 	}
 
 // Verifies a plaintext password against a stored hash. Stored hashes are
@@ -2506,7 +2552,7 @@ function adThumbCreate3( $path, $file, $to ) {
 	$from = $terminal."/".$file;
 	$to = $terminal."/".$path."/".$to;
 		
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:PSO_MFC_Paper_bas.icc '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
 	
 	error_log( $command );
 	
@@ -2559,7 +2605,7 @@ function adThumbCreate2( $path, $file, $to ) {
 	$from = $terminal."/engine/switch/".$file;
 	$to = $terminal."/".$path."/".$to;
 		
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:PSO_MFC_Paper_bas.icc '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
 	
 	error_log( $command );
 	
@@ -2616,7 +2662,7 @@ function adThumbCreate( $path, $file, $to ) {
 	
 	$to = $terminal."/".$path."/".$to;
 	
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:PSO_MFC_Paper_bas.icc '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
 	
 	echo $command."<br>";
 	$result = shell_exec('
@@ -2658,11 +2704,12 @@ function thumbCreate2( $file, $pageWidth, $color = "" ) {
 	if( empty( $color ) ) {
 		$color = "FOGRA_39";
 		}
-	
+	$iccProfile = resolveIccProfileByName( $color );
+
 	error_log( "R3 DEBUG" );
-	error_log( './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$color.'.icc '.$from.' $@ >'.$to.' 2>&1' );
-	
-	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$color.'.icc '.$from.' $@ >'.$to.' 2>&1';
+	error_log( './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' $@ >'.$to.' 2>&1' );
+
+	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' $@ >'.$to.' 2>&1';
 	
 	error_log( $command );
 	
@@ -2699,7 +2746,7 @@ function thumbCreate( $path, $file, $to, $pageWidth ) {
 	$to = substr($to[( count($to)-1 )], 0, -4).".jpg";
 	$to = $terminal."/".substr( $path, 3 )."/".$to;
 	
-	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:PSO_MFC_Paper_bas.icc '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
 		
 	$result = shell_exec('
 		cd /var/www/html/r3API/r3 2>&1;
@@ -2921,7 +2968,7 @@ function isWeekend($date) {
 	}
 
 function colorPick( $pdfPath, $x, $y ) {
-	$command = './r3 -mode:MEASURE -x:'.$x.' -y:'.$y.' -tprofile:PSO_MFC_Paper_bas.icc '.$pdfPath.' 2>&1';
+	$command = './r3 -mode:MEASURE -x:'.$x.' -y:'.$y.' -tprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$pdfPath.' 2>&1';
 	$command = shell_exec('
 			cd /var/www/html/r3API/r3 2>&1;
 			'.$command.';
@@ -2966,7 +3013,7 @@ function getAllColors( $pageinfo ) {
 
 function getColorTitles( $pdfPath ) {
 	$titles = array();
-	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:PSO_MFC_Paper_bas.icc '.$pdfPath.' 2>&1';
+	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$pdfPath.' 2>&1';
 	$command = shell_exec('
 			cd /var/www/html/r3API/r3 2>&1;
 			'.$command.';
@@ -2986,7 +3033,7 @@ function getColorTitles( $pdfPath ) {
 
 function getColors( $pdfPath ) {
 	$colors = array();
-	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:PSO_MFC_Paper_bas.icc '.$pdfPath.' 2>&1';
+	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$pdfPath.' 2>&1';
 	$command = shell_exec('
 			cd /var/www/html/r3API/r3 2>&1;
 			'.$command.';
@@ -4484,14 +4531,16 @@ function PDFtoImage_TEMP( $sizes, $from, $to, $icc, $colors = "" ) {
 				}
 			}
 		
-		error_log( './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$icc.'.icc '.$from.' > '.$to.'' );
-		
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$icc.'.icc '.$from.' > '.$to.'';
+		$iccProfile = resolveIccProfileByName( $icc );
+		error_log( './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'' );
+
+		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
 		}
-	else {	
-		error_log( './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$icc.'.icc '.$from.' > '.$to.'' );
-		
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$icc.'.icc '.$from.' > '.$to.'';
+	else {
+		$iccProfile = resolveIccProfileByName( $icc );
+		error_log( './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'' );
+
+		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
 		}
 	
 	$command = shell_exec('
@@ -4506,20 +4555,21 @@ function PDFtoImage_TEMP( $sizes, $from, $to, $icc, $colors = "" ) {
 	
 function PDFtoImage_( $sizes, $from, $to, $colors = "" ) {
 	error_log( "WARNING! PDFtoImage_" );
+	$iccProfile = resolveIccProfileByName( "FOGRA_39" );
 	if( $colors != "" ) {
 		$color = "";
 		foreach( $colors as $key => $val ) {
 			if( $val == 'true' ) {
 				if( strlen( $key ) > 1 )
 					$color .= $key[0];
-				else 
+				else
 					$color .= $key;
 				}
 			}
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:FOGRA_39.icc '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
+		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
 		}
 	else {
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:FOGRA_39.icc '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
+		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
 		}
 	$command = shell_exec('
 			cd /var/www/html/r3API/r3
@@ -4533,20 +4583,21 @@ function PDFtoImage_( $sizes, $from, $to, $colors = "" ) {
 
 function PDFtoImage_Measure( $sizes, $from, $to, $colors = "" ) {
 	$rustart = microtime(true);
+	$iccProfile = resolveIccProfileByName( "FOGRA_41" );
 	if( $colors != "" ) {
 		$color = "";
 		foreach( $colors as $key => $val ) {
 			if( $val == 'true' ) {
 				if( strlen( $key ) > 1 )
 					$color .= $key[0];
-				else 
+				else
 					$color .= $key;
 				}
 			}
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:PSO_MFC_Paper_bas.icc '.$from.' > '.$to.'';
+		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
 		}
 	else {
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:PSO_MFC_Paper_bas.icc '.$from.' > '.$to.'';
+		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
 		}
 	
 	echo $command."<br>";
@@ -4562,32 +4613,35 @@ function PDFtoImage_Measure( $sizes, $from, $to, $colors = "" ) {
 	return $command;
 	}
 
-function PdfToImageRender( $file, $temp_path, $tempFile ) {
+function PdfToImageRender( $file, $temp_path, $tempFile, $colorName = "FOGRA_41" ) {
 	$pdf = new dynapdf();
-	
+
 	include('../engine/config.inc.php');
 	$pdf->CreateNewPDF( $temp_path."/".$tempFile.".pdf" );
 	$pdf->SetImportFlags(dynapdf::ifImportAll | dynapdf::ifImportAsPage);
 	$pdf->SetImportFlags2(dynapdf::if2UseProxy);
-	
+
 	$pdf->InitColorManagement( NULL, NULL , 1 );
-	
+
 	$pdf->OpenImportFile( $file, dynapdf::ptOpen, NULL );
-	$pdf->ImportPDFFile( 1, 1.0, 1.0 );	
+	$pdf->ImportPDFFile( 1, 1.0, 1.0 );
 	$pdf->CloseImportfile();
-	
+
 	$pdf->EditPage(1);
 		$tbox = $pdf->GetBBox( dynapdf::pbTrimBox );
 		$newWidth = $tbox['Right'];
-		$newHeight = $tbox['Top'];	
+		$newHeight = $tbox['Top'];
 		$pdf->SetBBox( dynapdf::pbCropBox, $tbox['Left'], $tbox['Bottom'], $newWidth, $newHeight );
 	$pdf->EndPage();
 	$pdf->SetJPEGQuality( 100 );
-	
-	$pdf->AddOutputIntent( "../engine/PSO_MFC_Paper_bas.icc" );	
+
+	// The old relative path here ("../engine/PSO_MFC_Paper_bas.icc") never
+	// resolved to a real file anywhere in this app - every ICC profile
+	// actually lives in r3API/r3, so that's used here too now.
+	$pdf->AddOutputIntent( "/var/www/html/r3API/r3/".resolveIccProfileByName( $colorName ) );
 	$pdf->RenderPageToImage(1, $temp_path."/".$tempFile.".jpg", 180, 1, 0, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfJPEG, dynapdf::ifmJPEG);
 	$pdf->CloseFile();
-	
+
 	@unlink( $temp_path."/".$tempFile.".pdf" );
 	return $temp_path."/".$tempFile.".jpg";
 	}

@@ -18,15 +18,8 @@
 					<td align='left'>
 						<select name="part1_color">
 						<?
-						$colors = array( 'FOGRA_39', 'FOGRA_41', 'FOGRA_45', 'FOGRA_46', 'FOGRA_47', 'FOGRA_51', 'FOGRA_52' , 'IFRA_26' );
-						$value = $newxml->Item[$x]->ColorManagement->Cover;
-						
-						for( $i = 0; $i < count( $colors ); $i++ ) {
-							echo '<option ';
-							if( $value == $colors[$i] ) echo "selected ";
-							echo 'class="color_select" value="'.$colors[$i].'">'.$lang["publications"][ $colors[$i] ].'</option>';
-							}
-						
+						$value = (string) $newxml->Item[$x]->ColorManagement->Cover;
+						echo colorStandardOptions( $value, "color_select" );
 						?>
 						</select>
 					</td>
@@ -49,14 +42,8 @@
 					<td align='left'>
 						<select name="part2_color">
 						<?
-						$colors = array( 'FOGRA_39', 'FOGRA_41', 'FOGRA_45', 'FOGRA_46', 'FOGRA_47', 'FOGRA_51', 'FOGRA_52' , 'IFRA_26' );
-						$value = $newxml->Item[$x]->ColorManagement->Content;
-						
-						for( $i = 0; $i < count( $colors ); $i++ ) {
-							echo '<option ';
-							if( $value == $colors[$i] ) echo "selected ";
-							echo 'class="color_select" value="'.$colors[$i].'">'.$lang["publications"][ $colors[$i] ].'</option>';
-							}
+						$value = (string) $newxml->Item[$x]->ColorManagement->Content;
+						echo colorStandardOptions( $value, "color_select" );
 						?>
 						</select>
 					</td>
@@ -179,14 +166,15 @@ function create_part() {
 		txt += "<td style='padding-left: 15px;' align='left' height='28px'><?= $lang['publications']['color'] ?></td>";
 		txt += "<td align='left'>";
 			txt += '<select name="part'+parts+'_color">';
-				txt += '<option class="color_select" value="FOGRA_39"><?= $lang["publications"]["FOGRA_39"] ?></option>';
-				txt += '<option class="color_select" value="FOGRA_41"><?= $lang["publications"]["FOGRA_41"] ?></option>';
-				txt += '<option class="color_select" value="FOGRA_45"><?= $lang["publications"]["FOGRA_45"] ?></option>';
-				txt += '<option class="color_select" value="FOGRA_46"><?= $lang["publications"]["FOGRA_46"] ?></option>';
-				txt += '<option class="color_select" value="FOGRA_47"><?= $lang["publications"]["FOGRA_47"] ?></option>';
-				txt += '<option class="color_select" value="FOGRA_51"><?= $lang["publications"]["FOGRA_51"] ?></option>';
-				txt += '<option class="color_select" value="FOGRA_52"><?= $lang["publications"]["FOGRA_52"] ?></option>';
-				txt += '<option class="color_select" value="IFRA_26"><?= $lang["publications"]["IFRA_26"] ?></option>';
+				<?
+				// This builds a JS string at page-render time (not per
+				// create_part() call), so the option list always reflects
+				// the color_standards table as of when the panel was loaded.
+				$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+				for( $i = 0; $i < count( $standards ); $i++ ) {
+					echo "\t\t\t\ttxt += '<option class=\"color_select\" value=\"".$standards[$i][0]."\">".str_replace( "_", " ", $standards[$i][0] )."</option>';\n";
+					}
+				?>
 			txt += "</select>";
 		txt += "</td>";
 	txt += "</tr>";

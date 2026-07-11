@@ -56,7 +56,11 @@ $publisher = sql_get( "publishers", "id='".$job[0][1]."'", "name" );
 						$temp = array( $lang["settings"]["yes"], $lang["settings"]["no"] );
 						break;
 					case 'ColorManagement':
-						$temp = array( 'FOGRA_39', 'FOGRA_45', 'FOGRA_46', 'IFRA_26' );
+						$temp = array();
+						$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+						for( $s = 0; $s < count( $standards ); $s++ ) {
+							$temp[] = $standards[$s][0];
+							}
 						break;
 					case 'MailComm':
 						$temp = array( 'Yes', 'No' );

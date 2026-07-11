@@ -146,6 +146,17 @@ Kijelölve <a href='http://tracker.colorcom.hu/client/filetransfer_view.php?tran
 		);
 
 	function __construct( $parts, $uid ) {
+		// colorprofile_array above is a property default, which PHP
+		// requires to be a constant expression - can't query the DB
+		// there, so it's swapped in here instead once the object exists.
+		$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+		if( count( $standards ) > 0 ) {
+			$this->colorprofile_array = array();
+			for( $s = 0; $s < count( $standards ); $s++ ) {
+				$this->colorprofile_array[ $standards[$s][0] ] = str_replace( "_", " ", $standards[$s][0] );
+				}
+			}
+
 		$user = sql_aget( "accounts", "id='".$uid."'", "*" );
 		$this->user = $user[0];
 		$this->settings["upload"] = json_decode( $this->user["uploadsettings"], true );

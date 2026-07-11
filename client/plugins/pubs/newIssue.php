@@ -150,17 +150,9 @@ else {
 						echo '<span style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" value="'.$size[0].'" style="width: 25px;">x<input type="text" name="trim_y[]" value="'.$size[1].'" style="width: 25px;">mm</span>';
 						}
 					
-					echo '<span style="padding-left: 10px; '.( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ).'">Color standard: <select name="color[]">
-					<option '.( $parts[$i]["color"] == "FOGRA_29" ? "selected" : "" ).' value="FOGRA_29">FOGRA 29</option>
-					<option '.( $parts[$i]["color"] == "FOGRA_39" ? "selected" : "" ).' value="FOGRA_39">FOGRA 39</option>
-					<option '.( $parts[$i]["color"] == "FOGRA_41" ? "selected" : "" ).' value="FOGRA_41">FOGRA 41</option>
-					<option '.( $parts[$i]["color"] == "FOGRA_45" ? "selected" : "" ).' value="FOGRA_45">FOGRA 45</option>
-					<option '.( $parts[$i]["color"] == "FOGRA_46" ? "selected" : "" ).' value="FOGRA_46">FOGRA 46</option>
-					<option '.( $parts[$i]["color"] == "FOGRA_47" ? "selected" : "" ).' value="FOGRA_47">FOGRA 47</option>
-					<option '.( $parts[$i]["color"] == "FOGRA_51" ? "selected" : "" ).' value="FOGRA_51">FOGRA 51</option>
-					<option '.( $parts[$i]["color"] == "FOGRA_52" ? "selected" : "" ).' value="FOGRA_52">FOGRA 52</option>
-					<option '.( $parts[$i]["color"] == "IFRA_26" ? "selected" : "" ).' value="IFRA_26">IFRA 26</option>
-					<option '.( $parts[$i]["color"] == "RGB" ? "selected" : "" ).' value="RGB">RGB</option>
+					echo '<span style="padding-left: 10px; '.( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ).'">Color standard: <select name="color[]">'
+					.colorStandardOptions( $parts[$i]["color"] ).
+					'<option '.( $parts[$i]["color"] == "RGB" ? "selected" : "" ).' value="RGB">RGB</option>
 					<option '.( $parts[$i]["color"] == "PSO_INP" ? "selected" : "" ).' value="PSO_INP">PSO_INP</option></select></span>';
 					echo '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span>';
 				echo "</td></tr>";
@@ -219,9 +211,9 @@ function newLine() {
 			}
 		?>
 		<?php if( $newxml->Item[$x]->PageNumbering == "European" ) { ?>
-		text += '</select></span><span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span><span><input type="hidden" name="trim_x[]" value="210" style="width: 35px;"><input type="hidden" name="trim_y[]" value="297"></span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ) ?>"><?= $lang["parts"]["Color"] ?>: <select name="color[]"><option value="FOGRA_39">FOGRA 39</option><option value="FOGRA_41">FOGRA 41</option><option value="FOGRA_45">FOGRA 45</option><option value="FOGRA_46">FOGRA 46</option><option value="FOGRA_47">FOGRA 47</option><option value="FOGRA_51">FOGRA 51</option><option value="FOGRA_52">FOGRA 52</option><option value="IFRA_26">IFRA 26</option><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
+		text += '</select></span><span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span><span><input type="hidden" name="trim_x[]" value="210" style="width: 35px;"><input type="hidden" name="trim_y[]" value="297"></span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ) ?>"><?= $lang["parts"]["Color"] ?>: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
 		<?php } else { ?>
-		text += '</select></span><span><input type="hidden" name="trim_x[]" value="210" style="width: 35px;"><input type="hidden" name="trim_y[]" value="297"></span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ) ?>"><?= $lang["parts"]["Color"] ?>: <select name="color[]"><option value="FOGRA_29">FOGRA 29</option><option selected value="FOGRA_39">FOGRA 39</option><option value="FOGRA_41">FOGRA 41</option><option value="FOGRA_45">FOGRA 45</option><option value="FOGRA_46">FOGRA 46</option><option value="FOGRA_47">FOGRA 47</option><option value="FOGRA_51">FOGRA 51</option><option value="FOGRA_52">FOGRA 52</option><option value="IFRA_26">IFRA 26</option><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';		
+		text += '</select></span><span><input type="hidden" name="trim_x[]" value="210" style="width: 35px;"><input type="hidden" name="trim_y[]" value="297"></span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ) ?>"><?= $lang["parts"]["Color"] ?>: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';		
 		<?php } ?>
 	<?php } else { ?>
 		var text = '<tr><td><span><select name="type[]">';
@@ -235,7 +227,7 @@ function newLine() {
 				';
 			}
 		?>
-		text += '</select></span><span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span><span style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display:none;" : "" ) ?>">Color standard: <select name="color[]"><option value="FOGRA_29">FOGRA 29</option><option selected value="FOGRA_39">FOGRA 39</option><option value="FOGRA_41">FOGRA 41</option><option value="FOGRA_45">FOGRA 45</option><option value="FOGRA_46">FOGRA 46</option><option value="FOGRA_47">FOGRA 47</option><option value="FOGRA_51">FOGRA 51</option><option value="FOGRA_52">FOGRA 52</option><option value="IFRA_26">IFRA 26</option><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
+		text += '</select></span><span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span><span style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display:none;" : "" ) ?>">Color standard: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
 	<? } ?>
 	$("#partContent").append(text);
 	}

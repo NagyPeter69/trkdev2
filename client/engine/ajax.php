@@ -706,7 +706,7 @@
 			
 			$pdf->SetPDFVersion( 10 );
 			//$pdf->CreateICCBasedColorSpace('ISOcoated_v2_eci.icc');
-			$pdf->AddOutputIntent('ISOcoated_v2_eci.icc');
+			$pdf->AddOutputIntent( '/var/www/html/r3API/r3/'.resolveIccProfileByName( "FOGRA_39" ) );
 			$pdf->CloseFile();
 			
 			unlink( "../temp/".$_GET['file'] );

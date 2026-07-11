@@ -110,7 +110,7 @@ $("input[name='jobname']").focusout(function() {
 	});
 	
 function addPart() {
-	var partHTML = "<tr><td class='part_opt'><div><select class='nr_"+x+"' name='partType'><option value='Cover'>Borító</option><option value='Content'>Belív</option><option value='Attachment'>Melléklet</option><option value='Endpaper'>Előzék</option><option value='Hardcover'>Táblaborító</option><option value='Softcover'>Védőborító</option></select><img onclick='removePart(this)' style='cursor: pointer; vertical-align:middle; padding-left: 3px;' src='images/trk_minus.png'></div><div><select name='partColor'><option value='FOGRA_29'>FOGRA 29</option><option selected value='FOGRA_39'>FOGRA 39</option><option value='FOGRA_45'>FOGRA 45</option><option value='FOGRA_46'>FOGRA 45</option><option value='FOGRA_47'>FOGRA 47</option><option value='FOGRA_51'>FOGRA 51</option><option value='FOGRA_52'>FOGRA 52</option></select></div></td></tr>";
+	var partHTML = "<tr><td class='part_opt'><div><select class='nr_"+x+"' name='partType'><option value='Cover'>Borító</option><option value='Content'>Belív</option><option value='Attachment'>Melléklet</option><option value='Endpaper'>Előzék</option><option value='Hardcover'>Táblaborító</option><option value='Softcover'>Védőborító</option></select><img onclick='removePart(this)' style='cursor: pointer; vertical-align:middle; padding-left: 3px;' src='images/trk_minus.png'></div><div><select name='partColor'><?= str_replace( '"', '\"', colorStandardOptions( "FOGRA_39" ) ) ?></select></div></td></tr>";
 	$(partHTML).insertBefore(".partadd");
 	
 	$("select[name='partType']").change( function() {

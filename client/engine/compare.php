@@ -35,7 +35,7 @@ function PDFtoImage( $sizes, $to ) {
 			}
 		}
 		
-	$command = './r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -colors:'.$color.' -height:'.$sizes["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -colors:'.$color.' -height:'.$sizes["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
 	
 	error_log( $command );
 	logToFile( 'pageGenerate.txt' , $command );

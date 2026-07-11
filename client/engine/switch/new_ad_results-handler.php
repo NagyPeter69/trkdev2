@@ -124,7 +124,7 @@ if( $ad[0][0] != '' ) {
 		$to_ = $terminalPath."/engine/switch/".$file_name."_check.jpg";
 		
 		//echo implode( " | ", $sizes );
-		$command = './r3 -binary -mode:RENDER -left:0 -right:'.( $sizes["Right"] - $sizes["Left"] ).' -bottom:0 -top:'.( $sizes["Top"] - $sizes["Bottom"] ).' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$from_.' $@ >'.$to_.' 2>&1';
+		$command = './r3 -binary -mode:RENDER -left:0 -right:'.( $sizes["Right"] - $sizes["Left"] ).' -bottom:0 -top:'.( $sizes["Top"] - $sizes["Bottom"] ).' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from_.' $@ >'.$to_.' 2>&1';
 		
 		$command = shell_exec('
 			cd /var/www/html/client/engine/r3 2>&1;

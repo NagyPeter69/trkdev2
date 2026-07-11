@@ -172,7 +172,7 @@
 				$viewed = implode( ",", $viewed );
 				sql_update( 'pageinfo', 'view="'.$viewed.'"', 'id="'.$pageinfo[0][0].'"' );
 					
-				$img[] = PdfToImageRender( $path, "../temp", $file2."_".$_GET['intra_user'] );
+				$img[] = PdfToImageRender( $path, "../temp", $file2."_".$_GET['intra_user'], partDetect( $issue[0][0], $page ) );
 				}
 			}
 			

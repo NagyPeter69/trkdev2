@@ -596,14 +596,15 @@ function create_part() {
 		text += "<span style='padding-left: 20px; color: #FF0000; font-size: 14px;' id='part"+parts+"_place_result'></span>";
 		text += "<br>";
 		text += '<select name="part'+parts+'_color">';
-			text += '<option class="color_select" value="FOGRA_39" title="Íves offszetnyomás mázolt papírra">FOGRA 39</option>';
-			text += '<option class="color_select" value="FOGRA_45" title="Heat-set offszetnyomás javított minőségű papírra">FOGRA 45</option>';
-			text += '<option class="color_select" value="FOGRA_46" title="Heat-set offszetnyomás sztenderd papírra papírra">FOGRA 46</option>';
-			text += '<option class="color_select" value="FOGRA_47" title="Íves offszetnyomás offszet papírra">FOGRA 47</option>';
-			text += '<option class="color_select" value="PSR_LWC_STD_V2_PT" title="Mélynyomtatás javított minőségű papírra">PSR_LWC_STD_V2_PT</option>';
-			text += '<option class="color_select" value="PSR_SC_STD_V2_PT" title="Mélynyomtatás simított papírra">PSR_SC_STD_V2_PT</option>';
-			text += '<option class="color_select" value="IFRA_26" title="Újságnyomtatás">IFRA_26</option>';
-		text += "</select>";
+			<?
+			// Note: the old hardcoded list here carried a Hungarian
+			// tooltip (title=...) per standard - that description isn't
+			// captured in color_standards, so it's not reproduced here.
+			$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+			for( $s = 0; $s < count( $standards ); $s++ ) {
+				echo "\t\t\ttext += '<option class=\"color_select\" value=\"".$standards[$s][0]."\">".str_replace( "_", " ", $standards[$s][0] )."</option>';\n";
+				}
+			?>
 		text += "</select>";
 		text += "</td>";
 	text += "</tr>";

@@ -89,11 +89,12 @@ $(function(){
 								html += "<td align='left' style='width: 60px; height: 25px;'><div style='margin-bottom: 6px;'><?= $lang['adhoc']['color'] ?></div></td>";
 								html += "<td align='left' style='padding-left: 5px;'>";
 									html += "<select name='proof_color' id='proof_color' style='margin-bottom: 10px;'>";
-										html += "<option value='FOGRA_39'>FOGRA 39</option>";
-										html += "<option value='FOGRA_45'>FOGRA 45</option>";
-										html += "<option value='FOGRA_46'>FOGRA 46</option>";
-										html += "<option value='FOGRA_47'>FOGRA 47</option>";
-										html += "<option value='IFRA_26'>IFRA 26</option>";
+										<?
+										$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+										for( $s = 0; $s < count( $standards ); $s++ ) {
+											echo "\t\t\t\t\t\t\t\t\t\thtml += \"<option value='".$standards[$s][0]."'>".str_replace( "_", " ", $standards[$s][0] )."</option>\";\n";
+											}
+										?>
 									html += "</select>";
 								html += "</td>";
 							html += "</tr>";
@@ -155,11 +156,12 @@ $(function(){
 								html += "<td align='left' style='width: 60px; height: 25px;'><div style='margin-bottom: 7px;'><?= $lang['adhoc']['color'] ?></div></td>";
 								html += "<td align='left' style='padding-left: 5px;'>";
 									html += "<select name='proof_color' id='proof_color' style=' margin-bottom: 11px;'>";
-										html += "<option value='FOGRA_39'>FOGRA 39</option>";
-										html += "<option value='FOGRA_45'>FOGRA 45</option>";
-										html += "<option value='FOGRA_46'>FOGRA 46</option>";
-										html += "<option value='FOGRA_47'>FOGRA 47</option>";
-										html += "<option value='IFRA_26'>IFRA 26</option>";
+										<?
+										$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+										for( $s = 0; $s < count( $standards ); $s++ ) {
+											echo "\t\t\t\t\t\t\t\t\t\thtml += \"<option value='".$standards[$s][0]."'>".str_replace( "_", " ", $standards[$s][0] )."</option>\";\n";
+											}
+										?>
 									html += "</select>";
 								html += "</td>";
 							html += "</tr>";						

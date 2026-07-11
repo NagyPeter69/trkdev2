@@ -160,7 +160,11 @@ if( isset( $_GET['code'] ) && $_GET['code'] != '' ) {
 					case 'Cover':
 					case 'Content':
 					case 'Insert':
-						$temp = array( 'FOGRA_39', 'FOGRA_45', 'FOGRA_46', 'IFRA_26', 'PSR_LWC_PLUS_V2_PT', 'PSR_LWC_STD_V2_PT', 'PSR_SC_PLUS_V2_PT', 'PSR_SC_STD_V2_PT' );
+						$temp = array();
+						$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+						for( $s = 0; $s < count( $standards ); $s++ ) {
+							$temp[] = $standards[$s][0];
+							}
 						break;
 					}
 			
@@ -249,7 +253,11 @@ if( isset( $_GET['code'] ) && $_GET['code'] != '' ) {
 					case 'Cover':
 					case 'Content':
 					case 'Insert':
-						$temp = array( 'FOGRA_39', 'FOGRA_45', 'FOGRA_46', 'IFRA_26', 'PSR_LWC_PLUS_V2_PT', 'PSR_LWC_STD_V2_PT', 'PSR_SC_PLUS_V2_PT', 'PSR_SC_STD_V2_PT' );
+						$temp = array();
+						$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+						for( $s = 0; $s < count( $standards ); $s++ ) {
+							$temp[] = $standards[$s][0];
+							}
 						break;
 					}
 			

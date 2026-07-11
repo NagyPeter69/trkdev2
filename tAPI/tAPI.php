@@ -255,7 +255,23 @@ Colorcom Media<br>
 	
 	public function __construct( $POST ) {
 		$this->post = $POST;
-		$this->login( $this->post["username"], $this->post["password"] );		
+		$this->login( $this->post["username"], $this->post["password"] );
+
+		// magDefParams below is a property default, which PHP requires to
+		// be a constant expression - can't query the DB there. Cover/
+		// Content/Insert need to validate against whatever's actually
+		// defined in color_standards, so that list is fetched and swapped
+		// in here instead, once the object exists.
+		$standards = sql_get( "color_standards", "1 ORDER BY `name` ASC", "name" );
+		if( count( $standards ) > 0 ) {
+			$colorNames = array();
+			for( $s = 0; $s < count( $standards ); $s++ ) {
+				$colorNames[] = $standards[$s][0];
+				}
+			$this->magDefParams["Cover"] = $colorNames;
+			$this->magDefParams["Content"] = $colorNames;
+			$this->magDefParams["Insert"] = $colorNames;
+			}
 		}
 		
 	public $magDefParams = array(
