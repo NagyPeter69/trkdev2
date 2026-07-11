@@ -2522,8 +2522,8 @@ function sendMail( $subject, $body, $to, $cc = "" ) {
 function adThumbCreate3( $path, $file, $to ) {
 	$terminal = "/var/www/html/client";
 	$trim = getPDFBox2( "Trimbox, Mediabox", "/var/www/html/client/".$file );
-	
-	if( count( $trim["Trimbox"] ) > 0 ) {
+
+	if( count( $trim["Trimbox"] ?? array() ) > 0 ) {
 		$trim = $trim["Trimbox"];
 		}
 	else {
@@ -2552,7 +2552,7 @@ function adThumbCreate3( $path, $file, $to ) {
 	$from = $terminal."/".$file;
 	$to = $terminal."/".$path."/".$to;
 		
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
 	
 	error_log( $command );
 	
@@ -2583,8 +2583,13 @@ function adThumbCreate3( $path, $file, $to ) {
 
 function adThumbCreate2( $path, $file, $to ) {
 	$terminal = "/var/www/html/client";
-	$trim = getPDFBox2( "Trimbox", "/var/www/html/client/engine/switch/".$file );
-	$trim = $trim["Trimbox"];
+	$trim = getPDFBox2( "Trimbox, Mediabox", "/var/www/html/client/engine/switch/".$file );
+	if( count( $trim["Trimbox"] ?? array() ) > 0 ) {
+		$trim = $trim["Trimbox"];
+		}
+	else {
+		$trim = $trim["Mediabox"];
+		}
 	
 	echo implode( " | ", $trim )."<br>";
 	
@@ -2605,7 +2610,7 @@ function adThumbCreate2( $path, $file, $to ) {
 	$from = $terminal."/engine/switch/".$file;
 	$to = $terminal."/".$path."/".$to;
 		
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
 	
 	error_log( $command );
 	
@@ -2635,7 +2640,7 @@ function adThumbCreate2( $path, $file, $to ) {
 function adThumbCreate( $path, $file, $to ) {
 	$terminal = "/var/www/html/client";
 	$trim = getPDFBox( "Trimbox ", "message/".$file );
-	if( count( $trim["Trimbox"] ) > 0 ) {
+	if( count( $trim["Trimbox"] ?? array() ) > 0 ) {
 		$trim = $trim["Trimbox"];
 		}
 	else {
@@ -2662,7 +2667,7 @@ function adThumbCreate( $path, $file, $to ) {
 	
 	$to = $terminal."/".$path."/".$to;
 	
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
 	
 	echo $command."<br>";
 	$result = shell_exec('
@@ -2746,7 +2751,7 @@ function thumbCreate( $path, $file, $to, $pageWidth ) {
 	$to = substr($to[( count($to)-1 )], 0, -4).".jpg";
 	$to = $terminal."/".substr( $path, 3 )."/".$to;
 	
-	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$from.' $@ >'.$to.' 2>&1';
+	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
 		
 	$result = shell_exec('
 		cd /var/www/html/r3API/r3 2>&1;
@@ -2968,7 +2973,7 @@ function isWeekend($date) {
 	}
 
 function colorPick( $pdfPath, $x, $y ) {
-	$command = './r3 -mode:MEASURE -x:'.$x.' -y:'.$y.' -tprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$pdfPath.' 2>&1';
+	$command = './r3 -mode:MEASURE -x:'.$x.' -y:'.$y.' -tprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$pdfPath.' 2>&1';
 	$command = shell_exec('
 			cd /var/www/html/r3API/r3 2>&1;
 			'.$command.';
@@ -3013,7 +3018,7 @@ function getAllColors( $pageinfo ) {
 
 function getColorTitles( $pdfPath ) {
 	$titles = array();
-	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$pdfPath.' 2>&1';
+	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$pdfPath.' 2>&1';
 	$command = shell_exec('
 			cd /var/www/html/r3API/r3 2>&1;
 			'.$command.';
@@ -3033,7 +3038,7 @@ function getColorTitles( $pdfPath ) {
 
 function getColors( $pdfPath ) {
 	$colors = array();
-	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_41" ).' '.$pdfPath.' 2>&1';
+	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$pdfPath.' 2>&1';
 	$command = shell_exec('
 			cd /var/www/html/r3API/r3 2>&1;
 			'.$command.';
@@ -4583,7 +4588,7 @@ function PDFtoImage_( $sizes, $from, $to, $colors = "" ) {
 
 function PDFtoImage_Measure( $sizes, $from, $to, $colors = "" ) {
 	$rustart = microtime(true);
-	$iccProfile = resolveIccProfileByName( "FOGRA_41" );
+	$iccProfile = resolveIccProfileByName( "FOGRA_39" );
 	if( $colors != "" ) {
 		$color = "";
 		foreach( $colors as $key => $val ) {
@@ -4613,7 +4618,7 @@ function PDFtoImage_Measure( $sizes, $from, $to, $colors = "" ) {
 	return $command;
 	}
 
-function PdfToImageRender( $file, $temp_path, $tempFile, $colorName = "FOGRA_41" ) {
+function PdfToImageRender( $file, $temp_path, $tempFile, $colorName = "FOGRA_39" ) {
 	$pdf = new dynapdf();
 
 	include('../engine/config.inc.php');
