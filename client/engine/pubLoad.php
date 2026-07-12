@@ -274,7 +274,11 @@ if( $_GET['op'] == 'load_publications' ) {
 						
 					$txt .= "<div ".$mset." style='position:absolute; ";
 					if( $i == 0 && count( $magazines ) > 1 ) $txt .= "top:0px !important; padding-bottom:4px !important;";
-					$txt .= "padding-bottom:1px; cursor: pointer; float:left; height: 31px; width: 12px;";
+					// .jline (the row) is 30px tall in CSS - height:31px plus this
+					// padding-bottom used to render 32px total, so the swatch stuck
+					// 1-2px past the row's actual bottom border (the separator line
+					// between publications), instead of ending flush with it.
+					$txt .= "padding-bottom:0px; cursor: pointer; float:left; height: 30px; width: 12px;";
 					if( $color != "" ) {
 						$txt .= "background: ".$color." !important;";
 						}
@@ -326,7 +330,10 @@ if( $_GET['op'] == 'load_publications' ) {
 						
 							$txt .= "<div row='".$row."' class='jline issueline' style='position:relative;'>";
 								$txt .= "<div ".$mset." style='position:absolute; ";
-								$txt .= "padding-top:1px; padding-bottom:1px; cursor: pointer; float:left; height: 30px; width: 12px; background: ".$color2." !important;' class='status_color default2'>&nbsp;</div>";
+								// Same 30px-row-vs-taller-swatch mismatch as the primary
+							// row's status_color above (height + this padding used to
+							// total 32px against a 30px row).
+							$txt .= "padding-top:0px; padding-bottom:0px; cursor: pointer; float:left; height: 30px; width: 12px; background: ".$color2." !important;' class='status_color default2'>&nbsp;</div>";
 								if( isMobile() ) {
 									$onclick = "onclick='window.location.href=\"?page=flatplan&id=".$publications2[$y][0]."\"'";
 									}

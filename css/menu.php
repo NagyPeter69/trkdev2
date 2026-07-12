@@ -242,11 +242,17 @@ ul.nav li:first-child {
 ul.nav li {
 	font-family: <?php echo $font; ?> !important;
 	flex: 0 0 auto;
-	/* Fluid sizing so the whole bar keeps fitting one line as the
-	   window narrows from the ~24" design width, instead of the fixed
-	   20px/18px only working above that width. */
-	padding-left: clamp( 8px, 4px + 0.5vw, 18px );
-	font-size: clamp( 13px, 9px + 0.55vw, 20px );
+	/* Fluid sizing so the whole bar keeps fitting one line as the window
+	   narrows from the ~24" design width, instead of the fixed 20px/18px
+	   only working above that width - but the two shrink at different
+	   rates on purpose: padding does essentially all the work first
+	   (18px down to 2px over a wide range), keeping the original 20px
+	   letter size intact for as long as possible. font-size only starts
+	   giving ground once padding is already near its floor, and even
+	   then only over a narrow band down to a 13px minimum - a last
+	   resort for the extreme end, not the first thing to shrink. */
+	padding-left: clamp( 2px, -7px + 1.4vw, 18px );
+	font-size: clamp( 13px, -8px + 2.5vw, 20px );
 	margin-left:1px;
 	position:relative;
 	height: 50px;

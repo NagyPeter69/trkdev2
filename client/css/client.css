@@ -51,6 +51,14 @@
 	display: flex;
 	flex-wrap: nowrap;
 	max-width: 100%;
+	/* .jline (the row) is a fixed 30px - without this, flex's default
+	   align-items:stretch makes every column match whichever one
+	   naturally needs the most height (the bold name/code columns, in
+	   this font), so the whole row grew past 30px. Fixing .pub_info's
+	   own height too, rather than just centering, stops that taller
+	   column from pushing the row height out further still. */
+	height: 30px;
+	align-items: center;
 	}
 
 .pub_info > div {
@@ -62,8 +70,12 @@
 	   float-layout-era hack that relied on floats showing overflowing
 	   content by default so the box didn't add height to the row. Flex
 	   items don't get that default, and overflow:hidden above would
-	   otherwise clip the text down to nothing. */
-	height: auto !important;
+	   otherwise clip the text down to nothing. Capping at .pub_info's
+	   own 30px (rather than auto) keeps any column whose natural
+	   content is taller than that from overflowing the row instead of
+	   being centered/clipped within it. */
+	height: 100% !important;
+	max-height: 30px;
 	}
 
 .pubClient {

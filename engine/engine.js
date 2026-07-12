@@ -1445,6 +1445,19 @@ $( document ).ready(function() {
 		}
 	fit_wrapper();
 	fit_nav();
+	// ul.nav's items are set in a custom @font-face font - if it's still
+	// loading at the point fit_nav() first runs, the nav's text measures
+	// narrower than its final rendered width, so #menuLine gets sized too
+	// wide and can end up overlapping the client dropdown/username once
+	// the font swaps in. Re-running once the font is confirmed ready
+	// catches that; the timeout is just a fallback for browsers without
+	// the Font Loading API.
+	if( document.fonts && document.fonts.ready ) {
+		document.fonts.ready.then( fit_nav );
+		}
+	else {
+		setTimeout( fit_nav, 300 );
+		}
 	});
 
 $(window).resize(function(){
