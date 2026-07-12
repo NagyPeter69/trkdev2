@@ -448,19 +448,16 @@ function checkTransferRight( $uid ) {
 				}
 			
 			$process = (string) $xml->Item[$x]->Workflow;
-			switch( $process ) {
-				case "Full":
-					$return = array();
-					$return["up"] = true;
-					$return["down"] = false;
-					break;
-
-				case "Resize":
-					$return = array();
-					$return["up"] = true;
-					$return["down"] = true;
-					break;
-				}
+			// Upload must be available for every Workflow type, for every
+			// job - only Resize additionally grants download. This used to
+			// be a switch keyed on $process with cases only for "Full" and
+			// "Resize"; any other value (Hybrid, Repack, Enhance, ...) left
+			// $return["up"] completely unset, and menu.php's
+			// if( $tr["up"] ) treated that as false - the Upload nav item
+			// silently vanished for those workflow types.
+			$return = array();
+			$return["up"] = true;
+			$return["down"] = ( $process == "Resize" );
 			
 			if( !empty( $_GET["id"] ) ) {	
 				$return["id"] = $_GET["id"];
