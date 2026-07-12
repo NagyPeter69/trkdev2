@@ -867,16 +867,22 @@ var found = "";
 var contextWidth = $(".custom-menu").width();
 
 // Ctrl/Cmd+click on the thumbnail's <a href="?page=advertisement_preview...">
-// fires both a native click (which would navigate to the high-res view) and
-// our contextmenu handler below (which opens the delete menu) - without this
-// guard the navigation wins the race and the menu never gets a chance to be
-// clicked. Suppressing the click when a modifier is held leaves the link
-// navigable on a plain click while routing modifier-clicks to the menu only.
-$(document).on("click", ".adsTiles a", function( event ) {
-	if( event.ctrlKey || event.metaKey ) {
+// fires a full native click in addition to contextmenu (confirmed via live
+// diagnostics: Safari dispatches mousedown -> contextmenu -> mouseup -> click
+// for a Ctrl+click, not just contextmenu) - that click's default navigation
+// was still winning the race, replacing the whole page with the high-res
+// view before the menu could ever be clicked (looks like "the menu vanishes"
+// since the entire page it belonged to is gone). The previous fix used
+// jQuery's delegated click binding and checked event.ctrlKey on jQuery's
+// wrapped event object - jQuery 1.10.2 (2013) does not reliably normalize
+// ctrlKey there on current Safari/WebKit, so the guard silently never
+// fired. This version listens on the raw DOM in the capture phase and reads
+// the native event directly, with no dependency on jQuery's normalization.
+document.addEventListener("click", function( event ) {
+	if( ( event.ctrlKey || event.metaKey ) && event.target.closest(".adsTiles a") ) {
 		event.preventDefault();
 		}
-	});
+	}, true );
 
 // Safari/macOS fires a synthetic secondary mousedown/click right on release
 // of a Ctrl+click, in addition to contextmenu - on Chrome it's a synthetic
