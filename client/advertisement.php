@@ -865,6 +865,19 @@ var winWidth = $(window).width()-20;
 var found = "";
 
 var contextWidth = $(".custom-menu").width();
+
+// Ctrl/Cmd+click on the thumbnail's <a href="?page=advertisement_preview...">
+// fires both a native click (which would navigate to the high-res view) and
+// our contextmenu handler below (which opens the delete menu) - without this
+// guard the navigation wins the race and the menu never gets a chance to be
+// clicked. Suppressing the click when a modifier is held leaves the link
+// navigable on a plain click while routing modifier-clicks to the menu only.
+$(document).on("click", ".adsTiles a", function( event ) {
+	if( event.ctrlKey || event.metaKey ) {
+		event.preventDefault();
+		}
+	});
+
 $(document).bind("contextmenu", function (event) {
     event.preventDefault();
     found = $(event.target).closest( ".adsTiles" );
