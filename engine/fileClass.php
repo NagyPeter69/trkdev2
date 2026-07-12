@@ -201,12 +201,17 @@ Kijelölve <a href='http://tracker.colorcom.hu/client/filetransfer_view.php?tran
 				"name" => $lang["filetype"]["pdf"],
 				"ext" => array( "pdf" ),
 				),
-				
+
+			"pdf_to_flatplan" => array(
+				"name" => $lang["filetype"]["pdf_to_flatplan"],
+				"ext" => array( "pdf" ),
+				),
+
 			"picture" => array(
 				"name" => $lang["filetype"]["pic"],
 				"ext" => array( "tif", "tiff", "jpeg", "jpg", "psd", "png" ),
 				),
-			);			
+			);
 
 		$this->filetypefull_array = array(
 			"indesign_pack" => array(
@@ -223,12 +228,17 @@ Kijelölve <a href='http://tracker.colorcom.hu/client/filetransfer_view.php?tran
 				"name" => $lang["filetype"]["pdf"],
 				"ext" => array( "pdf" ),
 				),
-				
+
+			"pdf_to_flatplan" => array(
+				"name" => $lang["filetype"]["pdf_to_flatplan"],
+				"ext" => array( "pdf" ),
+				),
+
 			"picture" => array(
 				"name" => $lang["filetype"]["pic"],
 				"ext" => array( "tif", "tiff", "jpeg", "jpg", "psd", "png" ),
 				),
-				
+
 			"picture_pack" => array(
 				"name" => $lang["filetype"]["pic_pack"],
 				"ext" => array( "tif", "tiff", "jpeg", "jpg", "png", "psd" ),

@@ -251,6 +251,10 @@ var filetype_array = {
 		"name" : "<?= $lang["filetransfer"]["pdf"] ?>",
 		"ext" : [ "PDF" ],
 		},
+	"pdf_to_flatplan": {
+		"name" : "<?= $lang["filetransfer"]["pdf_to_flatplan"] ?>",
+		"ext" : [ "PDF" ],
+		},
 	"picture": {
 		"name" : "<?= $lang["filetransfer"]["images"] ?>",
 		"ext" : [ "TIF", "TIFF", "JPG", "JPEG", "PSD", "PNG" ],
@@ -376,7 +380,7 @@ function loadType() {
 					$("#parts_row").show(0);
 					}
 					
-				if( $("#type").val() == "picture" || $("#type").val() == "pdf" ) {
+				if( $("#type").val() == "picture" || $("#type").val() == "pdf" || $("#type").val() == "pdf_to_flatplan" ) {
 					$("#parts_row").hide(0);
 					}
 				else {
