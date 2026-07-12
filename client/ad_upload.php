@@ -127,8 +127,14 @@ if( in_array( $type, $allowed ) ) {
 					adThumbCreateIMG( "advertisements", $target.'/'.$doc_name, $_POST['job_code']."_preview.jpg" );
 					}
 				
-				$result = 'A hirdetés sikeresen feltöltve.-1';
-				$result = $_POST['job_code'];		
+				// The second line here used to unconditionally overwrite the
+				// first, discarding the "-1" suffix uploadFinish() (script.js)
+				// parses to tell success from failure - a successful upload's
+				// response ended up as just the bare job code, which
+				// uploadFinish() then read as failure (response[1] undefined),
+				// showing a "failed" style message and wrong state on an
+				// upload that had actually succeeded.
+				$result = 'A hirdetés sikeresen feltöltve: '.$_POST['job_code'].'.-1';
 				}
 			else {
 				$result =  'A feltöltés sikertelen.-0';

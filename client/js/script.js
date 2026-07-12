@@ -107,9 +107,22 @@ function uploadFinish(e) { // upload successfully finished
    
    	$('#job_code').val('');
    	$("#file").val("");
-    $('#job_code').keyup();
+   	// .val("") on a file input doesn't fire "change", so #fileSelected's
+   	// filename label and #fileLabel's visibility were left showing the
+   	// just-uploaded file instead of resetting to the "no file chosen"
+   	// state the change handler's else-branch produces - the form looked
+   	// like it still had the old file selected even though the input was
+   	// actually empty.
+   	$("#fileSelected").html( "" );
+   	$("#fileSelected").removeAttr("title");
+   	$("#fileLabel").show(0);
+   	$("#fileSelected").hide(0);
+   	// #sizer has to be cleared before keyup() runs the enable/disable
+   	// check below - it reads #sizer's current value, so clearing it
+   	// afterward meant the check still saw the just-uploaded size and
+   	// left Upload enabled on an otherwise-empty form.
     $("#sizer").val('');
-    $('#ad_sender').prop('disabled', false);
+    $('#job_code').keyup();
     clearInterval(oTimer);
 }
 
