@@ -369,14 +369,18 @@ if( !empty( $_GET["op"] ) ) {
 								}
 							}
 
-						// Dec 24th (Christmas Eve) isn't an official statutory
-						// holiday so the API doesn't list it, but every
-						// hand-maintained year before this feature existed
-						// included it (a de facto non-working day for this
-						// business) - add it too so new years look consistent
-						// with the existing ones.
-						if( sql_add( "calendar_holidays", $names, array( $year."-12-24", "Szenteste" ) ) ) {
-							$added++;
+						// Dec 24th and Dec 31st aren't official statutory
+						// holidays so the API doesn't list them, but nobody
+						// here works those days - add them too so new years
+						// look consistent with the existing ones.
+						$extraHolidays = array(
+							$year."-12-24" => "Szenteste",
+							$year."-12-31" => "Szilveszter",
+							);
+						foreach( $extraHolidays as $extraDate => $extraName ) {
+							if( sql_add( "calendar_holidays", $names, array( $extraDate, $extraName ) ) ) {
+								$added++;
+								}
 							}
 
 						$result["ok"] = true;
