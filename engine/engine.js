@@ -276,6 +276,14 @@ document.addEventListener('click', function(e){
 						if( $(e.target).closest(".floatCommentMenu").length == 0 ) {
 							if( $(e.target).closest("#ui-datepicker-div").length == 0 ) {
 								$(".floatMenu").each(function(){
+									// #customMenu (the Ctrl+click delete/proof/force context menu used on
+									// advertisement.php, flatplan.php, design.php, assets.php, etc.) already
+									// has its own contextmenu/mousedown open-close lifecycle on every page
+									// that uses it. Letting this generic sweep also hide it raced with that
+									// page-specific logic - on Safari in particular, the synthetic click
+									// Ctrl+click fires on release was caught here and closed the menu
+									// before it could ever be clicked.
+									if( $(this).attr("id") == "customMenu" ) { return; }
 									$(this).hide(100, function(){
 										if( $(this).attr("id") != "logSettingsPanel" && $(this).attr("id") != "handoutBox" && $(this).attr("id") != "customMenu" && $(this).attr("id") != "floatMenu" && $(this).attr("id") != "logoMenu" && $(this).attr("id") != "mobile_usermenu" ) { 
 											$(this).remove();
