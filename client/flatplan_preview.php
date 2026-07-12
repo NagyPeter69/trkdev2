@@ -1723,6 +1723,24 @@ function rendering( command, newZoom ) {
 						type: "POST",
 						data: { positions : positions, file: file, colors: sendcolors, cBox: cBox, fpBox: fpBox, trimbox: trimbox, corr: correction },
 						dataType: 'json',
+						timeout: 6000,
+						// This fallback (retried after the primary request above
+						// already errored/timed out) had no error handler at all -
+						// if it also failed, #renderCounter (incremented once before
+						// either request was sent) never got decremented, so
+						// loadingBar() kept the spinner showing forever with no
+						// further render ever completing to clear it. Mirrors the
+						// state cleanup the success handlers do, just without an
+						// image to show.
+						error:function( data ) {
+							console.log( "render fallback also failed - clearing renderCounter so the spinner doesn't stick" );
+							ajaxDisabled = false;
+							$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
+							if( graphState == "magnify" ) {
+								$( "#zoomRange" ).slider( "option", { disabled: false } );
+								}
+							disableZoom = false;
+							},
 						success:function( data ) {
 							if( img > 2 ) img = 1;
 							
