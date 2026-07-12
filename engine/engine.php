@@ -1170,12 +1170,24 @@ function calendarExtraWorkday( $month, $day, $year ) {
 			"10" => array(),
 			"11" => array(),
 			"12" => array(),
-			),		
+			),
 		);
-	
+
+	// $array only covers years hand-added by a developer (2018-2027 as of
+	// this writing) - in_array() against an unset $array[$year][$month]
+	// throws a fatal TypeError in PHP 8, crashing the whole calendar grid
+	// render for any later year. Hungary's "shifted workday" schedule
+	// (which Saturdays become mandatory workdays to compensate for a
+	// bridge day off) isn't covered by the public-holiday API the
+	// Planner's "Add Year" button uses, so there's no data source to
+	// fall back to here yet - just fail safe instead of crashing.
+	if( !isset( $array[$year][$month] ) ) {
+		return false;
+		}
+
 	return ( in_array( $day, $array[$year][$month] ) ? true : false );
 	}
-	
+
 function calendarExtraHoliday( $month, $day, $year ) {
 	$array = array(
 		"2018" => array(
@@ -1336,11 +1348,17 @@ function calendarExtraHoliday( $month, $day, $year ) {
 			"10" => array(),
 			"11" => array(),
 			"12" => array(),
-			),			
+			),
 		);
-	
+
+	// Same crash risk and same "no automated data source yet" situation
+	// as calendarExtraWorkday() above - see its comment.
+	if( !isset( $array[$year][$month] ) ) {
+		return false;
+		}
+
 	return ( in_array( $day, $array[$year][$month] ) ? true : false );
-	}	
+	}
 
 function calendarHoliday( $month, $day, $year ) {
 	$array = array(
@@ -1502,9 +1520,33 @@ function calendarHoliday( $month, $day, $year ) {
 			"10" => array( "23" ),
 			"11" => array( "1" ),
 			"12" => array( "25", "26" ),
-			),			
+			),
 		);
-	
+
+	// $array only covers years hand-added by a developer (2018-2027 as of
+	// this writing) - in_array() against an unset $array[$year][$month]
+	// throws a fatal TypeError in PHP 8 (it used to just warn and treat
+	// it as not-found in PHP 7), so every year beyond the hardcoded range
+	// crashed the whole calendar grid render. Years added via the
+	// Planner's "Add Year" button live in calendar_holidays instead of
+	// this array; check that first before falling through to it.
+	if( !isset( $array[$year][$month] ) ) {
+		// $month follows this function's own "0 = December of $year-1"
+		// convention (used for the calendar grid's leading days from the
+		// prior month), so translate to a real calendar date first.
+		if( $month == 0 ) {
+			$realYear = $year - 1;
+			$realMonth = 12;
+			}
+		else {
+			$realYear = $year;
+			$realMonth = $month;
+			}
+		$dateStr = $realYear.'-'.str_pad( $realMonth, 2, '0', STR_PAD_LEFT ).'-'.str_pad( $day, 2, '0', STR_PAD_LEFT );
+		$check = sql_get( 'calendar_holidays', 'holiday_date="'.$dateStr.'"', 'id' );
+		return !empty( $check[0][0] );
+		}
+
 	return ( in_array( $day, $array[$year][$month] ) ? true : false );
 	}
 

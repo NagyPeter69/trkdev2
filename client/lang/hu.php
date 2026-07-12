@@ -134,7 +134,9 @@
 				"spec_porder" => "Nyomdai leadás",
 				"spec_sday" => "Megjelenés",
 				"pdf_title" => "nyomdai ütemezés",				
-				"pdf_gen" => "Generálva",				
+				"pdf_gen" => "Generálva",
+				"add_year" => "Év hozzáadása",
+				"add_year_title" => "A magyar munkaszüneti napok automatikus lekérése és hozzáadása a megjelenített évhez",
 				),
 				
 			"standard" => array(

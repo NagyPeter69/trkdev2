@@ -134,6 +134,16 @@ if( !empty( $_GET["op"] ) ) {
 							$txt .= '<div class="arrow-left"></div>';
 							$txt .= '<div class="calendarYear">'.$_GET["year"].'</div>';
 							$txt .= '<div class="arrow-right"></div>';
+							// Adding a year's Hungarian public holidays used to mean a
+							// developer hand-editing the calendarHoliday() array in
+							// engine.php and redeploying - this fetches them from
+							// date.nager.at into calendar_holidays instead, for
+							// whichever year is currently on screen. Admin-only
+							// (same convention as other developer-adjacent actions),
+							// since it's a state-changing, external-network action.
+							if( $user[0][8] == 2 ) {
+								$txt .= '<div class="addYearButton" title="'.$lang['calendar']['add_year_title'].'">+ '.$lang['calendar']['add_year'].'</div>';
+								}
 						$txt .= '</div>';
 					$txt .= "</td>";
 				$txt .= "</tr>";	
@@ -301,11 +311,82 @@ if( !empty( $_GET["op"] ) ) {
 			else {
 				$hex = "#".$_GET["color"];
 				list($r, $g, $b) = sscanf($hex, "#%02x%02x%02x");
-				
+
 				sql_update( "calendar_post", "code='rgb(".$r.", ".$g.", ".$b.")'", "id='".$_GET["id"]."'" );
 				}
 			}
-		}	
+		}
+
+	// Populates calendar_holidays for a year not covered by the hardcoded
+	// calendarHoliday() array in engine.php, from the free public
+	// holidays API at date.nager.at - lets the Planner's "Add Year"
+	// button cover a new year without a developer hand-editing that
+	// array and redeploying, which was the whole point of this feature.
+	// Restricted to admins (user_groups id 2), same convention menuAjax.php
+	// uses elsewhere for developer-adjacent actions.
+	if( $_GET["op"] == "addYear" ) {
+		$result = array( "ok" => false, "message" => "" );
+
+		if( $user[0][8] != 2 ) {
+			$result["message"] = "Not allowed.";
+			}
+		else {
+			$year = intval( $_GET["year"] );
+			if( $year < 2000 || $year > 2100 ) {
+				$result["message"] = "Invalid year.";
+				}
+			else {
+				$ch = curl_init( "https://date.nager.at/api/v3/publicholidays/".$year."/HU" );
+				curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
+				curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 5 );
+				curl_setopt( $ch, CURLOPT_TIMEOUT, 15 );
+				$response = curl_exec( $ch );
+				$httpCode = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+				$curlError = curl_error( $ch );
+				curl_close( $ch );
+
+				if( $response === false || $httpCode != 200 ) {
+					$result["message"] = "Could not reach the holiday service (".( $curlError ? $curlError : $httpCode." status" ).").";
+					}
+				else {
+					$holidays = json_decode( $response, true );
+					if( !is_array( $holidays ) ) {
+						$result["message"] = "The holiday service returned an unexpected response.";
+						}
+					else {
+						$names = array( "holiday_date", "name" );
+						$added = 0;
+						foreach( $holidays as $h ) {
+							if( empty( $h["date"] ) || empty( $h["localName"] ) ) continue;
+							// The API is trusted but is still third-party network
+							// content - validate the date shape and escape the
+							// free-text name rather than trusting it outright,
+							// even though sql_add() elsewhere in this app doesn't.
+							if( !preg_match( '/^\d{4}-\d{2}-\d{2}$/', $h["date"] ) ) continue;
+							$safeName = mysqli_real_escape_string( $con, $h["localName"] );
+							if( sql_add( "calendar_holidays", $names, array( $h["date"], $safeName ) ) ) {
+								$added++;
+								}
+							}
+
+						// Dec 24th (Christmas Eve) isn't an official statutory
+						// holiday so the API doesn't list it, but every
+						// hand-maintained year before this feature existed
+						// included it (a de facto non-working day for this
+						// business) - add it too so new years look consistent
+						// with the existing ones.
+						if( sql_add( "calendar_holidays", $names, array( $year."-12-24", "Szenteste" ) ) ) {
+							$added++;
+							}
+
+						$result["ok"] = true;
+						$result["message"] = $added." dates added for ".$year.".";
+						$result["count"] = $added;
+						}
+					}
+				}
+			}
+		}
 	}
 	
 else {

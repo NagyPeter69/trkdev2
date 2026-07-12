@@ -101,12 +101,29 @@ i {
 	position: relative;
 	margin-right: -7px;
 	}
-	
+
 .calendarYear {
 	font-size: 16px;
 	padding: 5px;
 	padding-top: 0px;
 	color: #000;;
+	}
+
+.addYearButton {
+	font-size: 11px;
+	color: rgb( 20, 137, 206 );
+	cursor: pointer;
+	white-space: nowrap;
+	}
+
+.addYearButton:hover {
+	text-decoration: underline;
+	}
+
+.addYearButton.disabled {
+	color: #AAA;
+	cursor: default;
+	pointer-events: none;
 	}
 
 .magazines {

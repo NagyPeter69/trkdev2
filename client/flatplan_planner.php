@@ -210,7 +210,7 @@ jQuery(document).ready(function(){
 <?
 
 $check = sql_get( "pageinfo", "(type='ad' OR type='magazine') AND code='".$magazine[0][3]."' AND issue='".$pub[0][10]."' AND fin='1'", "id" );
-$allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
+$allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
 
 
 ?>
@@ -316,8 +316,32 @@ function loadMags() {
 				year -= 1;
 				changeYear( year );
 				});
-				
-			$('.colorBox, .altercolorBox').off();	
+
+			// Only rendered for admins (see plugins/calendar.php) - adds the
+			// currently-shown year's Hungarian public holidays, so a year
+			// beyond whatever a developer last hand-added to
+			// calendarHoliday() in engine.php no longer means it shows up
+			// with no holidays marked until someone edits and redeploys
+			// that array. Safe to click again on an already-added year -
+			// the backend just skips dates it already has.
+			$(".addYearButton").off();
+			$(".addYearButton").click( function() {
+				if( !confirm( "Add Hungarian public holidays for "+year+"?" ) ) return;
+				$(".addYearButton").addClass("disabled");
+				$.ajax	({
+					url:"plugins/calendar.php?op=addYear&year="+year,
+					dataType: 'json',
+					success:function( result ) {
+						$(".addYearButton").removeClass("disabled");
+						if( result.ok ) {
+							loadCalendar( year );
+							}
+						alert( result.message );
+						}
+					});
+				});
+
+			$('.colorBox, .altercolorBox').off();
 			$('.colorBox').ColorPicker({
 				onBeforeShow: function () {
 					colorField = this;

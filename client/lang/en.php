@@ -134,7 +134,9 @@
 				"spec_porder" => "Print Order",
 				"spec_sday" => "Sales Day",				
 				"pdf_title" => "Production Planning",				
-				"pdf_gen" => "Generated",				
+				"pdf_gen" => "Generated",
+				"add_year" => "Add Year",
+				"add_year_title" => "Fetch and add Hungarian public holidays for the year currently shown",
 				),
 				
 			"standard" => array(
