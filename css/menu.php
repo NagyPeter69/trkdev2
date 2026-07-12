@@ -218,10 +218,17 @@ ul.sub a:hover {
 
 ul.nav {
 	width:100%;
-	float:left;
+	/* flex instead of float: items never wrap onto a second line and
+	   reorder themselves - if they don't all fit even at the shrunk
+	   sizing below, the row scrolls horizontally (see overflow-x)
+	   instead of breaking. */
+	display: flex;
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	overflow-y: hidden;
 	padding-left: 0px !important;
 	}
-	
+
 ul.nav, ul.nav li, ul.nav li ul {
 	list-style-type:none;
 	margin:0px;
@@ -231,16 +238,20 @@ ul.nav, ul.nav li, ul.nav li ul {
 ul.nav li:first-child {
 	padding-left: 13px !important;
 	}
-	
+
 ul.nav li {
 	font-family: <?php echo $font; ?> !important;
-	float:left;
-	padding-left: 18px;
-	font-size: 20px;
+	flex: 0 0 auto;
+	/* Fluid sizing so the whole bar keeps fitting one line as the
+	   window narrows from the ~24" design width, instead of the fixed
+	   20px/18px only working above that width. */
+	padding-left: clamp( 8px, 4px + 0.5vw, 18px );
+	font-size: clamp( 13px, 9px + 0.55vw, 20px );
 	margin-left:1px;
 	position:relative;
 	height: 50px;
 	line-height: 53px;
+	white-space: nowrap;
 	}
 
 ul.nav a {

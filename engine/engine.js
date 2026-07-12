@@ -1281,6 +1281,34 @@ function singleDoubleClick( ids, fpType ) {
 		}
 	}
 
+function fit_nav() {
+	// #menuLine (ul.nav's wrapper) is position:absolute with a fixed left
+	// offset and no built-in awareness of the float:right cluster sharing
+	// #header - #member, #freespace, #publist and #menuClientBox all
+	// share the same "float:right" rule in css/default.php, but which of
+	// them actually exist varies by page (e.g. advertisement.php has
+	// #member but no #publist), and their combined width varies with the
+	// logged-in user's name, so neither a fixed CSS boundary nor checking
+	// only one of them is reliable. Using the leftmost offset among
+	// whichever exist and capping #menuLine's width to stop just before
+	// it is what keeps ul.nav's fluid sizing (css/menu.php) from
+	// rendering wide enough to overlap that cluster; nav's own
+	// overflow-x:auto is the fallback if even the shrunk items don't fit
+	// in what's left.
+	if( !$.browser.device ) {
+		var rightEdge = $("#header").width();
+		$("#member, #freespace, #publist, #menuClientBox").each(function(){
+			var left = $(this).offset().left;
+			if( left < rightEdge ) rightEdge = left;
+			});
+		var navLeft = $("#menuLine").offset().left;
+		var available = rightEdge - navLeft - 15;
+		if( available > 0 ) {
+			$("#menuLine").css( "width", available + "px" );
+			}
+		}
+	}
+
 function fit_wrapper() {
 	if( !$.browser.device ) {
 		ad_height = parseInt( $( "#mainPage" ).height() )-(parseInt( $("#header").outerHeight()) );
@@ -1402,20 +1430,21 @@ $( document ).ready(function() {
 	if( isNaN(height) ) {
 		height = $( window ).height();
 		}
-	$( "#mainPage" ).height( height );	
+	$( "#mainPage" ).height( height );
 
 	width = parseInt( $( window ).width() )-parseInt( $(".rightChat").outerWidth());
 	if( isNaN(width) ) {
 		width = $( window ).width();
 		}
 	$( "#mainPage" ).width( width );
-	
+
 	if( !$.browser.device ) {
 		height = parseInt( $( "#mainPage" ).height() )-parseInt( $("#header").outerHeight());
 		$('#content').height( height );
 		fit_page();
 		}
 	fit_wrapper();
+	fit_nav();
 	});
 
 $(window).resize(function(){
@@ -1425,6 +1454,7 @@ $(window).resize(function(){
 		fit_ad_list();
 		fit_preview();
 		fit_wrapper();
+		fit_nav();
 		}
 	});
 

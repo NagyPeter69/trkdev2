@@ -33,8 +33,50 @@
     text-align: center;
 	}
 
+/* Each column in a Publications row (pubLoad.php) is a float:left div
+   with a fixed inline pixel width - on a row that narrow, the floats
+   wrapped independently per row once their combined width exceeded the
+   available space, and since wrap point depends on that row's own
+   content (deadline text length, publisher name, part count...), rows
+   broke at different points and columns stopped lining up with each
+   other. Flex + nowrap keeps every row's columns on one line in a
+   fixed order; flex-shrink (the default for all children here) lets
+   each column's inline width act as an upper bound rather than a
+   floor, so columns shrink together in place of wrapping. min-width:0
+   plus the ellipsis rule below let text truncate instead of forcing
+   the row wider than it has room for. If a row still doesn't fit even
+   at minimum shrink (e.g. many "parts" columns), #pub_table_wrapper's
+   existing overflow:auto falls back to a horizontal scrollbar. */
+.pub_info {
+	display: flex;
+	flex-wrap: nowrap;
+	max-width: 100%;
+	}
+
+.pub_info > div {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	/* .pubStatus/.pubClient/.pubWorkflow set an inline height:1px - a
+	   float-layout-era hack that relied on floats showing overflowing
+	   content by default so the box didn't add height to the row. Flex
+	   items don't get that default, and overflow:hidden above would
+	   otherwise clip the text down to nothing. */
+	height: auto !important;
+	}
+
 .pubClient {
 	margin-right: 25px;
+	/* pubLoad.php sizes this column's inline width from
+	   strlen(longest client name) * an average px-per-character, which
+	   systematically rounds down for names with wider-than-average
+	   characters - close enough that old float overflow hid the
+	   shortfall, but enough for text-overflow:ellipsis above to
+	   truncate a name that visually fits. max-content overrides that
+	   inline width as a floor (not the shrink target - it can still
+	   fall back to ellipsis if a genuinely long name exceeds this). */
+	min-width: max-content !important;
 	}
 
 .pubExtraInfo {
@@ -1621,8 +1663,7 @@ background-color:#C7C7C7}
 		}
 	}
 	
-@media screen and (max-width: 1135px) {
-	.pubParts {
-		display: none !important;
-		}
-	}
+/* .pubParts used to be hidden outright below 1135px - removed so the
+   color-standard columns shrink/truncate via .pub_info's flex rules
+   above instead of disappearing; they're the one thing this row exists
+   to show at a glance. */
