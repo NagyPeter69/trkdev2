@@ -184,7 +184,14 @@ function SwitchASend( $datas, $file = "" ) {
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
 	curl_setopt($ch, CURLOPT_POST, true );
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-	curl_setopt($ch, CURLOPT_SAFE_UPLOAD, false);
+	// CURLOPT_SAFE_UPLOAD can no longer be set to false as of PHP 8.x
+	// (curl_setopt() throws ValueError - "unsafe" @filename uploads were
+	// removed outright, not just deprecated). Harmless to drop: this call
+	// already builds the upload with CurlFile below, which *is* the safe
+	// method, so disabling safe uploads was doing nothing useful here -
+	// same conclusion already reached for the other Switch senders in
+	// this file, which have this line commented out for the same reason.
+	//curl_setopt($ch, CURLOPT_SAFE_UPLOAD, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
 	$response = curl_exec ($ch);
 	
@@ -248,7 +255,14 @@ function SwitchAnyagSend( $datas, $file = "" ) {
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
 	curl_setopt($ch, CURLOPT_POST, true );
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-	curl_setopt($ch, CURLOPT_SAFE_UPLOAD, false);
+	// CURLOPT_SAFE_UPLOAD can no longer be set to false as of PHP 8.x
+	// (curl_setopt() throws ValueError - "unsafe" @filename uploads were
+	// removed outright, not just deprecated). Harmless to drop: this call
+	// already builds the upload with CurlFile below, which *is* the safe
+	// method, so disabling safe uploads was doing nothing useful here -
+	// same conclusion already reached for the other Switch senders in
+	// this file, which have this line commented out for the same reason.
+	//curl_setopt($ch, CURLOPT_SAFE_UPLOAD, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
 	$response = curl_exec ($ch);
 	error_log( $response);
