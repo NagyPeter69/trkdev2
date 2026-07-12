@@ -600,9 +600,9 @@ $(".innerPreview").mCustomScrollbar({
 var pageID = new Array();
 var statusText = new Array();
 <?
-	for( $i = 0; $i < count( $pageID ); $i++ ) {
+	for( $i = 0; $i < count( $pageID ?? array() ); $i++ ) {
 		echo "pageID.push(\"".$pageID[$i]."\");";
-		echo "statusText.push(\"".str_replace('"', '\"', $text[$i])."\");";
+		echo "statusText.push(\"".str_replace('"', '\"', $text[$i] ?? "")."\");";
 		}
 ?>
 var txt = "";
@@ -666,7 +666,7 @@ var fpBox = {
 	}
 
 var fpPages = '<?= $user[0][14]; ?>';
-var pages = '<?= count($pages) ?>';
+var pages = '<?= count($pages ?? array()) ?>';
 var trimbox =  {};
 var bleedbox =  {};
 var cropbox =  {};

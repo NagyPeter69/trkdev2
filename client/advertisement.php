@@ -374,7 +374,7 @@ $('#file').change( function() {
 		}	
 	
 	var counter = $('#ad_upload input[value!=""]').length;
-	if( counter == ( $('#ad_upload input').length ) && $('#sizer').val() != '' ) {
+	if( counter == ( $('#ad_upload input').length ) && $('#sizer').val() != '' ) {
 		$("#ad_sender").removeAttr("disabled");
 		}
 	else {
@@ -384,7 +384,7 @@ $('#file').change( function() {
 	
 $('#job_code').keyup( function() {
 	var counter = $('#ad_upload input[value!=""]').length;
-	if( counter == ( $('#ad_upload input').length ) && $('#sizer').val() != '' ) {
+	if( counter == ( $('#ad_upload input').length ) && $('#sizer').val() != '' ) {
 		$("#ad_sender").removeAttr("disabled");
 		}
 	else {
@@ -531,7 +531,7 @@ function init_drag() {
 		o["r"] = parseInt( ui.offset.left )+o_width;
 		o["b"] = parseInt( ui.offset.top )+o_height;
 		
-		if( mouseX >= t['l']-30 && mouseX <= t['r']+30 && mouseY >= t['t']-60 && mouseY <= t['b']+60 ) {
+		if( mouseX >= t['l']-30 && mouseX <= t['r']+30 && mouseY >= t['t']-60 && mouseY <= t['b']+60 ) {
 			//if( $(this).attr('status') == 1 || $(this).attr('status') == 0 ) {
 			if( $(this).attr('status') == 1 || $(this).attr('status') == 2 || $(this).attr('force') == 1 ) {
 				var id = $(this).attr('id');
@@ -556,7 +556,7 @@ function init_drag() {
 
 	$('div[id*="ad_img_"]').each( function(){
 		//if( $(this).attr('allapot') != 'Feltöltés alatt' && ( $(this).attr('status') == "1" || $(this).attr('status') == "0" ) ) {
-		if( $(this).attr('allapot') != 'Feltöltés alatt' && ( $(this).attr('status') == "1" || $(this).attr('status') == "2" || $(this).attr('force') == "1" ) ) {
+		if( $(this).attr('allapot') != 'Feltöltés alatt' && ( $(this).attr('status') == "1" || $(this).attr('status') == "2" || $(this).attr('force') == "1" ) ) {
 			o_width = parseInt( $(this).outerWidth() );
 			o_height = parseInt( $(this).outerHeight() );
 			$(this).draggable({
@@ -732,7 +732,7 @@ function page_checker() {
 		b = value.indexOf("B")+1;
 		c = value.indexOf("C")+1;
 		
-		if( b > 0 && c > 0 ) {
+		if( b > 0 && c > 0 ) {
 			new_value = '';
 			}
 		else if( b > 0 ) {
@@ -789,14 +789,14 @@ function page_checker() {
 		b = value.indexOf("B")+1;
 		c = value.indexOf("C")+1;
 		
-		if( b > 0 && c > 0 ) {
+		if( b > 0 && c > 0 ) {
 			new_value = '';
 			}
 		else if( b > 0 ) {
 			var page = parseInt( value.substring( b ) );
 			if( isNaN( page ) ) { page = 1 }
 			
-			if( page <= 1 ) {
+			if( page <= 1 ) {
 				page = 2;
 				}
 			else if( page == 3 ) {
@@ -813,7 +813,7 @@ function page_checker() {
 			var page = parseInt( value.substring( c ) );
 			if( isNaN( page ) ) { page = 1 }
 			
-			if( page <= 1 ) {
+			if( page <= 1 ) {
 				page = 2;
 				}
 			else if( page == 3 ) {
@@ -872,7 +872,7 @@ $(document).bind("contextmenu", function (event) {
    	var check = found.children( "div" )[0];
 	
 	enableContext = 1;
-	if( $(check).hasClass('adChecking2') ) {
+	if( $(check).hasClass('adChecking2') ) {
 		enableContext = 0;
 		
 		if( "6" == "<?= $user[0][4] ?>") {
@@ -881,36 +881,40 @@ $(document).bind("contextmenu", function (event) {
 		}
 	
 	
-   	if( enableContext ) {
-		$(".custom-menu").fadeOut(100, function(){
-			if( found.length != 0 ) {
-				var checker = winWidth-contextWidth-5;
-			
-				if( event.pageX >= checker ) {
-					event.pageX = event.pageX-contextWidth;
-					}
-				event.pageY = event.pageY-parseFloat( $("#header").height() );
-				event.pageX = event.pageX+10;
-				if( found.attr("force") == "1" ) {
-					$("#force").show( 0 );
-					}
-				else {
-					$("#force").hide( 0 );
-					}
+   	if( enableContext ) {
+		if( found.length != 0 ) {
+			var checker = winWidth-contextWidth-5;
 
-				$(".custom-menu").fadeIn(100).css({
-					top: event.pageY + "px",
-					left: event.pageX + "px"
-					});	
+			if( event.pageX >= checker ) {
+				event.pageX = event.pageX-contextWidth;
 				}
-			});
+			event.pageY = event.pageY-parseFloat( $("#header").height() );
+			event.pageX = event.pageX+10;
+			if( found.attr("force") == "1" ) {
+				$("#force").show( 0 );
+				}
+			else {
+				$("#force").hide( 0 );
+				}
+
+			// .stop(true, true) clears any fade still queued/running from a
+			// previous open/close before starting this one - without it,
+			// repeated or rapid-fire contextmenu/mousedown events (e.g. a
+			// Ctrl+click, which fires both a click and a contextmenu) queue
+			// up multiple fades that fire one after another, so the menu
+			// visibly flickers or closes itself moments after opening.
+			$(".custom-menu").stop( true, true ).css({
+				top: event.pageY + "px",
+				left: event.pageX + "px"
+				}).fadeIn(100);
+			}
    		}
 	});
 
 $(document).bind("mousedown", function (e) {
     var container = $(".custom-menu");
     if (!container.is(e.target) && container.has(e.target).length === 0) {
-        container.fadeOut(100);
+        container.stop( true, true ).fadeOut(100);
     	}
 	});
 
