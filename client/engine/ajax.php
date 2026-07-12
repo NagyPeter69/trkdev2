@@ -42,7 +42,14 @@
 		$user = sql_aget( "accounts", "id='".$_SESSION['intra_user']."'", "*" );
 		$parts = sql_aget( "parts", "pub_id='".$pub[0]["id"]."' order by id ASC", "*" );
 		$uploader = new file( $parts, $user[0]["id"] );
-		
+
+		// PDF to Flatplan only makes sense for Hybrid-workflow publications -
+		// pull it back out of both type lists otherwise.
+		if( $workflow != "Hybrid" ) {
+			unset( $uploader->filetype_array["pdf_to_flatplan"] );
+			unset( $uploader->filetypefull_array["pdf_to_flatplan"] );
+			}
+
 		$picturePackAllow = array( "Resize", "Repack", "Enhance" );
 		if( in_array( $workflow, $picturePackAllow ) ) {
 			$txt = $uploader->getSelectList( "filetypefull", "type" );
