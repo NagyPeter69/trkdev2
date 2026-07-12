@@ -1430,7 +1430,7 @@ function dayBreak( $type, $time, $magazine, $issue, $lang, $sum = NULL, $sumFP =
 				}
 			}
 		$height = ($indd+$pdf)/(70+$fullpage[0][0])*30;
-		if( $height > 0 ) {
+		if( $height > 0 ) {
 			if( $height < $min ) $height = $min;
 			if( $height > $max ) $height = $max;
 			

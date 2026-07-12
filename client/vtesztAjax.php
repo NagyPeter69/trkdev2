@@ -72,7 +72,7 @@ if( floatval( str_replace( ",", ".", $sizes['left'] ) ) >= floatval( str_replace
 		$sizes['right'] += $_POST["trimbox"][1]["Left"];
 		$sizes["bottom"] = $sizes["bottom"]-$_POST['corr'][0]["Bottom"]+$_POST['corr'][1]["Bottom"];
 		$sizes["top"] = $sizes["top"]-$_POST['corr'][0]["Bottom"]+$_POST['corr'][1]["Bottom"];
-		if( $sizes["width"] > 0 ) {
+		if( $sizes["width"] > 0 ) {
 			$d = PDFtoImage__( $sizes, $to );
 			}	
 		}
@@ -91,7 +91,7 @@ if( floatval( str_replace( ",", ".", $sizes['left'] ) ) >= floatval( str_replace
 
 			} 
 
-		if( $sizes["width"] > 0 ) {
+		if( $sizes["width"] > 0 ) {
 			$d = PDFtoImage__( $sizes, $to );	
 			$img = new Imagick( "engine/r3/".$to );
 			$image = new Imagick();
@@ -104,7 +104,7 @@ if( floatval( str_replace( ",", ".", $sizes['left'] ) ) >= floatval( str_replace
 			}	
 		}
 	
-	if( $sizes["width"] > 0 ) {
+	if( $sizes["width"] > 0 ) {
 		$imgData = base64_encode(file_get_contents( "engine/r3/".$to ) );
 		$imgData = 'data:'.mime_content_type( "engine/r3/".$to ).';base64,'.$imgData;
 		@unlink( "engine/r3/".$to );	
@@ -118,7 +118,7 @@ elseif( $difference > 0 && $_POST['file'][1]["Name"] != "" ) {
 	//$sizes['left'] -= floatval( str_replace( ",", ".", $cbox[0]['Left'] ) );
 	$sizes['right'] = floatval( str_replace( ",", ".", $_POST['file'][0]['Right'] ) );
 	$sizes['width'] -= $temp;
-	if( $sizes['width'] < 0 ) $sizes['width'] = 1;
+	if( $sizes['width'] < 0 ) $sizes['width'] = 1;
 	$sizesSave = $sizes;
 	$maxheight = ( $_POST['file'][0]["Height"] > $_POST['file'][1]["Height"] ? pixel__($_POST['file'][0]["Top"]-$_POST['file'][0]["Bottom"]) : pixel__($_POST['file'][1]["Top"]-$_POST['file'][1]["Bottom"]) );
 	$corr = ( $maxheight - pixel__($_POST['file'][0]["Top"]-$_POST['file'][0]["Bottom"]) ) / 2;
@@ -223,7 +223,7 @@ else {
  	if( $_POST['file'][1]["Height"] > 0 && $_POST['file'][1]["Height"] != "" && $_POST['file'][1]["Height"] != "undefined" ) {
 		$maxheight = ( $_POST['file'][0]["Height"] > $_POST['file'][1]["Height"] ? pixel__($_POST['file'][0]["Top"]-$_POST['file'][0]["Bottom"]) : pixel__($_POST['file'][1]["Top"]-$_POST['file'][1]["Bottom"]) );
 		$corr = ( $maxheight - pixel__($_POST['file'][0]["Top"]-$_POST['file'][0]["Bottom"]) ) / 2;
-		error_log( ( $sizes['top']-$sizes['bottom'] )." < ".( $_POST['file'][0]["Top"]-$_POST['file'][0]["Bottom"] ) ) ;
+		error_log( ( $sizes['top']-$sizes['bottom'] )." < ".( $_POST['file'][0]["Top"]-$_POST['file'][0]["Bottom"] ) ) ;
 		if( ( $sizes['top']-$sizes['bottom'] ) < ( $_POST['file'][0]["Top"]-$_POST['file'][0]["Bottom"] ) ) {
 			$sizes['bottom'] -= point__( $corr );
 			$sizes['height'] += $corr;

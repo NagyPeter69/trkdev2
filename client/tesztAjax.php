@@ -149,7 +149,7 @@ elseif( $difference > 0 && $_POST['file'][1]["Name"] != "" ) {
 	//$sizes['left'] -= 1;
 	$sizes['right'] = floatval( str_replace( ",", ".", $_POST['file'][0]['Right'] ) ) ;
 	$sizes['width'] -= $temp;
-	if( $sizes['width'] < 0 ) $sizes['width'] = 1;
+	if( $sizes['width'] < 0 ) $sizes['width'] = 1;
 	
 	if( $_GET["pdfstand"] == "Web" ) {
 		$to_left = "/var/www/html/client/engine/dyna/left".$_GET['intra_user'].".jpg";

@@ -100,7 +100,7 @@ elseif( $difference > 0 && $_POST['file'][1]["Name"] != "" ) {
 	$sizes['right'] = floatval( str_replace( ",", ".", $_POST['file'][0]['Right'] ) );
 	error_log( "width: ".$sizes['width'].", temp: ".$temp );
 	$sizes['width'] -= $temp;
-	if( $sizes['width'] < 0 ) $sizes['width'] = 1;
+	if( $sizes['width'] < 0 ) $sizes['width'] = 1;
 	error_log( "width: ".$sizes['width'] );
 	PDFtoImage( $sizes, "left".$_SESSION['intra_user'].".jpg" );
 	if( $_POST['file'][1]['Name'] != "" ) {
