@@ -1546,29 +1546,19 @@
 		}
 
 	if( $_GET['op'] == 'add_ad' ) {
-		$mag = sql_get( 'magazines', 'code="'.$_GET['code'].'"', 'code' );
-		
-		$newxml = simplexml_load_file( '../xml/'.PMD.'.xml' );
-		$txt = $_GET['size'].' '.$_GET['orient'].', '.$_GET['cover'].': '.$_GET['width'].' x '.$_GET['height'].' mm';
-		
-		$xpath = $newxml->xpath('/Publications');
-		foreach($xpath as $temp) {
-			for( $x = 0; $x < count( $temp->Item ); $x++ ) {
-				if( $temp->Item[$x]->Code == $mag[0][0] ) {
-					break;
-					}
-				}
-			}
-		$newxml->Item[$x]->AdSizes->addChild( 'value', $txt );
+		// ad_sizes (DB) is the source of truth for a publication's ad sizes -
+		// the PMD's <AdSizes> block is a generated projection of it, rebuilt
+		// in full by regenerateAdSizesInPmd() rather than hand-patched here,
+		// so the file can't drift out of sync with the table the way the old
+		// per-value XML mutation could.
+		$mag = sql_get( 'magazines', 'code="'.$_GET['code'].'"', 'id' );
 
-		$dom = new DOMDocument();
-		$dom->preserveWhiteSpace = false;
-		$dom->loadXML($newxml->asXML());
-		$dom->formatOutput = true;
+		$names = array( 'magazine_id', 'size', 'orient', 'cover', 'width', 'height' );
+		$values = array( $mag[0][0], $_GET['size'], $_GET['orient'], $_GET['cover'], $_GET['width'], $_GET['height'] );
+		sql_add( 'ad_sizes', $names, $values );
 
-		file_put_contents( '../xml/'.PMD.'.xml', $dom->saveXML() );
-		$pmdName = pmdDevSafeName( PMD_LONG.'.xml' );
-		file_put_contents( "../xml/".$pmdName, $dom->saveXML() );
+		$pmdName = regenerateAdSizesInPmd( $_GET['code'] );
+
 		$array = array(
 			"event" => "xml_data",
 			// switchClientAllowed() (the DEV-environment gate) identifies the
@@ -1665,10 +1655,27 @@
 			$result = $dirFiles;
 			}
 		if( $_GET['type'] == '' ) {
-			$data = explode( "_", $_GET['id'] );
-			
-			removeFromXML( '../xml/'.PMD.'.xml', $data[0], '/AdSizes', array( 'value' => $data[1] ) );
-			
+			// Ad-size removal: $_GET['id'] is a real ad_sizes.id (see
+			// load_ads below), not the old "magazineCode_index" compound
+			// string used for XML positional removal.
+			$size = sql_get( 'ad_sizes', 'id="'.$_GET['id'].'"', 'magazine_id' );
+			if( !empty( $size[0][0] ) ) {
+				$mag = sql_get( 'magazines', 'id="'.$size[0][0].'"', 'code' );
+				sql_delete( 'ad_sizes', 'id="'.$_GET['id'].'"' );
+
+				$pmdName = regenerateAdSizesInPmd( $mag[0][0] );
+				if( $pmdName ) {
+					$array = array(
+						"event" => "xml_data",
+						"jobCode" => $mag[0][0],
+						);
+					$file = array(
+						"name" => $pmdName,
+						"path" => "xml",
+						);
+					SwitchSend_TESZT( $array, $file );
+					}
+				}
 
 			$result = 'ok';
 			}
@@ -1676,28 +1683,26 @@
 
 	if( $_GET['op'] == 'load_ads' ) {
 		$txt = '';
-		
-		$code = sql_get( 'magazines', 'code="'.$_GET['code'].'"', 'code' );
-		$ads = collectFromXml( '../xml/'.PMD.'.xml', $code[0][0], 'AdSizes', 'value' );
-		$ads = $ads['AdSizes'];
-		
+
+		$mag = sql_get( 'magazines', 'code="'.$_GET['code'].'"', 'id' );
+		$ads = sql_aget( 'ad_sizes', 'magazine_id="'.$mag[0][0].'"', '*' );
+
 		for( $i = 0; $i < count( $ads ); $i++ ) {
-			$temp = explode( " ", $ads[$i] );
 			if( fmod( $i, 2 ) == 0 ) { $class = 'one'; }
 			else { $class = 'two'; }
-			
-			$txt .= "<tr id='ad_".$code[0][0]."_".$i."'><td colspan='2' align='left' height='28px'>";
+
+			$txt .= "<tr id='ad_size_".$ads[$i]['id']."'><td colspan='2' align='left' height='28px'>";
 				$txt .= "<div style='float:left;'>";
-					$txt .= $temp[0]." ".$lang["ads"][substr($temp[1], 0, -1)].", ".$lang["ads"][substr($temp[2], 0, -1)].": ".$temp[3]." x ".$temp[5]." mm";
+					$txt .= $ads[$i]['size']." ".$lang["ads"][$ads[$i]['orient']].", ".$lang["ads"][$ads[$i]['cover']].": ".$ads[$i]['width']." x ".$ads[$i]['height']." mm";
 				$txt .= "</div>";
 				if( $rights["ad_sizes"] ) {
 					$txt .= "<div style='float:right;'>";
-						$txt .= "<img onclick=\"remove_ad('".$code[0][0]."_".$i."')\" style='cursor: pointer;' src='../images/trash.png' height='18px'>";
+						$txt .= "<img onclick=\"remove_ad(".$ads[$i]['id'].")\" style='cursor: pointer;' src='../images/trash.png' height='18px'>";
 					$txt .= "</div>";
 					}
 			$txt .= "</td></tr>";
 			}
-			
+
 		$result = $txt;
 		}
 	

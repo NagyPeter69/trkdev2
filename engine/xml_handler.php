@@ -223,6 +223,49 @@
 		return $result;
 		}
 
+	// The ad_sizes DB table is the source of truth for a publication's ad
+	// sizes (see the "narrow update" migration note in advertisement.php /
+	// engine/ajax.php) - this rebuilds the <AdSizes> block for one magazine
+	// entirely from that table and writes both the local PMD file and its
+	// Switch-facing long-named counterpart. Callers still own pushing the
+	// result to Switch (via SwitchSend_TESZT), matching how add_ad already
+	// separates "write the file" from "send the file".
+	function regenerateAdSizesInPmd( $magazineCode ) {
+		$mag = sql_get( 'magazines', 'code="'.$magazineCode.'"', 'id' );
+		if( empty( $mag[0][0] ) ) return false;
+
+		$sizes = sql_aget( 'ad_sizes', 'magazine_id="'.$mag[0][0].'"', '*' );
+
+		$xmlFile = TRKPATH.'/xml/'.PMD.'.xml';
+		$newxml = simplexml_load_file( $xmlFile );
+
+		$xpath = $newxml->xpath( '/Publications/Item[Code = "'.$magazineCode.'"]' );
+		if( empty( $xpath ) ) return false;
+		$item = $xpath[0];
+
+		if( isset( $item->AdSizes ) ) {
+			$dom = dom_import_simplexml( $item->AdSizes );
+			$dom->parentNode->removeChild( $dom );
+			}
+		$adSizesNode = $item->addChild( 'AdSizes' );
+
+		foreach( $sizes as $size ) {
+			$txt = $size['size'].' '.$size['orient'].', '.$size['cover'].': '.$size['width'].' x '.$size['height'].' mm';
+			$adSizesNode->addChild( 'value', $txt );
+			}
+
+		$dom = new DOMDocument();
+		$dom->preserveWhiteSpace = false;
+		$dom->loadXML( $newxml->asXML() );
+		$dom->formatOutput = true;
+
+		file_put_contents( $xmlFile, $dom->saveXML() );
+		$pmdName = pmdDevSafeName( PMD_LONG.'.xml' );
+		file_put_contents( TRKPATH.'/xml/'.$pmdName, $dom->saveXML() );
+
+		return $pmdName;
+		}
+
 	function changeJOBXmlDatabase( $operation, $values, $xml2 = 'client/xml/job.xml' ) {
 		$xml = simplexml_load_file( $xml2 );
 		$deny = array( 'addRUser', 'publisher', 'magazine', 'old', 'old_code', 'xml_go', $values['deny'], 'deny', 'type', 'code', 'CustomCode_2', 'counter_parts', 'Client2', 'adhocUser' );
