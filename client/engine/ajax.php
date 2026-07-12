@@ -1571,6 +1571,13 @@
 		file_put_contents( "../xml/".$pmdName, $dom->saveXML() );
 		$array = array(
 			"event" => "xml_data",
+			// switchClientAllowed() (the DEV-environment gate) identifies the
+			// client from jobCode/Code/code and silently blocks the send if
+			// none is present - without this, every ad size added here got
+			// written to the local PMD files but never reached the external
+			// Switch backend, so its copy of the PMD stayed stale and ad
+			// checking kept validating against the old size list.
+			"jobCode" => $_GET['code'],
 			);
 
 		$file = array(
@@ -1578,7 +1585,7 @@
 			"path" => "xml",
 			);
 		$response = SwitchSend_TESZT( $array, $file );
-				
+
 		$return = 'ok';
 		}
 
