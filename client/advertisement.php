@@ -878,6 +878,17 @@ $(document).on("click", ".adsTiles a", function( event ) {
 		}
 	});
 
+// Safari/macOS fires a synthetic secondary mousedown/click right on release
+// of a Ctrl+click, in addition to contextmenu - on Chrome it's a synthetic
+// click on the thumbnail link (handled above), on Safari it lands as a
+// mousedown that the "click outside closes the menu" handler below sees as
+// an outside click and closes the menu before it can ever be clicked. Since
+// the exact event Safari fires isn't reliable to target directly, ignore
+// any outside-click-close within a short window after the menu opens - long
+// enough to absorb the same-gesture echo, short enough to still close
+// promptly on a genuine later click elsewhere.
+var menuOpenedAt = 0;
+
 $(document).bind("contextmenu", function (event) {
     event.preventDefault();
     found = $(event.target).closest( ".adsTiles" );
@@ -920,11 +931,15 @@ $(document).bind("contextmenu", function (event) {
 				top: event.pageY + "px",
 				left: event.pageX + "px"
 				}).fadeIn(100);
+			menuOpenedAt = Date.now();
 			}
    		}
 	});
 
 $(document).bind("mousedown", function (e) {
+    if( Date.now() - menuOpenedAt < 400 ) {
+        return;
+    	}
     var container = $(".custom-menu");
     if (!container.is(e.target) && container.has(e.target).length === 0) {
         container.stop( true, true ).fadeOut(100);
