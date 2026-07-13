@@ -194,10 +194,19 @@ user-input-driven query as suspect until proven otherwise.
 
 `client/engine/switchAPI.php` talks to an external Enfocus Switch server (hardcoded IP,
 see `engine/switchconstant.php` for `SWITCHURL`/`SWITCHLOGINURL`) for job routing. **This
-network path is deliberately unreachable from trkdev2** — done on purpose, at the network
+network path was supposed to be deliberately unreachable from trkdev2**, at the network
 level, specifically so this dev/refactoring work can't accidentally affect the real
-production Switch instance. Do not "fix" this connectivity without checking with the
-project owner first; it's a safety boundary, not an oversight.
+production Switch instance — **but as of 2026-07-13 it is NOT actually blocked**: both a
+raw TCP connect and an actual HTTP request to `SWITCHLOGINURL` succeed from trkdev2 in
+under 10ms (confirmed while building `bin/preflight-prod-check.sh`'s connectivity check).
+Whether this firewall rule was removed at some point or never actually applied is unknown.
+The only thing currently preventing trkdev2 from sending real Switch jobs is the
+application-level `TRKDEV_ENVIRONMENT`/`IS_DEV_ENVIRONMENT` gate in `switchAPI.php` (see
+`switchClientAllowed()`), which is still correctly set - so nothing has actually leaked -
+but the intended second, independent layer of defense is currently not there. Flagged to
+the project owner; needs the Sophos firewall owner to confirm/restore the block. Do not
+"fix" this connectivity yourself without checking with the project owner first - restoring
+the block, not opening it further, is almost certainly the correct direction here.
 
 Two real bugs were found and fixed in this integration:
 
