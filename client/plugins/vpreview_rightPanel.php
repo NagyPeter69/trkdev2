@@ -143,9 +143,13 @@ function renderComparePages( file, place, nr ) {
 				"width": boxSize.width+"px",
 				"height": boxSize.height+"px"
 				});
-			var width = pixel( (compare["file"][0]['Right'] - compare["file"][0]['Left']) );
-			var height = pixel( (compare["file"][0]['Top'] - compare["file"][0]['Bottom'] ) );
-				
+			// Was hardcoded to compare["file"][0] (side A) regardless of
+			// which side (nr) this particular call is actually rendering -
+			// see preview_rightPanel.php's identical fix for the full
+			// explanation.
+			var width = pixel( (compare["file"][nr]['Right'] - compare["file"][nr]['Left']) );
+			var height = pixel( (compare["file"][nr]['Top'] - compare["file"][nr]['Bottom'] ) );
+
 			$("#sidebyside, #side_a, #side_b").css("height", height+"px" );
 			$("#sidebyside").css("width", (width*2+9)+"px" );
 			$("#side_a, #side_b").css("width", width+"px" );
