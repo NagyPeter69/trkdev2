@@ -25,9 +25,10 @@ function moveObject2(event) {
 var image_pos = 'allo';
 var image_size = { 'height': 4000 };
 
+var zoomDebounceTimer = null;
+
 function _zoom( opt, source, size ) {
 	if( !disableZoom ) {
-		disableZoom = true;
 		if( size == undefined ) {
 			switch( opt ) {
 				case '+':
@@ -35,7 +36,7 @@ function _zoom( opt, source, size ) {
 					zoom = parseInt( zoom+( zoom/100*45 ) );
 					if( zoom > 1500 ) zoom = 1500;
 					break;
-	  
+
 				case '-':
 					oldZoom = zoom;
 					zoom = parseInt( zoom-( zoom/100*45 ) );
@@ -46,7 +47,28 @@ function _zoom( opt, source, size ) {
     		oldZoom = zoom;
       		zoom = size;
       		}
-      	$("#boxDraw").html("");
-		placeBox( 'force', source );
+
+		// Mouse-wheel zoom (source=='roll', no explicit target size) fires
+		// this on every single wheel tick with no coalescing - scrolling
+		// fast used to queue up one full render (~0.5-3s each, before the
+		// tesztAjax.php render cache) per accepted tick, even though only
+		// the FINAL zoom level the user settles on actually matters.
+		// Debounce just that case; a slider release or any other
+		// explicit zoom-to-value call (size is set) still fires
+		// immediately, since that's already one deliberate "I'm done"
+		// action, not a rapid burst.
+		clearTimeout( zoomDebounceTimer );
+		if( source == 'roll' && size == undefined ) {
+			zoomDebounceTimer = setTimeout( function() {
+				disableZoom = true;
+				$("#boxDraw").html("");
+				placeBox( 'force', source );
+				}, 180 );
+			}
+		else {
+			disableZoom = true;
+			$("#boxDraw").html("");
+			placeBox( 'force', source );
+			}
 		}
 	}

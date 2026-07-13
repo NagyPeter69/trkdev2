@@ -1999,8 +1999,21 @@ var previewPic = "";
 
 function changePic( data ) {
 	removeAdvancedTool();
-	disableZoom = false;
+	// Was "disableZoom = false;" unconditionally, immediately before this
+	// very check - which made the guard permanently pass regardless of
+	// whether a previous zoom/reload was still in flight. disableZoom is
+	// the general busy flag set by reloadBG()/rendering() for both zoom
+	// and page-nav (see reloadBG(), which sets it true at its own start),
+	// so this let a fast double-click on next/prev fire two overlapping
+	// page loads - wasted FPM workers and (before this session's other
+	// fixes) races on shared per-user temp render filenames.
 	if( !disableZoom ) {
+		// Set synchronously, right here, rather than waiting for
+		// reloadBG() to set it - reloadBG() only runs after the 200ms
+		// fadeOut below completes, which left a real window where a
+		// second rapid click still passed this same guard because
+		// disableZoom hadn't been flipped true yet.
+		disableZoom = true;
 		data = data.split( "&" );
 		$("#renderedIMG1").hide( 0 ).attr('src', '' );
 		$("#renderedIMG2").hide( 0 ).attr('src', '' );
