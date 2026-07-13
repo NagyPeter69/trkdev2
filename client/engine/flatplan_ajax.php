@@ -1685,11 +1685,26 @@
 	    	}
  
 	    if( $_GET["mode"] == "compare" ) {
-	   		$file = $terminalPath."/".$_POST['file']['Name'];
-	    	} 
-		
+	   		// Unlike "normal" mode's file[0]/file[1] (plain relative paths,
+	   		// e.g. "packages/.../foo.pdf"), the file sent in compare mode
+	   		// comes from compare.php's op=loadbg response, which already
+	   		// builds Name as an absolute path (TRKPATH prefixed - see
+	   		// compare.php's loadbg handler). Prepending $terminalPath
+	   		// again produced a nonexistent doubled-up path
+	   		// ("/var/www/html/client//var/www/html/client/packages/...");
+	   		// r3 silently failed to open it, so colorPick() got no
+	   		// measurable output at all - the color sampler looked like it
+	   		// did nothing on either compare image, for every click.
+	   		$file = $_POST['file']['Name'];
+	    	}
+
     	$info = colorPick( $file, $realX, $realy );
-    	$debug = $realX." ".$_POST['file'][0]['Right'];
+    	// $_POST['file'] is a single flat object in compare mode (not the
+    	// two-element array "normal" mode uses), so ['file'][0] doesn't
+    	// exist there - this debug string isn't used for anything beyond
+    	// logging, but keeping it mode-aware avoids a spurious "Undefined
+    	// array key 0" warning on every compare-mode pick.
+    	$debug = $realX." ".( $_GET["mode"] == "compare" ? $_POST['file']['Right'] : $_POST['file'][0]['Right'] );
     	$result = array( $info, $debug );
     	}
 		
