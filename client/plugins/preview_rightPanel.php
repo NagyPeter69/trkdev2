@@ -1352,6 +1352,19 @@ function reloadBG( switchTo, from ) {
 		type: "POST",
 		data: { colors: colors, switchTo: switchTo, from: from },
 		dataType: 'json',
+		// This request had no error handler at all - disableZoom is set true
+		// right at the top of reloadBG(), before this call fires, and was only
+		// ever cleared inside the success handler below. A failed/malformed
+		// response (PHP fatal, timeout, non-2xx) skipped straight past success
+		// entirely, leaving disableZoom stuck true forever - every subsequent
+		// changePic()/_zoom() call is gated on !disableZoom, so nav silently
+		// stopped responding until a full page refresh reset the JS state.
+		error:function() {
+			$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
+			$("#errorInfo").html( "hiba" );
+			$("#errorInfo").fadeIn( 100 );
+			disableZoom = false;
+			},
 		success:function( data ) {
 			if( data[0] != "error" ) {
 				console.log( data );
@@ -1595,9 +1608,13 @@ function reloadBG( switchTo, from ) {
 				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
 				$("#errorInfo").html( "hiba" );
 				$("#errorInfo").fadeIn( 100 );
+				// Same stuck-disableZoom gap as the ajax error: handler above -
+				// this branch reported the error to the user but never released
+				// the nav guard, so it silently blocked every click after it.
+				disableZoom = false;
 				}
 			}
-		});	
+		});
 		}
 	}
 
