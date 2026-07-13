@@ -12,6 +12,47 @@ $cbox = $_POST['cBox'];
 $terminalPath = "/var/www/html/client";
 $user = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', '*' );
 
+// Render cache: every zoom tick and page-nav used to re-run r3/DynaPDF
+// from scratch every single time (measured ~0.8-3s+ per render), even
+// when returning to a page/zoom/crop state already rendered moments
+// ago. This is an approval workflow, so a stale cached render would be
+// a real (not just cosmetic) problem - the cache key below is built
+// from the ENTIRE request payload (so any different crop/zoom/color
+// state is automatically a different key) PLUS each referenced source
+// PDF's mtime+filesize (so a new page version - which always changes
+// at least the mtime, whether it lands at a new path or, in some
+// future code path, the same one - always invalidates old cache
+// entries, without depending on knowing/trusting the versioning
+// scheme's exact behavior).
+function tesztAjaxCacheKey( $terminalPath ) {
+	$fileStamps = array();
+	foreach( array( 0, 1 ) as $idx ) {
+		if( !empty( $_POST['file'][$idx]['Name'] ) ) {
+			$name = $_POST['file'][$idx]['Name'];
+			$full = ( $name[0] == '/' ) ? $name : $terminalPath.'/'.$name;
+			$fileStamps[] = $name.':'.( is_file( $full ) ? filemtime( $full ).':'.filesize( $full ) : 'missing' );
+			}
+		}
+
+	$keyInput = json_encode( array(
+		'get' => $_GET,
+		'post' => $_POST,
+		'files' => $fileStamps,
+		) );
+
+	return md5( $keyInput );
+	}
+
+$renderCacheFile = TRKPATH.'/engine/r3/_cache_'.tesztAjaxCacheKey( $terminalPath ).'.jpg';
+if( is_file( $renderCacheFile ) ) {
+	$imgData = base64_encode( file_get_contents( $renderCacheFile ) );
+	$imgData = 'data:image/jpeg;base64,'.$imgData;
+	$debug = 'cached';
+	$result = $imgData;
+	print json_encode( array( $result, $debug ) );
+	exit;
+	}
+
 function pixel__( $num, $_zoom = '' ) {
 	global $zoom;
 	
@@ -126,7 +167,7 @@ if( floatval( str_replace( ",", ".", $sizes['left'] ) ) >= floatval( str_replace
 			$img = new Imagick( "engine/r3/".$to );
 			$image = new Imagick();
 			$image->newImage( ($_POST['positions']['width']-1), $_POST['positions']['height'], new ImagickPixel('rgb( 178, 178, 178 )') );
-				$icc_rgb = file_get_contents( "engine/r3/sRGB_Color_Space_Profile.icc" );
+				$icc_rgb = file_get_contents( "/var/www/html/r3API/r3/sRGB_Color_Space_Profile.icc" );
 				$image->profileImage('icc', $icc_rgb);
 				$image->setImageFormat('jpg');
 				$image->compositeImage($img, $img->getImageCompose(), "-".$diff, 0); 
@@ -204,7 +245,7 @@ elseif( $difference > 0 && $_POST['file'][1]["Name"] != "" ) {
 			$_POST['positions']['height'] = $zoomHeight;
 			
 		$image->newImage( ($_POST['positions']['width']-1 ), $_POST['positions']['height'], new ImagickPixel('rgb( 178, 178, 178 )') );
-			$icc_rgb = file_get_contents( "engine/r3/sRGB_Color_Space_Profile.icc" );
+			$icc_rgb = file_get_contents( "/var/www/html/r3API/r3/sRGB_Color_Space_Profile.icc" );
 			$image->profileImage('icc', $icc_rgb);
 			$image->setImageFormat('jpg');
 			$image->compositeImage($first, $first->getImageCompose(), 0, 0); 
@@ -254,7 +295,7 @@ else {
 		}
 		
 	$image->newImage( ($sizes['width']), $sizes['height'], new ImagickPixel('rgb( 178, 178, 178 )') );
-		$icc_rgb = file_get_contents( "engine/r3/sRGB_Color_Space_Profile.icc" );
+		$icc_rgb = file_get_contents( "/var/www/html/r3API/r3/sRGB_Color_Space_Profile.icc" );
 		$image->profileImage('icc', $icc_rgb);
 		$image->setImageFormat('jpg');
 		$image->compositeImage($first, $first->getImageCompose(), 0, 0); 
@@ -268,6 +309,17 @@ else {
 
 $width = floatval( str_replace( ",", ".", $cbox[0]['Right'] ) ) - floatval( str_replace( ",", ".", $cbox[0]['Left'] ) );
 $result = $imgData;
+
+// Persist this render for reuse (see the cache-check near the top of
+// this file) - deliberately done here, once, on the single $imgData
+// value every branch above converges to, rather than touching any of
+// the branches' own internal temp-file handling.
+if( !empty( $imgData ) && strpos( $imgData, 'base64,' ) !== false ) {
+	$rawBinary = base64_decode( substr( $imgData, strpos( $imgData, 'base64,' )+7 ) );
+	if( $rawBinary !== false ) {
+		file_put_contents( $renderCacheFile, $rawBinary );
+		}
+	}
 
 print json_encode( array( $result, $debug ) );
 ?>
