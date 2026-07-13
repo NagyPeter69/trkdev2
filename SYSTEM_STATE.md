@@ -38,7 +38,7 @@ and what isn't.
 | nginx | 1.26.3 | Config at `/etc/nginx/sites-available/trkdev` |
 | PHP | 8.4.21 (FPM + CLI) | See PHP notes below |
 | MariaDB | 11.8.6 | DB name `nyomadake_intra` |
-| DynaPDF | v5.0 (was v4.0 on the old PHP7 box) | See DynaPDF section below — **currently unlicensed** |
+| DynaPDF | v5.0 (was v4.0 on the old PHP7 box) | See DynaPDF section below — **licensed as of 2026-07-13** |
 
 Disk: 47G total, ~2.5G used. RAM: 3.8G. Both comfortable headroom for a dev box; do not
 assume production has the same headroom.
@@ -237,12 +237,19 @@ The actual PDF-rendering engine behind print-proof previews (`engine.php`'s `pdf
 family). A genuine PHP 8.4 Linux build exists (found at `/home/user/php_8.4.zip` on the old
 dev box, now installed at `/usr/lib/php/20240924/dynapdf.so` on trkdev2) and has been
 **verified working end-to-end** (opened a real PDF, rendered a page to JPEG, matching
-engine.php's actual code path) — but **the output is watermarked "DynaPDF 5.0" (unlicensed
-trial mode)**. The old box ran DynaPDF v4.0; this is a major version jump, and the existing
-license key (in `config.inc.php`) is almost certainly v4-only. **A new v5 license from
-DynaPDF/DynaForms is needed before this is usable for anything real** — check
-`https://www.dynaforms.com` account/support for licensing options (this was where the v8.4
-build itself came from).
+engine.php's actual code path). It ran watermarked ("DynaPDF 5.0", unlicensed trial mode)
+until 2026-07-13, when a renewed v5 license key was obtained and installed — **re-verified
+after the key change**: a fresh render via the real `PdfToImageRender()` code path against
+a real sample PDF produced no watermark and logged no license/trial-related warnings.
+
+The key lives in **three** separately-duplicated copies of `config.inc.php` (`engine/`,
+`client/engine/`, and the webroot root) — not one shared file, consistent with this app's
+general pattern of copy-pasted files rather than shared includes (see "Known architectural
+issues" below). All three needed updating together; a future key renewal must do the same
+or some code paths will silently keep using a stale key. All three are tracked in git
+(the key is committed in plaintext, same as the previous keys were) — worth reconsidering
+if this app ever gets a real secrets-management setup, but not changed here since it
+matches how every prior key in this repo's history was already handled.
 
 ## R3 (PDF rendering / color management)
 
