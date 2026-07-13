@@ -239,15 +239,19 @@ function renderComparePages( file, place, nr ) {
 
 				$("#"+place+"_img").fadeIn(0).show(0);
 			
-				disableZoom = false;	
-				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");	
+				disableZoom = false;
+				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
 				//createBoxes();
+				},
+			error:function() {
+				disableZoom = false;
+				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
 				}
 			});
 		}
 	}
 
-function loadComparePages( file, place, nr, sbsf ) {
+function loadComparePages( file, place, nr, sbsf ) {
 	if( previousCompareOperation != "diff" || nr == 1 || nr == 4 ) {
 		disableZoom = true;
 		$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )+1 ) ).trigger("onchange");
@@ -337,6 +341,10 @@ function loadComparePages( file, place, nr, sbsf ) {
 					}
 				
 				setTimeout( function(){ renderComparePages( file, place, nr ); }, 0 );
+				},
+			error:function() {
+				disableZoom = false;
+				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
 				}
 			});
 		}

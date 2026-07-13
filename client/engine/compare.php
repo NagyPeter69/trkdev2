@@ -154,7 +154,13 @@ if( $_GET['op'] == 'render' ) {
 		}
 
 	$image->newImage( ($sizes['width']), $sizes['height'], new ImagickPixel('rgb( 178, 178, 178 )') );
-		$icc_rgb = file_get_contents( "r3/sRGB_Color_Space_Profile.icc" );
+		// Was a relative path ("r3/...") that resolved against this
+		// script's own directory (client/engine/r3/), where this file has
+		// never existed - the real ICC profiles all live in r3API/r3 (see
+		// SYSTEM_STATE.md's DynaPDF/R3 sections). file_get_contents()
+		// silently returned false on the old path, so every compare
+		// render has been compositing with no color profile at all.
+		$icc_rgb = file_get_contents( "/var/www/html/r3API/r3/sRGB_Color_Space_Profile.icc" );
 		$image->profileImage('icc', $icc_rgb);
 		$image->setImageFormat('jpg');
 		$image->compositeImage($first, $first->getImageCompose(), 0, 0); 
@@ -200,7 +206,15 @@ if( $_GET['op'] == 'loadbg' ) {
     $dcolors = getColors( $terminalPath."/".$file[0]["Path"] );
 	$dtitles = getColorTitles( $terminalPath."/".$file[0]["Path"] );
      
-	$postfix = "comp_".$_GET['intra_user'];
+	// Must be unique per side (state_a/b/c/d), not just per user - a
+	// side-by-side or spread comparison fires all four loadbg requests
+	// concurrently for the SAME intra_user, and they used to share this
+	// exact filename. Each one's PDFtoImage_()-then-Imagick-read raced
+	// the others' writes to the same path, so whichever request's read
+	// landed on a file another request had just truncated/was mid-write
+	// on saw a corrupt/incomplete JPEG - the "insufficient image data"
+	// ImagickException seen intermittently on page 46 of TMG_2601.
+	$postfix = "comp_".$_GET['intra_user']."_".$_GET['state'];
 
 	$correctionBox[2] = $correctionBoxTemp = $user[0][15];
 	$box = getPDFBox2( "Mediabox Trimbox Cropbox Bleedbox", $file[0]["Name"] );
@@ -294,7 +308,13 @@ if( $_GET['op'] == 'loadbg' ) {
 	$first = new Imagick( "r3/_bg".$postfix.".jpg" );
 	$image = new Imagick();
 	$image->newImage( pixel__( $fullSizes, $bgDPI ), pixel__( $sizes['Top'] , $bgDPI ), new ImagickPixel('rgb( 178, 178, 178 )') );
-		$icc_rgb = file_get_contents( "r3/sRGB_Color_Space_Profile.icc" );
+		// Was a relative path ("r3/...") that resolved against this
+		// script's own directory (client/engine/r3/), where this file has
+		// never existed - the real ICC profiles all live in r3API/r3 (see
+		// SYSTEM_STATE.md's DynaPDF/R3 sections). file_get_contents()
+		// silently returned false on the old path, so every compare
+		// render has been compositing with no color profile at all.
+		$icc_rgb = file_get_contents( "/var/www/html/r3API/r3/sRGB_Color_Space_Profile.icc" );
 		$image->profileImage('icc', $icc_rgb);			
 		$image->setImageFormat('jpg');
 		$image->compositeImage($first, $first->getImageCompose(), 0, 0);
@@ -323,8 +343,25 @@ if( $_GET['op'] == 'loadbg' ) {
 		$newsize = '';
 		$cbox = $correctionBox;
 		}
-			
-	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop );	
+
+	// $pageID/$text/$numb/$prev_link/$next_link/$fpPages/$ver are never
+	// assigned anywhere in this file - they're only ever read here. On
+	// PHP 7 that just meant these fields came back empty/null in the
+	// response (harmless - nothing on the JS side reads them); PHP 8
+	// makes implode( "-", null ) a fatal TypeError instead of a warning,
+	// which crashed every single compare render regardless of the
+	// postfix race condition above. Defaulting them preserves the old
+	// (always-empty) behavior instead of guessing at values nothing here
+	// ever computed.
+	$pageID = $pageID ?? null;
+	$text = $text ?? '';
+	$numb = $numb ?? array();
+	$prev_link = $prev_link ?? '';
+	$next_link = $next_link ?? '';
+	$fpPages = $fpPages ?? null;
+	$ver = $ver ?? null;
+
+	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop );
 	}
 
 if( $_GET['op'] == 'loadpanel' ) {

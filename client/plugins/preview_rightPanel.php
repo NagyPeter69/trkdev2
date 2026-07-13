@@ -338,9 +338,18 @@ function renderComparePages( file, place, nr ) {
 
 				$("#"+place+"_img").fadeIn(0).show(0);
 			
-				disableZoom = false;	
-				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");	
+				disableZoom = false;
+				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
 				//createBoxes();
+				},
+			// Without this, a failed render (e.g. the ImagickException a
+			// corrupt/racing temp file used to throw server-side) left
+			// renderCounter incremented forever - the render spinner in
+			// the corner never stops, indistinguishable from a render
+			// that's still legitimately in progress.
+			error:function() {
+				disableZoom = false;
+				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
 				}
 			});
 		}
@@ -435,6 +444,14 @@ function loadComparePages( file, place, nr, sbsf ) {
 					}
 				
 				setTimeout( function(){ renderComparePages( file, place, nr ); }, 0 );
+				},
+			// Same reasoning as renderComparePages()'s error handler below -
+			// this call chains into renderComparePages() on success, so a
+			// failure here left renderCounter incremented with nothing to
+			// ever bring it back down.
+			error:function() {
+				disableZoom = false;
+				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
 				}
 			});
 		}
