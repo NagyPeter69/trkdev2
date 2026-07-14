@@ -1281,7 +1281,18 @@ function refreshPageStatus() {
 			// two-button REJECT/APPROVE group is wider than a plain
 			// "Approved"/"Rejected" text), and #colorStdLabel1/2 trail
 			// directly off that width - reposition them whenever it changed.
-			if( statusChanged ) centerToolbar();
+			// This poll runs on its own free-running 600ms timer, completely
+			// decoupled from changePic()/reloadBG()/rendering() - if its
+			// response happens to land while a page nav is still in flight
+			// (disableZoom true), .pagePreview and file[] are mid-transition
+			// and centerToolbar() would measure a transient, inconsistent
+			// state, visibly yanking the toolbar left for a moment before
+			// rendering()'s own completion snaps it back. Skipping the
+			// reposition here while disableZoom is true loses nothing -
+			// rendering() always repositions again once it finishes, by
+			// which point statusText/.status1/.status2 already reflect
+			// whatever this poll last wrote into them regardless.
+			if( statusChanged && !disableZoom ) centerToolbar();
 			fit_box();
 			$("#pstatus>div>img").mouseenter(function(e) {
 				var id = $(this).parent().attr("id");
