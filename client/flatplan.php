@@ -1234,8 +1234,17 @@ function sendProof( type ) {
 		dataType: 'json',
 		success:function( data ) {
 			var download2 = new Array( 'one', 'multi', 'jpg' );
-			
-			if( jQuery.inArray( type, download2 ) != -1 ) {
+
+			// "one" (PDF Merged) is the only download type that combines
+			// pages into a single PDF - so it's the only one where a
+			// selection spanning Parts with different color standards is a
+			// real problem (a merged PDF can only carry one output intent).
+			// "multi" zips separate PDFs and "jpg" normalizes every page to
+			// sRGB independently, so mixed standards are fine for both.
+			if( type == 'one' && data && data.error == 'colorMismatch' ) {
+				alert( "The pages can't be downloaded together because their color standards don't match. Please download publication parts individually." );
+				}
+			else if( jQuery.inArray( type, download2 ) != -1 ) {
 				download(data, type);
 				}
 			enableContext = 1;

@@ -413,31 +413,48 @@
 		$result = $loc;
 		}
 		
-	elseif( $_GET['type'] == 'one' ) {	
-		if( count( $pages ) > 1 )
-			$loc = $magazine[0][3]."_".$issue."_".$pages[0]."-".$pages[count($pages)-1].".pdf";
-		else 
-			$loc = $magazine[0][3]."_".$issue."_".$pages[0].".pdf";
-		
-		$data = array();
-		$data["loc"] = $loc;
-		$data["path"] = $path;
-		$data["files"] = $files;
+	elseif( $_GET['type'] == 'one' ) {
+		// A merged single PDF can only ever carry one output intent -
+		// mixing pages from Parts with different color standards would
+		// produce a PDF with a genuinely ambiguous/conflicting output
+		// intent at the end. Refuse rather than silently hand back a
+		// broken file. "multi" (zip of separate PDFs) and "jpg" (each page
+		// independently normalized to sRGB) don't merge pages together, so
+		// neither of them has this problem.
+		$standards = array();
+		for( $i = 0; $i < count( $pages ); $i++ ) {
+			$standards[ partDetect( $pub_id, $pages[$i] ) ] = true;
+			}
 
-		include( "/var/www/html/dynAPI/tracker/one_local.php" );
-		
-/*		
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/one.php" );
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
-		curl_setopt($ch, CURLOPT_POST, true );
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-		$response = curl_exec ($ch);
-		$response = json_decode( $response, true );
-*/
-		$result = $loc;
+		if( count( $standards ) > 1 ) {
+			$result = array( "error" => "colorMismatch" );
+			}
+		else {
+			if( count( $pages ) > 1 )
+				$loc = $magazine[0][3]."_".$issue."_".$pages[0]."-".$pages[count($pages)-1].".pdf";
+			else
+				$loc = $magazine[0][3]."_".$issue."_".$pages[0].".pdf";
+
+			$data = array();
+			$data["loc"] = $loc;
+			$data["path"] = $path;
+			$data["files"] = $files;
+
+			include( "/var/www/html/dynAPI/tracker/one_local.php" );
+
+	/*
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/one.php" );
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
+			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
+			curl_setopt($ch, CURLOPT_POST, true );
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+			$response = curl_exec ($ch);
+			$response = json_decode( $response, true );
+	*/
+			$result = $loc;
+			}
 		}
 	
 	
