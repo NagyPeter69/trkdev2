@@ -518,7 +518,16 @@
 		$holderWidth += $w;
 		//if( $page == 1 ) $holderWidth += $w;
 		if( $page == 1 ) $holderWidth += 81;
-		if( intval( $page )%2 != "" ) {
+		// PHP 7 compared this int to "" by converting "" to 0, so this only
+		// fired for odd pages (1%2=1 != 0) - the intended "close out this
+		// pair's spacer" trigger. PHP 8's "saner string to number
+		// comparisons" stringifies the int instead ("0"/"1" != ""), which is
+		// true either way - so this fired on every single page, inserting an
+		// extra floated spacer div into a spread's flow on top of the one
+		// already correctly added, widening the spread's container beyond
+		// the two thumbnails' combined width and leaving a visible gap
+		// between them instead of the pages touching at the spine.
+		if( intval( $page )%2 != 0 ) {
 			if( $page == 1 && $fPage[0][9] > 1 && $_GET["type"] == "fpPreview" ) {
 				$txt .= "";
 				}

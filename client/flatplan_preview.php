@@ -1020,6 +1020,14 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 					?>			
 				<input type="text" id='pageNr' value='<?= implode( "-", $numb ) ?>' style='padding: 0; border: 0;' onkeypress="return isEnter(event, 'jumpToPage' )" onfocus="this.select();">
 				<div class='pv2 pageVer'></div>
+				<?
+					$colorStdNames = array();
+					for( $i = 0; $i < count( $pages ); $i++ ) {
+						$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color" );
+						}
+					$colorStdNames = array_unique( $colorStdNames );
+				?>
+				<div id='colorStdLabel' title='Color standard'><?= htmlspecialchars( implode( " / ", $colorStdNames ) ) ?></div>
 			</div>
 
 			<?php if( isMobile() ) { ?>
@@ -2812,11 +2820,71 @@ function refreshComments( suboption ) {
 	
 var fpPages = parseInt( $("#fpPages").outerWidth() );
 
-function fit_pages() {
-	var footer = parseInt( $("#fpFooter").outerWidth() );
-	var pagesLeft = (footer/2)-(parseInt($(".pages").outerWidth())/2 );
-	$(".pages").css("left", pagesLeft+"px" );
+// Centers the page-number/version/nav-arrow complex (and the per-page
+// approve/reject controls flanking it) within the footer toolbar.
+// #zoomRange/#zoomdiv (the zoom % input + slider) sit fixed on the left of
+// this same bar but were never excluded from the width used to center
+// everything else - so the whole complex was centered across the FULL bar,
+// including that reserved zone, rather than the space actually left over
+// for it. That made it look off-center relative to its own visible free
+// area. zoomOffset marks where that free area actually starts; centering
+// math for the left side (.pages and .status1) is now relative to
+// [zoomOffset, footer] instead of [0, footer]. The right side (.status2)
+// is untouched - nothing reserved eats into its space.
+// animate: true uses the same 200ms slide toggleBar() already used: false
+// (default) applies instantly, for initial load / resize.
+function centerToolbar( footerWidth, animate ) {
+	if( footerWidth == undefined ) {
+		footerWidth = parseInt( $("#fpFooter").outerWidth() );
+		}
+	var zoomOffset = parseInt( $("#zoomRange").position().left )+parseInt( $("#zoomRange").outerWidth() )+15;
+	var usable = footerWidth-zoomOffset;
+	var pagesLeft = zoomOffset+(usable/2)-(parseInt($(".pages").outerWidth())/2 );
+	var status1Left = zoomOffset+( (pagesLeft-zoomOffset)/2 )-(parseInt($(".status1").outerWidth())/2 );
+	var temp = pagesLeft+parseInt($(".pages").outerWidth());
+	var maradt = (footerWidth-temp)/2;
+	var status2Left = (temp+maradt)-(parseInt($(".status2").outerWidth())/2 );
+
+	function setLeft( $el, val ) {
+		if( animate ) $el.animate({ left: val+"px" }, 200 );
+		else $el.css( "left", val+"px" );
+		}
+
+	setLeft( $(".pages"), pagesLeft );
+	setLeft( $("#leftArrow, #leftArrow_hover"), pagesLeft-36 );
+	setLeft( $("#rightArrow, #rightArrow_hover"), pagesLeft+parseInt($(".pages").outerWidth())+5 );
+	setLeft( $(".status1"), status1Left );
+	setLeft( $(".status2"), status2Left );
+
+	return pagesLeft;
 	}
+
+function fit_pages() {
+	centerToolbar();
+	}
+
+// The static "left: 300px" / "left: 150px" / "left: 169px" inline styles on
+// the arrows/status divs in the HTML above are only rough placeholders for
+// the instant before this runs - toggleBar() was the only other place this
+// layout ever got (re)computed, which only fires when the side panel is
+// manually toggled, so the true initial position on a fresh page load was
+// never actually centered. Same font-swap timing issue fit_nav() has
+// elsewhere in this app: if the custom @font-face text is still loading the
+// first time this runs, .status1/.status2/.pages measure narrower than
+// their final rendered width, so re-running once the font is confirmed
+// ready (or after a fallback timeout) catches that.
+$(function() {
+	centerToolbar();
+	// Not "document.fonts.ready.then( centerToolbar )" directly - .then()
+	// resolves with a FontFaceSet, which would land in centerToolbar's own
+	// first parameter (footerWidth) and break the width math.
+	if( document.fonts && document.fonts.ready ) {
+		document.fonts.ready.then( function() { centerToolbar(); } );
+		}
+	else {
+		setTimeout( function() { centerToolbar(); }, 300 );
+		}
+	});
 
 var starting_zoom = 0;
 
@@ -3032,8 +3100,9 @@ $(window).resize(function(){
 		winWidth = $(window).width();
 		fit_box_preview();
 		zoomCalc();
-	
+
 		placeBox();
+		centerToolbar();
 		}
 	});
 

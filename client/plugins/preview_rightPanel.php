@@ -1016,20 +1016,8 @@ function toggleBar() {
 	if( parseInt( bar.css("left") ) >= 0 ) {
 		//fit_box();
 		var footer = parseInt( $("#fpFooter").outerWidth() )+width;
-		var pagesLeft = (footer/2)-(parseInt($(".pages").outerWidth())/2 );
-		var status = ( ((footer-pagesLeft)/2)-(parseInt($(".status1").outerWidth())/2 ) );
-		$(".status1").animate({ left: status+"px" }, 200 );
-		var temp = pagesLeft+parseInt($(".pages").outerWidth());
-		var maradt = (footer-temp)/2;
-		status = ( (temp+maradt)-(parseInt($(".status2").outerWidth())/2 ) );
-		$(".status2").animate({ left: status+"px" }, 200 );
-		$(".pages").animate({ left: pagesLeft+"px" }, 200 );
-		$("#leftArrow").animate({ left: (pagesLeft-36)+"px" }, 200 );
-		$("#rightArrow").animate({ left: (pagesLeft+parseInt($(".pages").outerWidth()) + 5 )+"px" }, 200 );
-		$("#leftArrow_hover").animate({ left: (pagesLeft-36)+"px" }, 200 );
-		$("#rightArrow_hover").animate({ left: (pagesLeft+parseInt($(".pages").outerWidth()) + 5 )+"px" }, 200 );
-		$(".status1").css("left", ( ((footer-pagesLeft)/2)-(parseInt($(".status1").outerWidth())/2 ) )+"px" );
-		
+		centerToolbar( footer, true );
+
 		bar.animate({ left: (0-width)+"px" }, 200 );
 		if( parseInt( $(".pagePreview").css("left") ) > 0 ) {
 			temp = parseInt( $(".pagePreview").css("left") )+(width/2);		
@@ -1062,18 +1050,7 @@ function toggleBar() {
 		}
 	else {
 		var footer = parseInt( $("#fpFooter").outerWidth() )-width;
-		var pagesLeft = (footer/2)-(parseInt($(".pages").outerWidth())/2 );
-		var status = ( ((footer-pagesLeft)/2)-(parseInt($(".status1").outerWidth())/2 ) );
-		$(".status1").animate({ left: status+"px" }, 200 );
-		$(".pages").animate({ left: pagesLeft+"px" }, 200 );
-		$("#leftArrow").animate({ left: (pagesLeft-36)+"px" }, 200 );
-		$("#rightArrow").animate({ left: (pagesLeft+parseInt($(".pages").outerWidth()) + 5 )+"px" }, 200 );
-		$("#leftArrow_hover").animate({ left: (pagesLeft-36)+"px" }, 200 );
-		$("#rightArrow_hover").animate({ left: (pagesLeft+parseInt($(".pages").outerWidth()) + 5)+"px" }, 200 );
-		var temp = pagesLeft+parseInt($(".pages").outerWidth());
-		var maradt = (footer-temp)/2;
-		status = ( (temp+maradt)-(parseInt($(".status2").outerWidth())/2 ) );
-		$(".status2").animate({ left: status+"px" }, 200 );
+		centerToolbar( footer, true );
 		bar.animate({ left: 0+"px" }, 200 );
 		extraCorrection.Left = 0;
 		$(".commentDraw, .commentText").each(function(){
@@ -1430,6 +1407,14 @@ function reloadBG( switchTo, from ) {
 				if( from == "changePic" ) firstRun = true;
 				fpPages = data[8];
 				$("#pageNr").val( data[6] );
+				// data[16]: per-page color standard(s), appended after the
+				// original 16-element response shape (see
+				// engine/flatplan_reloadbg.php). #colorStdLabel is only set
+				// from server-rendered HTML on the initial full page load -
+				// without this, it would go stale on every AJAX nav/zoom
+				// after that.
+				$("#colorStdLabel").text( data[16] );
+				centerToolbar();
 
 				$('#leftArrow').attr('onclick', 'changePic("'+data[7][0]+'")' );
 				$('#leftArrow_hover').attr('onclick', 'changePic("'+data[7][0]+'")' );

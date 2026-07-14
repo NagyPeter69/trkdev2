@@ -567,7 +567,7 @@ select[name="comp_operation"]:disabled {
 #zoomRange{
   position: absolute;
   left: 42px;
-  width: 100px;
+  width: 67px;
   top: 10px;
   }
 
@@ -1065,6 +1065,15 @@ select[name="comp_operation"]:disabled {
 	text-align:center;
 	color: rgb( 77, 77, 77 );
 	font-size: 11px;
+	}
+
+#colorStdLabel {
+	float: left;
+	margin-left: 8px;
+	font-size: 9px;
+	color: rgb( 170, 170, 170 );
+	line-height: 35px;
+	white-space: nowrap;
 	}
 
 #pageNr {

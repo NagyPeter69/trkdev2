@@ -705,7 +705,14 @@ if( $_GET['op'] == 'reloadbg' ) {
 		if( $alterCode != "") $txt .= "[".$alterCode."]";
 		$numb[] = $txt;
 		}
-	
+
+	$colorStdNames = array();
+	for( $i = 0; $i < count( $pages ); $i++ ) {
+		$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color" );
+		}
+	$colorStdText = implode( " / ", array_unique( $colorStdNames ) );
+
+
 	error_log( "PAGE COUNTER: ".count( $pages ) );
 	
 	switch( $user[0][15] ) {
@@ -789,7 +796,10 @@ if( $_GET['op'] == 'reloadbg' ) {
 	//$end = microtime(true);
 	//error_log( "time: ".rutime($end, $start, "stime")." ms" );
 	
-	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop );	
+	// Appended at the end (index 16), not inserted among the existing
+	// indices - the JS success handler reads this array by fixed numeric
+	// position, so anything added has to go after the existing ones.
+	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop, $colorStdText );
 	}
 	
 if( $_GET['op'] == 'getFirstPage' ) {
