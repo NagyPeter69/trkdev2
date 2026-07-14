@@ -352,7 +352,17 @@
 		
 		
 		if( $page > $length and $fPage[0][0] == "" and $pageType != "PRE" ) {
-				$txt = "<div style='float: right;'><div class='".$class."_pagenr pagenr'>&nbsp;</div><div style='position: absolute; left: 0px; z-index: 2; width: ".($w+2)."px; '></div></div>";
+				// This page number is genuinely beyond the issue's last page
+				// (the "right" partner a trailing odd-numbered final page
+				// doesn't have) - not a page that merely hasn't been
+				// uploaded/rendered yet. Reserving a full page's width here
+				// made every trailing lone page's wrapper the same width as
+				// a real pair, so it always floated as if paired even
+				// though nothing occupies that space - width:0 lets the
+				// wrapper shrink to the one real page it holds, so normal
+				// CSS wrapping places it correctly whether or not the
+				// previous row still has room.
+				$txt = "<div style='float: right;'><div class='".$class."_pagenr pagenr'>&nbsp;</div><div style='position: absolute; left: 0px; z-index: 2; width: 0px;'></div></div>";
 
 				return $txt;
 				}
@@ -1505,22 +1515,14 @@
 				
 				while( $i <= $length ) {
 					if( $counter == 5 ) $counter = 1;
-					// A trailing final page with no partner (odd total page
-					// count) reserves the same left+right width as every
-					// normal pair, so it just floats into whatever room is
-					// left at the end of the last row instead of starting a
-					// fresh one - clear:left forces it onto its own row
-					// instead, same as it would look if it had a partner.
-					$lastPageAlone = ( ( $i + 1 ) > $length );
-					$trailingClear = $lastPageAlone ? "clear: left; " : "";
 					if( $_GET['opt'] == 'FIN' ) {
-						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i, "FIN" );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i, "FIN" );
 						$text .= "</div>";
 						}
 					else {
-						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i );
 						$text .= "</div>";
