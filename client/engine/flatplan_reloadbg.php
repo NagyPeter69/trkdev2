@@ -630,7 +630,24 @@ if( $_GET['op'] == 'reloadbg' ) {
 		$tempSql = sql_get( 'pageinfo', 'issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND pack_id="'.$temp[1].'"', '*' );
 		if( $user[0][14] == "pair" ) {
 			if( $prev % 2 != 0 && $prev > 1 && $tempSql[0][9] == 1 ) {
-	  			if( $pages2[$needle-2] == ( $prev-1 ) ) {
+				// $pages2 entries are "PPP_packid" strings (e.g. "006_17"), not
+				// plain numbers. PHP 7 compared a non-numeric string like this
+				// to an int by extracting its leading numeric run, so
+				// "006_17" == 6 was true. PHP 8's "saner string to number
+				// comparisons" reversed that: it now stringifies the int
+				// instead ("006_17" == "6"), which is always false. That
+				// silently broke this pair-mode snap-to-even-page check, so
+				// $prev stayed on the odd, unpaired page (right pack_id for
+				// THAT page, but not for the even one two spots back in
+				// $pages2). The next click's own separate odd-page decrement
+				// then normalized the page number but kept that stale
+				// pack_id, producing a page/pack_id combination that
+				// doesn't exist in $pages2 at all - so the lookup for it
+				// failed outright and both prev/next links collapsed to the
+				// dead placeholder simultaneously, with no error anywhere.
+				// intval() here restores an explicit integer comparison
+				// instead of relying on comparison-operator type coercion.
+	  			if( intval( $pages2[$needle-2] ) == ( $prev-1 ) ) {
 					$prev = intval( $pages2[$needle-2] );
 					$temp = explode( "_", $pages2[$needle-2] );
 					}
@@ -642,7 +659,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 		$temp = explode( "_", $pages2[$needle+1] );
 		$tempSql = sql_get( 'pageinfo', 'issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND pack_id="'.$temp[1].'"', '*' );
 		if( $user[0][14] == "pair" ) {
-			if( $next == ( $pages2[$needle]+1 ) && $next % 2 != 0 && $tempSql[0][9] == 1 ) {
+			if( $next == ( intval( $pages2[$needle] )+1 ) && $next % 2 != 0 && $tempSql[0][9] == 1 ) {
 	  			$next = intval( $pages2[$needle+2] );
 	  			$temp = explode( "_", $pages2[$needle+2] );
 	  			}
@@ -672,7 +689,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 			}
 	
 		$next_link .= "&id=".$_GET['id']."&p=".$next."&clk=".$next."&pack_id=".$next_id;
-		}	
+		}
 
 	$numb = array();
 	for( $i = 0; $i < count( $pages ); $i++ ) {

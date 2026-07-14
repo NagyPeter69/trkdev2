@@ -748,20 +748,28 @@ if( $needle !== false ) {
 	$clk = intval( $pages2[$needle-1] ); 
 	if( $user[0][14] == "pair" ) {
     if( $prev % 2 != 0 && $prev > 1 && $tempSql[0][9] == 1 ) {
-      if( $pages2[$needle-2] == ( $prev-1 ) ) {
+      // $pages2 entries are "PPP_packid" strings (e.g. "006_17"), not plain
+      // numbers. PHP 7 compared a non-numeric string like this to an int by
+      // extracting its leading numeric run, so "006_17" == 6 was true. PHP
+      // 8's "saner string to number comparisons" reversed that: it now
+      // stringifies the int instead ("006_17" == "6"), which is always
+      // false - silently breaking this pair-mode snap-to-even-page check.
+      // intval() restores an explicit integer comparison. See the matching
+      // fix (and full writeup) in engine/flatplan_reloadbg.php.
+      if( intval( $pages2[$needle-2] ) == ( $prev-1 ) ) {
         $prev = intval( $pages2[$needle-2] );
         $temp = explode( "_", $pages2[$needle-2] );
         }
       }
 	}
 	$prev_id = $temp[1];
-	
+
 	$next = intval( $pages2[$needle+1] );
 	$temp = explode( "_", $pages2[$needle+1] );
 	$tempSql = sql_get( 'pageinfo', 'issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND pack_id="'.$temp[1].'"', '*' );
 	$clk2 = intval( $pages2[$needle+1] );
 	if( $user[0][14] == "pair" ) {
-	    if( $next == ( $pages2[$needle]+1 ) && $next % 2 != 0 && $tempSql[0][9] == 1 ) {
+	    if( $next == ( intval( $pages2[$needle] )+1 ) && $next % 2 != 0 && $tempSql[0][9] == 1 ) {
     		$next = intval( $pages2[$needle+2] );
 			$temp = explode( "_", $pages2[$needle+2] );
     		}
