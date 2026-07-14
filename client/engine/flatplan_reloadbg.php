@@ -706,11 +706,13 @@ if( $_GET['op'] == 'reloadbg' ) {
 		$numb[] = $txt;
 		}
 
+	// One entry per displayed page (not deduplicated) - #colorStdLabel1/2 each
+	// sit next to their OWN page's approve/reject group, so a spread with two
+	// different standards needs both values, not a combined string.
 	$colorStdNames = array();
 	for( $i = 0; $i < count( $pages ); $i++ ) {
 		$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color" );
 		}
-	$colorStdText = implode( " / ", array_unique( $colorStdNames ) );
 
 
 	error_log( "PAGE COUNTER: ".count( $pages ) );
@@ -799,7 +801,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 	// Appended at the end (index 16), not inserted among the existing
 	// indices - the JS success handler reads this array by fixed numeric
 	// position, so anything added has to go after the existing ones.
-	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop, $colorStdText );
+	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop, $colorStdNames );
 	}
 	
 if( $_GET['op'] == 'getFirstPage' ) {

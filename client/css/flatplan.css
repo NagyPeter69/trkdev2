@@ -1067,10 +1067,9 @@ select[name="comp_operation"]:disabled {
 	font-size: 11px;
 	}
 
-#colorStdLabel {
-	float: left;
-	margin-left: 8px;
-	font-size: 9px;
+#colorStdLabel1, #colorStdLabel2 {
+	position: absolute;
+	font-size: 11px;
 	color: rgb( 170, 170, 170 );
 	line-height: 35px;
 	white-space: nowrap;

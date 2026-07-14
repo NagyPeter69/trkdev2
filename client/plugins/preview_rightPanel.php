@@ -1015,9 +1015,6 @@ function toggleBar() {
 	
 	if( parseInt( bar.css("left") ) >= 0 ) {
 		//fit_box();
-		var footer = parseInt( $("#fpFooter").outerWidth() )+width;
-		centerToolbar( footer, true );
-
 		bar.animate({ left: (0-width)+"px" }, 200 );
 		if( parseInt( $(".pagePreview").css("left") ) > 0 ) {
 			temp = parseInt( $(".pagePreview").css("left") )+(width/2);		
@@ -1043,14 +1040,17 @@ function toggleBar() {
 				'Width': parseInt( $("#content_box").width() ),
 				'Height': fpBox['Height']
 				}
-			
+
 			fit_box();
+			// Only safe to measure .pagePreview for the new spine/page-center
+			// positions once the panel-toggle animation (and fit_box()'s own
+			// resulting resize) has actually settled - reading it mid-animate
+			// would target where the render used to be, not where it ends up.
+			centerToolbar( true );
 			enableCommentRefresh = true;
 			});
 		}
 	else {
-		var footer = parseInt( $("#fpFooter").outerWidth() )-width;
-		centerToolbar( footer, true );
 		bar.animate({ left: 0+"px" }, 200 );
 		extraCorrection.Left = 0;
 		$(".commentDraw, .commentText").each(function(){
@@ -1077,10 +1077,11 @@ function toggleBar() {
 				'Width': parseInt( $("#content_box").width() ),
 				'Height': fpBox['Height']
 				}
-			
+
 			fit_box();
+			centerToolbar( true );
 			enableCommentRefresh = true;
-			});		
+			});
 		}
 	}
 
@@ -1409,12 +1410,13 @@ function reloadBG( switchTo, from ) {
 				$("#pageNr").val( data[6] );
 				// data[16]: per-page color standard(s), appended after the
 				// original 16-element response shape (see
-				// engine/flatplan_reloadbg.php). #colorStdLabel is only set
-				// from server-rendered HTML on the initial full page load -
-				// without this, it would go stale on every AJAX nav/zoom
-				// after that.
-				$("#colorStdLabel").text( data[16] );
-				centerToolbar();
+				// engine/flatplan_reloadbg.php) - one entry per displayed
+				// page. Only the text is set here; repositioning happens
+				// once rendering()'s tesztAjax.php call actually completes
+				// and .pagePreview reflects the new page's real geometry
+				// (this reloadbg response alone doesn't render anything).
+				$("#colorStdLabel1").text( data[16][0] );
+				$("#colorStdLabel2").text( data[16].length > 1 ? data[16][1] : "" );
 
 				$('#leftArrow').attr('onclick', 'changePic("'+data[7][0]+'")' );
 				$('#leftArrow_hover').attr('onclick', 'changePic("'+data[7][0]+'")' );

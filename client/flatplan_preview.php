@@ -951,6 +951,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 						}
 				?>
 				</div>
+				<div id='colorStdLabel1' title='Color standard'><?= htmlspecialchars( partDetect( $_GET['id'], $pages[0], "color" ) ) ?></div>
 			<?php } ?>
 
 		<?php if( isMobile() ) { ?>
@@ -1020,14 +1021,6 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 					?>			
 				<input type="text" id='pageNr' value='<?= implode( "-", $numb ) ?>' style='padding: 0; border: 0;' onkeypress="return isEnter(event, 'jumpToPage' )" onfocus="this.select();">
 				<div class='pv2 pageVer'></div>
-				<?
-					$colorStdNames = array();
-					for( $i = 0; $i < count( $pages ); $i++ ) {
-						$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color" );
-						}
-					$colorStdNames = array_unique( $colorStdNames );
-				?>
-				<div id='colorStdLabel' title='Color standard'><?= htmlspecialchars( implode( " / ", $colorStdNames ) ) ?></div>
 			</div>
 
 			<?php if( isMobile() ) { ?>
@@ -1068,7 +1061,10 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 						}
 					echo $text[1];
 					} ?>
-			</div>				
+			</div>
+			<?php if( count( $pages ) > 1 ) { ?>
+				<div id='colorStdLabel2' title='Color standard'><?= htmlspecialchars( partDetect( $_GET['id'], $pages[1], "color" ) ) ?></div>
+			<?php } ?>
 		<?php } ?>
 	</div>
 </div>
@@ -1260,15 +1256,22 @@ function refreshPageStatus() {
 		data: 'op=refreshPageStatus&pagesID='+Pages+'&fpver='+opt+'&intra_user=<?= $_SESSION['intra_user'] ?>&part='+$("#part").val(),
 		dataType: 'json',
 		success:function( data ) {
+			var statusChanged = false;
 			for( var i = 0; i < pageID.length; i++ ) {
 				if( data[i] != statusText[i] ) {
 					statusText[i] = data[i];
 					$( ".status"+(i+1) ).html( data[i] );
+					statusChanged = true;
 					}
 				}
 			if( i < 2 ) {
 				$( ".status2" ).html( '' );
 				}
+			// .status1/.status2's width changes with approval state (the
+			// two-button REJECT/APPROVE group is wider than a plain
+			// "Approved"/"Rejected" text), and #colorStdLabel1/2 trail
+			// directly off that width - reposition them whenever it changed.
+			if( statusChanged ) centerToolbar();
 			fit_box();
 			$("#pstatus>div>img").mouseenter(function(e) {
 				var id = $(this).parent().attr("id");
@@ -1840,6 +1843,7 @@ function rendering( command, newZoom ) {
 								$( "#zoomRange" ).slider( "option", { disabled: false } );
 								}
 							disableZoom = false;
+							centerToolbar();
 							setTimeout(function() { refreshComments(''); }, 200 );
 							var currentPos = {
 								left: $('#content_box').scrollLeft(),
@@ -1909,6 +1913,7 @@ function rendering( command, newZoom ) {
 						$( "#zoomRange" ).slider( "option", { disabled: false } );
 						}
 					disableZoom = false;
+					centerToolbar();
 					setTimeout(function() { refreshComments(''); }, 200 );
 					var currentPos = {
 						left: $('#content_box').scrollLeft(),
@@ -1952,6 +1957,7 @@ function rendering( command, newZoom ) {
 						$( "#zoomRange" ).slider( "option", { disabled: false } );
 						}
 					disableZoom = false;
+					centerToolbar();
 					setTimeout(function() { refreshComments(''); }, 200 );
 					var currentPos = {
 						left: $('#content_box').scrollLeft(),
@@ -2820,32 +2826,46 @@ function refreshComments( suboption ) {
 	
 var fpPages = parseInt( $("#fpPages").outerWidth() );
 
-// Centers the page-number/version/nav-arrow complex (and the per-page
-// approve/reject controls flanking it) within the footer toolbar.
-// #zoomRange/#zoomdiv (the zoom % input + slider) sit fixed on the left of
-// this same bar but were never excluded from the width used to center
-// everything else - so the whole complex was centered across the FULL bar,
-// including that reserved zone, rather than the space actually left over
-// for it. That made it look off-center relative to its own visible free
-// area. zoomOffset marks where that free area actually starts; centering
-// math for the left side (.pages and .status1) is now relative to
-// [zoomOffset, footer] instead of [0, footer]. The right side (.status2)
-// is untouched - nothing reserved eats into its space.
+// Centers the page-number/nav-arrow complex on the actual spread spine
+// (where the two rendered pages touch on screen) rather than on some
+// computed midpoint of the toolbar's free space, and centers each
+// approve/reject control group (and its trailing color-standard label) on
+// its own page's rendered center - not on an arbitrary half of the
+// remaining bar width. file[0]/file[1] hold each page's own Left/Right
+// trim extents in PDF points (same source zoomCalc() uses for its own
+// width math); pixel() converts those to on-screen pixels at the current
+// zoom, and .pagePreview is the actual rendered image's own box (verified
+// its rect is pixel-identical to the rendered <img> itself), so the left
+// page spans [0, leftWidthPx) from .pagePreview's left edge and, in pair
+// mode, the right page spans [leftWidthPx, leftWidthPx+rightWidthPx).
 // animate: true uses the same 200ms slide toggleBar() already used: false
 // (default) applies instantly, for initial load / resize.
-function centerToolbar( footerWidth, animate ) {
-	if( footerWidth == undefined ) {
-		footerWidth = parseInt( $("#fpFooter").outerWidth() );
+function centerToolbar( animate ) {
+	var fcOffset = $(".footer_content").offset().left;
+	var ppOffset = $(".pagePreview").offset().left;
+	var leftWidthPx = pixel( parseFloat( file[0]['Right'] )-parseFloat( file[0]['Left'] ) );
+	// file[1] always exists as an object even in single-page mode (just with
+	// empty Left/Right/Width), so pages > 1 is the only reliable check here.
+	var isPair = ( pages > 1 );
+
+	var spineX, leftCenterX, rightCenterX;
+	if( isPair ) {
+		var rightWidthPx = pixel( parseFloat( file[1]['Right'] )-parseFloat( file[1]['Left'] ) );
+		spineX = ( ppOffset-fcOffset )+leftWidthPx;
+		leftCenterX = spineX-( leftWidthPx/2 );
+		rightCenterX = spineX+( rightWidthPx/2 );
 		}
-	var zoomOffset = parseInt( $("#zoomRange").position().left )+parseInt( $("#zoomRange").outerWidth() )+15;
-	var usable = footerWidth-zoomOffset;
-	var pagesLeft = zoomOffset+(usable/2)-(parseInt($(".pages").outerWidth())/2 );
-	var status1Left = zoomOffset+( (pagesLeft-zoomOffset)/2 )-(parseInt($(".status1").outerWidth())/2 );
-	var temp = pagesLeft+parseInt($(".pages").outerWidth());
-	var maradt = (footerWidth-temp)/2;
-	var status2Left = (temp+maradt)-(parseInt($(".status2").outerWidth())/2 );
+	else {
+		spineX = ( ppOffset-fcOffset )+( leftWidthPx/2 );
+		leftCenterX = spineX;
+		}
+
+	var pagesLeft = spineX-( parseInt( $(".pages").outerWidth() )/2 );
+	var status1Left = leftCenterX-( parseInt( $(".status1").outerWidth() )/2 );
+	var status2Left = isPair ? ( rightCenterX-( parseInt( $(".status2").outerWidth() )/2 ) ) : null;
 
 	function setLeft( $el, val ) {
+		if( val == null || $el.length == 0 ) return;
 		if( animate ) $el.animate({ left: val+"px" }, 200 );
 		else $el.css( "left", val+"px" );
 		}
@@ -2855,6 +2875,12 @@ function centerToolbar( footerWidth, animate ) {
 	setLeft( $("#rightArrow, #rightArrow_hover"), pagesLeft+parseInt($(".pages").outerWidth())+5 );
 	setLeft( $(".status1"), status1Left );
 	setLeft( $(".status2"), status2Left );
+
+	// Trails its page's approve/reject group rather than being centered
+	// itself - its own width varies with the standard's name length, and
+	// centering it independently would drift it away from the button.
+	setLeft( $("#colorStdLabel1"), status1Left+parseInt( $(".status1").outerWidth() )+8 );
+	if( isPair ) setLeft( $("#colorStdLabel2"), status2Left+parseInt( $(".status2").outerWidth() )+8 );
 
 	return pagesLeft;
 	}
@@ -2877,7 +2903,7 @@ $(function() {
 	centerToolbar();
 	// Not "document.fonts.ready.then( centerToolbar )" directly - .then()
 	// resolves with a FontFaceSet, which would land in centerToolbar's own
-	// first parameter (footerWidth) and break the width math.
+	// "animate" parameter and make this run as an unwanted 200ms slide.
 	if( document.fonts && document.fonts.ready ) {
 		document.fonts.ready.then( function() { centerToolbar(); } );
 		}
