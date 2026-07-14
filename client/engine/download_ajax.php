@@ -330,10 +330,18 @@
 			
 			$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$col.'.icc '.$from.' $@ >'.$to.' 2>&1';
 			//error_log( $command );
+			// "cd r3" (relative to this script's own directory,
+			// client/engine/) pointed at client/engine/r3/ - a JPG
+			// cache/working directory, not where the actual r3 binary
+			// lives. Every other r3 invocation in engine.php uses the
+			// absolute /var/www/html/r3API/r3 path (see SYSTEM_STATE.md's
+			// "R3" section) - this one call site was the only one left
+			// on the stale path, so it silently shelled out to a
+			// directory with no r3 binary in it and produced nothing.
 			$command = shell_exec('
-				cd r3 2>&1;
+				cd /var/www/html/r3API/r3 2>&1;
 				'.$command.';
-				');			
+				');
 			
 			$zip2->addFile( '../temp/_zip/'.$name, $name );
 			$removable[] = $generated;
