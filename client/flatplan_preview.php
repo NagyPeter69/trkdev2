@@ -2875,20 +2875,30 @@ function centerToolbar( animate ) {
 		status2Left = rightCenterX-( status2Width/2 );
 		}
 	else {
-		// Single page: .status1 and .pages can't both be independently
-		// centered on the one page's center without landing on top of each
-		// other - there's only one center point to share. Treat them as one
-		// [status1][labelGap][#colorStdLabel1][gap][.pages] cluster instead
-		// (the label term collapses to 0 width if it doesn't exist - prepress
-		// tools off) and center THAT as a whole.
+		// Single page: .pages always centers on the page's own midline, full
+		// stop - it never shifts to make room for anything else. .status1
+		// (+ its trailing color-standard label, which collapses to 0 width
+		// if it doesn't exist - prepress tools off) instead sits to the
+		// right of .pages, centered within whatever toolbar space is
+		// actually left over there (.pages' right edge out to the bar's own
+		// right edge) - the same "center within the real free space"
+		// approach already used to keep this complex clear of the zoom
+		// controls on the left.
 		var pageCenterX = ( ppOffset-fcOffset )+( leftWidthPx/2 );
-		var gap = 15;
+		pagesLeft = pageCenterX-( pagesWidth/2 );
+
+		// #fpFooter's own right edge, converted into .footer_content's
+		// coordinate space (what pagesLeft/status1Left are expressed in) -
+		// not just #fpFooter's outerWidth taken at face value, since
+		// .footer_content sits inset from #fpFooter's own left edge by its
+		// own "left: 15px" and that inset would otherwise silently throw
+		// this centering off by half its size.
+		var footerRightEdge = $("#fpFooter")[0].getBoundingClientRect().right-fcOffset;
 		var labelGap = 8;
 		var colorLabelWidth = parseInt( $("#colorStdLabel1").outerWidth() ) || 0;
 		var extra = colorLabelWidth > 0 ? labelGap+colorLabelWidth : 0;
-		var groupLeft = pageCenterX-( ( status1Width+extra+gap+pagesWidth )/2 );
-		status1Left = groupLeft;
-		pagesLeft = groupLeft+status1Width+extra+gap;
+		var rightAvailStart = pagesLeft+pagesWidth;
+		status1Left = rightAvailStart+( ( footerRightEdge-rightAvailStart-( status1Width+extra ) )/2 );
 		status2Left = null;
 		}
 
