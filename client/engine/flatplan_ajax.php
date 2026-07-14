@@ -355,16 +355,15 @@
 				// This page number is genuinely beyond the issue's last page
 				// (the "right" partner a trailing odd-numbered final page
 				// doesn't have) - not a page that merely hasn't been
-				// uploaded/rendered yet. Reserving a full page's width here
-				// made every trailing lone page's wrapper the same width as
-				// a real pair, so it always floated as if paired even
-				// though nothing occupies that space - width:0 lets the
-				// wrapper shrink to the one real page it holds, so normal
-				// CSS wrapping places it correctly whether or not the
-				// previous row still has room.
-				$txt = "<div style='float: right;'><div class='".$class."_pagenr pagenr'>&nbsp;</div><div style='position: absolute; left: 0px; z-index: 2; width: 0px;'></div></div>";
-
-				return $txt;
+				// uploaded/rendered yet. This used to render a float:right
+				// placeholder reserving a full page's width (later just
+				// width:0 on its inner div), but a zero-width float:right
+				// nested inside the pair wrapper's own float:left
+				// shrink-to-fit box is exactly the kind of ancient-CSS
+				// interaction that doesn't collapse reliably across
+				// browsers - render nothing at all instead, so there is no
+				// element left to contribute any width whatsoever.
+				return "";
 				}
 		
 		
