@@ -556,26 +556,48 @@ function viewhandout( file ) {
 	}
 
 if( process == "Full" ) {
+	// This poll reruns every 1s for as long as the page is open, regardless
+	// of whether the handout's state actually changed since last tick -
+	// unconditionally replacing .html() tore down and rebuilt the book icon
+	// (#handoutmenubox, including #book-icon itself) and every dropdown <li>
+	// (#handoutBox) on EVERY tick, even when the content was identical. If a
+	// click's mousedown/mouseup landed in the same instant one of these
+	// ticks fired, the element being clicked could be removed from the DOM
+	// between those two events - browsers don't fire "click" in that case -
+	// silently swallowing the click and needing a retry. Since the poll
+	// keeps running the whole time this menu is open, every second it's open
+	// is another chance to collide. Cache the last-rendered HTML and only
+	// touch the DOM when it actually changed, so the vast majority of ticks
+	// (nothing changed) leave the existing elements - and any click already
+	// in flight against them - completely undisturbed.
+	var lastHandoutIconHTML = null;
+	var lastHandoutMenuHTML = null;
 	function loadhandoutmenu() {
 		$.ajax	({
 			url:"engine/flatplan_ajax.php?op=loadhandoutmenu&id=<?= $pub[0][0] ?>&opt=<?= $_GET['opt'] ?>",
 			type: "GET",
 			dataType: 'json',
 			success:function( data ) {
-				$("#handoutmenubox").html( data[0] );
-				$("#handoutBox").html( data[1] );
+				if( data[0] !== lastHandoutIconHTML ) {
+					$("#handoutmenubox").html( data[0] );
+					lastHandoutIconHTML = data[0];
+					}
+				if( data[1] !== lastHandoutMenuHTML ) {
+					$("#handoutBox").html( data[1] );
+					lastHandoutMenuHTML = data[1];
+					}
 				if( data[2] ) {
 					$("#handoutLoading").show( 0 );
 					}
 				else {
 					$("#handoutLoading").hide( 0 );
 					}
-				
+
 				setTimeout(function(){ loadhandoutmenu(); }, 1000);
 				}
-			});		
+			});
 		}
-	loadhandoutmenu();	
+	loadhandoutmenu();
 	
 	function downloadHandout( id ) {
 		var link = 'get_file.php?type=handout&id='+id;
