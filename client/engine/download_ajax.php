@@ -312,44 +312,62 @@
 	
 	elseif( $_GET['type'] == 'jpg' ) {
 		$loc = $magazine[0][3]."_".$issue."_".$pages[0]."-".$pages[count($pages)-1].".zip";
+		$terminalPath = "/var/www/html/client";
+
+		// This feature is normally used to grab many or all of an issue's
+		// pages at once. r3 rendering is the bottleneck (~2s/page) - doing
+		// it one page at a time in a single request routinely exceeded
+		// php-fpm's request_terminate_timeout (30s, i.e. ~15 pages) and got
+		// the whole download killed outright with no file ever produced.
+		// Render up to $maxConcurrent pages at a time instead, each in its
+		// own process (render_page_worker.php via proc_open()) - 4, to
+		// match this box's core count (nproc) without oversubscribing a
+		// CPU-bound workload. Only once every page has actually finished
+		// rendering do we build the zip, exactly as before.
+		$jobs = array();
+		for ($i = 0; $i < count($files); $i++) {
+			$name = $magazine[0][3]."_".$issue."_".$pages[$i].".jpg";
+			$jobs[] = array(
+				"name" => $name,
+				"from" => $terminalPath."/".$jpegPath."/".$files[$i],
+				"to"   => $terminalPath."/temp/_zip/".$name,
+				"page" => $pages[$i],
+				);
+			}
+
+		$maxConcurrent = 4;
+		$queue = $jobs;
+		$running = array();
+		while( count( $queue ) > 0 || count( $running ) > 0 ) {
+			while( count( $running ) < $maxConcurrent && count( $queue ) > 0 ) {
+				$job = array_shift( $queue );
+				$cmd = array( "php", __DIR__."/render_page_worker.php", $job["from"], $job["to"], $pub_id, $job["page"] );
+				$proc = proc_open( $cmd, array( 1 => array("pipe","w"), 2 => array("pipe","w") ), $pipes );
+				$running[] = array( "proc" => $proc, "pipes" => $pipes );
+				}
+
+			foreach( $running as $key => $r ) {
+				$status = proc_get_status( $r["proc"] );
+				if( !$status["running"] ) {
+					fclose( $r["pipes"][1] );
+					fclose( $r["pipes"][2] );
+					proc_close( $r["proc"] );
+					unset( $running[$key] );
+					}
+				}
+			$running = array_values( $running );
+
+			if( count( $running ) > 0 ) {
+				usleep( 100000 );
+				}
+			}
+
 		$zip2 = new ZipArchive();
 		$zip2->open( "../temp/".$loc, ZipArchive::CREATE );
-		$terminalPath = "/var/www/html/client";
-		$removable = array();
-		
-		for ($i = 0; $i < count($files); $i++) {			
-			$name = $magazine[0][3]."_".$issue."_".$pages[$i].".jpg";
-			$sizes = getBBox( $path.'/'.$files[$i], "", "trimbox" );
-			$from = $terminalPath."/".$jpegPath."/".$files[$i];
-			$to = $terminalPath."/temp/_zip/".$name;
-			$generated = "../temp/_zip/".$name;
-			
-			$sizes["Width"] = pixel_( $sizes["Width"], 200 );
-			$sizes["Height"] = pixel_( $sizes["Height"], 200 );
-			$col = partDetect( $pub_id, $pages[$i] );
-			
-			$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$col.'.icc '.$from.' $@ >'.$to.' 2>&1';
-			//error_log( $command );
-			// "cd r3" (relative to this script's own directory,
-			// client/engine/) pointed at client/engine/r3/ - a JPG
-			// cache/working directory, not where the actual r3 binary
-			// lives. Every other r3 invocation in engine.php uses the
-			// absolute /var/www/html/r3API/r3 path (see SYSTEM_STATE.md's
-			// "R3" section) - this one call site was the only one left
-			// on the stale path, so it silently shelled out to a
-			// directory with no r3 binary in it and produced nothing.
-			$command = shell_exec('
-				cd /var/www/html/r3API/r3 2>&1;
-				'.$command.';
-				');
-			
-			$zip2->addFile( '../temp/_zip/'.$name, $name );
-			$removable[] = $generated;
+		foreach( $jobs as $job ) {
+			$zip2->addFile( $job["to"], $job["name"] );
 			}
 		$zip2->close();
-		for( $i = 0; $i < count( $removable ); $i++ ) {
-			//unlink( $removable[$i] );
-			}
 		$result = $loc;
 		}
 		
