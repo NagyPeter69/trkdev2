@@ -2177,13 +2177,23 @@
 	
 	if( $_GET['op'] == 'loadhandoutmenu' ) {
 		$txt = "";
+		// $txt2/$loading/$keepPolling used to only ever get assigned inside
+		// the $rights/$haveall branches below, leaving them undefined-
+		// variable warnings (silently null in the JSON response) whenever
+		// rights were missing or not every page was finished yet. Default
+		// all three here instead - $keepPolling in particular is read by the
+		// client to decide whether to schedule another poll at all, so it
+		// needs a real, always-set boolean, not "false because PHP coerced
+		// null".
+		$txt2 = "";
+		$loading = false;
+		$keepPolling = false;
 		if( $rights["handouts"] ) {
 			//echo "HANDOUT TEST";
 			$txt .= "<div style='float: left; margin-left: 5px; margin-top: 4px;'>";
-			
+
 			$handout = sql_aget( "flatplan_handout", "pub_id='".$_GET["id"]."' ORDER BY id DESC LIMIT 1", "*" );
-			
-			$txt2 = "";
+
 			$pub = sql_get( 'publications', 'id="'.$_GET["id"].'" ORDER BY `code` ASC', '*' );
 			$magazine = sql_get( 'magazines', 'id="'.$pub[0][2].'"', '*' );
 			$haveall = true;
@@ -2203,17 +2213,25 @@
 				$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='0' order by page ASC ", "*" );
 				}
 			
-			for( $i = 1; $i <= $allpage; $i++ ) {				
+			for( $i = 1; $i <= $allpage; $i++ ) {
 				if( empty( $pages[ ( $i - 1 ) ]["id"] ) ) {
 					$haveall = false;
 					break;
 					}
-				
+
 				if( $pages[ ( $i - 1 ) ]["width"] != "1" ) {
 					$allpage -= $pages[ ( $i - 1 ) ]["width"] - 1;
 					}
 				}
-			
+
+			if( !$haveall ) {
+				// Not every page is finished yet, so the book icon isn't
+				// shown at all - but that can still change as soon as the
+				// remaining pages finish elsewhere in the app, with nobody
+				// touching this menu. Keep watching for that.
+				$keepPolling = true;
+				}
+
 			if( $haveall ) {
 				if( $handout[0]["arrived"] == "1" ) {
 					$icon = file_get_contents( "../images/sc_ready.svg" );
@@ -2225,11 +2243,16 @@
 					}
 				
 				
-				$loading = false;
 				if( $handout[0]["arrived"] == "0" ) {
 					$loading = true;
+					// Actively waiting on this specific handout: Switch has
+					// to render it, then the handout-handler cron job (runs
+					// once a minute - see client/cron/handout-handler.php)
+					// has to notice the file landed on disk. Keep polling
+					// until it does.
+					$keepPolling = true;
 					}
-				$txt .= "</div>";				
+				$txt .= "</div>";
 				
 				if( $handout[0]["arrived"] == "1" ) {
 					$txt2 .= '<li onclick="downloadHandout(\''.$handout[0]["id"].'\')">'.$lang["flatplan"]["downloadh"].'</li>';
@@ -2249,9 +2272,9 @@
 			
 			}
 			
-		$result = array( $txt, $txt2, $loading );		
+		$result = array( $txt, $txt2, $loading, $keepPolling );
 		}
-	
+
 print json_encode( $result );
 	
 ?>

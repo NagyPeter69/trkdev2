@@ -552,24 +552,17 @@ $allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
 var process = "<?= $process ?>";
 
 function viewhandout( file ) {
+	$('#handoutBox').hide(100);
 	window.open("book.php?file="+file+"&id=<?= $pub[0][0] ?>");
 	}
 
 if( process == "Full" ) {
-	// This poll reruns every 1s for as long as the page is open, regardless
-	// of whether the handout's state actually changed since last tick -
-	// unconditionally replacing .html() tore down and rebuilt the book icon
-	// (#handoutmenubox, including #book-icon itself) and every dropdown <li>
-	// (#handoutBox) on EVERY tick, even when the content was identical. If a
-	// click's mousedown/mouseup landed in the same instant one of these
-	// ticks fired, the element being clicked could be removed from the DOM
-	// between those two events - browsers don't fire "click" in that case -
-	// silently swallowing the click and needing a retry. Since the poll
-	// keeps running the whole time this menu is open, every second it's open
-	// is another chance to collide. Cache the last-rendered HTML and only
-	// touch the DOM when it actually changed, so the vast majority of ticks
-	// (nothing changed) leave the existing elements - and any click already
-	// in flight against them - completely undisturbed.
+	// Cache the last-rendered HTML for each and only touch the DOM when the
+	// server's response actually differs from what's already there - a
+	// click landing on a menu item at the exact moment its DOM node gets
+	// torn down and rebuilt underneath it silently fails (browsers don't
+	// fire "click" if the target is removed between mousedown and mouseup),
+	// so leaving unchanged elements alone avoids that entirely.
 	var lastHandoutIconHTML = null;
 	var lastHandoutMenuHTML = null;
 	function loadhandoutmenu() {
@@ -593,30 +586,50 @@ if( process == "Full" ) {
 					$("#handoutLoading").hide( 0 );
 					}
 
-				setTimeout(function(){ loadhandoutmenu(); }, 1000);
+				// data[3] (keepPolling): only reschedule while something can
+				// still actually change on its own - either the rest of the
+				// issue's pages are still being finished elsewhere, or this
+				// specific handout is still waiting on Switch and the
+				// handout-handler cron job (which only rechecks the
+				// filesystem once a minute - see
+				// client/cron/handout-handler.php - so polling faster than
+				// that can ever resolve buys nothing). Once settled (ready,
+				// or nothing was ever requested), stop entirely instead of
+				// hitting the server every second for as long as this page
+				// happens to stay open - generateHandout() below restarts
+				// this the moment a new handout is actually requested.
+				if( data[3] ) {
+					setTimeout(function(){ loadhandoutmenu(); }, 5000);
+					}
 				}
 			});
 		}
 	loadhandoutmenu();
-	
+
 	function downloadHandout( id ) {
+		$('#handoutBox').hide(100);
 		var link = 'get_file.php?type=handout&id='+id;
-		
+
 		if ($idown) { $idown.attr('src',link); }
 		else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
 		}
-		
+
 	function generateHandout() {
+		$('#handoutBox').hide(100);
 		$.ajax	({
 			url:"engine/flatplan_ajax.php?op=sendHandout&id=<?= $pub[0][0] ?>",
 			type: "GET",
 			dataType: 'json',
 			success:function( data ) {
-				$("#handoutBox").hide(100);
+				// The polling loop may have already stopped (settled state,
+				// nothing left to wait for) by the time this new handout was
+				// requested - kick it off again to pick up the now-pending
+				// state and resume watching for it to arrive.
+				loadhandoutmenu();
 				}
-			});		
-		}	
-		
+			});
+		}
+
 	function showHandoutMenu() {
 		var temp = $("#book-icon").offset();
 		$("#handoutBox").css( "top", ( temp.top + 5 )+"px" );
