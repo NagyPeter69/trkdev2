@@ -335,6 +335,41 @@ read, not narrowly scoped to the DMI table this specific binary wants) — accep
 the basis that this box sits behind a dedicated firewall gateway (Sophos) and isn't exposed
 to raw internet. Worth re-litigating if this system's network exposure ever changes.
 
+## dynAPI/tracker/, client/temp/, and filedownload.php's zip library
+
+Same shape as R3 above: things absent on trkdev2 because they fell outside the "copy the
+engine, not the media" migration split, discovered when the Flatplan context menu's three
+Download items turned out to be broken (fixed 2026-07-14).
+
+**`dynAPI/tracker/`** is gitignored and was entirely empty on trkdev2 until manually copied
+in from production. Only `one_local.php` is actually needed there — it's `include()`'d
+directly by `client/engine/download_ajax.php`'s "one" (PDF Merged) download type, is fully
+self-contained (just needs the native `dynapdf` PHP extension, already loaded — check
+`php -m | grep dynapdf` — and the already-present `/var/www/html/config.inc.php`), and uses
+DynaPDF to merge the selected pages' PDFs into one file. Everything else that came over in
+the same copy (`ad_check.php`, `ad_lowres.php`, `calendarpdf.php`, `flatplanpdf.php`,
+`functions.php`, `getbbox.php`, `multi.php`, `one.php`, two `.icc` profiles) belongs to a
+*separate* remote dynAPI service reached over HTTP (`http://DYNAIP/dynAPI/tracker/...`) by
+`calendar_to_pdf.php` and `client/engine/switch/new_ad_results-handler.php` — those two
+features call the remote host directly and never touch a local copy, so the extras were
+removed rather than kept "just in case".
+
+**`client/temp/`** (+ `client/temp/_zip/`) is also gitignored and was missing entirely —
+needed by `one_local.php`'s PDF output, `download_ajax.php`'s JPG-download zip build (which
+was *also* separately broken: it shelled out via `cd r3`, relative to its own directory,
+landing in `client/engine/r3/` — a JPG cache folder with no `r3` binary in it, instead of
+the real `/var/www/html/r3API/r3` — fixed to match every other r3 call site in `engine.php`),
+and `filedownload.php`'s zip build. Created manually (`www-data:www-data`, mode `755`,
+matching sibling runtime dirs like `client/handout/`).
+
+**`filedownload.php`** (the "PDF" context-menu download, plus the asset-download flows) used
+to `require('/composer/vendor/autoload.php')` purely to reach a Composer-installed
+`ZipStream` library — no Composer vendor directory, nor a `composer.json`/`composer.lock` to
+reinstall one from, exists anywhere on this box, so every request there fataled regardless
+of type. Rewritten to use PHP's built-in `ZipArchive` (`php8.4-zip`, the Debian/APT package —
+already installed) instead, matching what `download_ajax.php`'s own zip handling already
+relied on.
+
 ## SSL
 
 Current cert: `*.colorcom.hu` wildcard, valid through 2026-10-06, installed at
