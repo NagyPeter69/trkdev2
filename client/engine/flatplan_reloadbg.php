@@ -708,10 +708,16 @@ if( $_GET['op'] == 'reloadbg' ) {
 
 	// One entry per displayed page (not deduplicated) - #colorStdLabel1/2 each
 	// sit next to their OWN page's approve/reject group, so a spread with two
-	// different standards needs both values, not a combined string.
+	// different standards needs both values, not a combined string. Only
+	// computed when the account has Prepress Tools enabled (accounts.26) -
+	// the label elements themselves don't exist in the DOM otherwise, so
+	// there's nothing to send this to, and partDetect() isn't free (it loads
+	// and parses the issue's XML on every call).
 	$colorStdNames = array();
-	for( $i = 0; $i < count( $pages ); $i++ ) {
-		$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color" );
+	if( $user[0][26] == 1 ) {
+		for( $i = 0; $i < count( $pages ); $i++ ) {
+			$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color" );
+			}
 		}
 
 

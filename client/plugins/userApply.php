@@ -215,25 +215,36 @@
 			if( empty( $_POST['prepresstools_on'] ) ) {
 				$_POST['prepresstools_on'] = 0;
 				}
-			
+			// safety_on is an unchecked-by-default checkbox too, and had no
+			// equivalent default - an unchecked box sends no value at all, so
+			// $_POST['safety_on'] was undefined and coerced to an empty
+			// string, which MySQL's strict mode rejects for this integer
+			// column. That failure aborted the WHOLE update statement (every
+			// field in $names, not just this one), so unchecking this one
+			// checkbox silently prevented ANY setting on this form - prepress
+			// tools included - from ever saving.
+			if( empty( $_POST['safety_on'] ) ) {
+				$_POST['safety_on'] = 0;
+				}
+
 			$names = array(  'email', 'full_name', 'landing', 'unit', 'safety_int', 'safety_on', 'prepresstools', 'multiplelogin', 'lang' );
 			$datas = array(  $_POST['u_mail'], $_POST['u_fullname'], $_POST['u_landing'], $_POST['u_unit'], str_replace( ",", ".", $_POST['safety_int'] ), $_POST['safety_on'], $_POST['prepresstools_on'], ( empty( $_POST['multiplelogin'] ) ? "0" : $_POST['multiplelogin'] ), $_POST['u_lang'] );
 			$command = '';
-			
+
 			for( $i = 0; $i < count( $names ); $i++ ) {
 				$command .= $names[$i].'=\''.$datas[$i].'\'';
-		
+
 				if( $i < count( $names )-1 ) {
 					$command .= ', ';
 					}
 				}
-				
+
 			if( $pass_change == 1 ) {
 				$command .= ', pass=\''.password_hash($_POST['u_pass'], PASSWORD_DEFAULT).'\'';
 				}
-			
-			sql_update( 'accounts', $command, 'id=\''.$_SESSION['intra_user'].'\'' );	
-					
+
+			sql_update( 'accounts', $command, 'id=\''.$_SESSION['intra_user'].'\'' );
+
 			//PMD belenyúlás - magazin levél
 			$magID = explode( ",", $user[0][21] );
 			$magazines = array();

@@ -951,7 +951,9 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 						}
 				?>
 				</div>
-				<div id='colorStdLabel1' title='Color standard'><?= htmlspecialchars( partDetect( $_GET['id'], $pages[0], "color" ) ) ?></div>
+				<?php if( $user[0][26] == 1 ) { ?>
+					<div id='colorStdLabel1' title='Color standard'><?= htmlspecialchars( partDetect( $_GET['id'], $pages[0], "color" ) ) ?></div>
+				<?php } ?>
 			<?php } ?>
 
 		<?php if( isMobile() ) { ?>
@@ -1062,8 +1064,16 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 					echo $text[1];
 					} ?>
 			</div>
-			<?php if( count( $pages ) > 1 ) { ?>
-				<div id='colorStdLabel2' title='Color standard'><?= htmlspecialchars( partDetect( $_GET['id'], $pages[1], "color" ) ) ?></div>
+			<?php if( $user[0][26] == 1 ) { ?>
+				<!-- Always rendered regardless of the page's own current
+				count($pages) - gating this on count($pages) > 1 meant that if
+				the view happened to load in single-page mode, this element
+				was never created at all, and switching to spread/pair mode
+				afterward (an AJAX-only transition, no page reload) could
+				never make it appear since there was no DOM element left for
+				later updates to find. Left empty here in single-page mode;
+				an AJAX pair-mode switch fills it in. -->
+				<div id='colorStdLabel2' title='Color standard'><?= count( $pages ) > 1 ? htmlspecialchars( partDetect( $_GET['id'], $pages[1], "color" ) ) : '' ?></div>
 			<?php } ?>
 		<?php } ?>
 	</div>
@@ -2848,21 +2858,39 @@ function centerToolbar( animate ) {
 	// empty Left/Right/Width), so pages > 1 is the only reliable check here.
 	var isPair = ( pages > 1 );
 
-	var spineX, leftCenterX, rightCenterX;
+	var pagesWidth = parseInt( $(".pages").outerWidth() );
+	var status1Width = parseInt( $(".status1").outerWidth() );
+
+	var pagesLeft, status1Left, status2Left;
+
 	if( isPair ) {
 		var rightWidthPx = pixel( parseFloat( file[1]['Right'] )-parseFloat( file[1]['Left'] ) );
-		spineX = ( ppOffset-fcOffset )+leftWidthPx;
-		leftCenterX = spineX-( leftWidthPx/2 );
-		rightCenterX = spineX+( rightWidthPx/2 );
+		var spineX = ( ppOffset-fcOffset )+leftWidthPx;
+		var leftCenterX = spineX-( leftWidthPx/2 );
+		var rightCenterX = spineX+( rightWidthPx/2 );
+		var status2Width = parseInt( $(".status2").outerWidth() );
+
+		pagesLeft = spineX-( pagesWidth/2 );
+		status1Left = leftCenterX-( status1Width/2 );
+		status2Left = rightCenterX-( status2Width/2 );
 		}
 	else {
-		spineX = ( ppOffset-fcOffset )+( leftWidthPx/2 );
-		leftCenterX = spineX;
+		// Single page: .status1 and .pages can't both be independently
+		// centered on the one page's center without landing on top of each
+		// other - there's only one center point to share. Treat them as one
+		// [status1][labelGap][#colorStdLabel1][gap][.pages] cluster instead
+		// (the label term collapses to 0 width if it doesn't exist - prepress
+		// tools off) and center THAT as a whole.
+		var pageCenterX = ( ppOffset-fcOffset )+( leftWidthPx/2 );
+		var gap = 15;
+		var labelGap = 8;
+		var colorLabelWidth = parseInt( $("#colorStdLabel1").outerWidth() ) || 0;
+		var extra = colorLabelWidth > 0 ? labelGap+colorLabelWidth : 0;
+		var groupLeft = pageCenterX-( ( status1Width+extra+gap+pagesWidth )/2 );
+		status1Left = groupLeft;
+		pagesLeft = groupLeft+status1Width+extra+gap;
+		status2Left = null;
 		}
-
-	var pagesLeft = spineX-( parseInt( $(".pages").outerWidth() )/2 );
-	var status1Left = leftCenterX-( parseInt( $(".status1").outerWidth() )/2 );
-	var status2Left = isPair ? ( rightCenterX-( parseInt( $(".status2").outerWidth() )/2 ) ) : null;
 
 	function setLeft( $el, val ) {
 		if( val == null || $el.length == 0 ) return;
@@ -2872,14 +2900,14 @@ function centerToolbar( animate ) {
 
 	setLeft( $(".pages"), pagesLeft );
 	setLeft( $("#leftArrow, #leftArrow_hover"), pagesLeft-36 );
-	setLeft( $("#rightArrow, #rightArrow_hover"), pagesLeft+parseInt($(".pages").outerWidth())+5 );
+	setLeft( $("#rightArrow, #rightArrow_hover"), pagesLeft+pagesWidth+5 );
 	setLeft( $(".status1"), status1Left );
 	setLeft( $(".status2"), status2Left );
 
 	// Trails its page's approve/reject group rather than being centered
 	// itself - its own width varies with the standard's name length, and
 	// centering it independently would drift it away from the button.
-	setLeft( $("#colorStdLabel1"), status1Left+parseInt( $(".status1").outerWidth() )+8 );
+	setLeft( $("#colorStdLabel1"), status1Left+status1Width+8 );
 	if( isPair ) setLeft( $("#colorStdLabel2"), status2Left+parseInt( $(".status2").outerWidth() )+8 );
 
 	return pagesLeft;
