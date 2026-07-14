@@ -1494,6 +1494,33 @@ var delayed = 0;
 var ajaxDisabled = false;
 var img = 1;
 var disableZoom = false;
+// Safety-net watchdog: disableZoom is the shared busy-guard set true by every
+// zoom/nav action (changePic(), _zoom(), reloadBG()) and is meant to be
+// cleared by that action's matching render success/error handler. We've had
+// reports of it getting permanently stuck true after back-navigation in
+// spread/pair mode specifically - no error shown, no recovery short of a full
+// page refresh - and despite extensive testing could not pin down and force
+// the exact trigger on demand. Rather than leave users stuck, this watchdog
+// guarantees recovery regardless of root cause: if the guard has been
+// continuously true for longer than any legitimate render takes, force-clear
+// it and log the state that led here so a stuck report can be diagnosed from
+// the browser console.
+var disableZoomWatchdogTicks = 0;
+setInterval( function() {
+	if( disableZoom ) {
+		disableZoomWatchdogTicks++;
+		if( disableZoomWatchdogTicks >= 12 ) {
+			console.warn( "disableZoom watchdog: forcibly recovering after "+disableZoomWatchdogTicks+"s stuck. page="+page+" clk="+clk+" pack_id="+pack_id+" zoom="+zoom+" fpPages="+fpPages+" renderCounter="+$("#renderCounter").val() );
+			disableZoom = false;
+			$("#renderCounter").val( 0 ).trigger("onchange");
+			$("#boxDraw").css( "display", "none" );
+			disableZoomWatchdogTicks = 0;
+			}
+		}
+	else {
+		disableZoomWatchdogTicks = 0;
+		}
+	}, 1000 );
 var actualPos = {};
 var loadedCommandBindings = false;
 
