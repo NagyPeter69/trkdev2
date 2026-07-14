@@ -19,10 +19,10 @@ foreach($xpath as $temp) {
 <?php
 if( $newxml->Item[$x]->Workflow != "Full" and $newxml->Item[$x]->Workflow != "Hybrid" ) {
 	echo '<input type="hidden" id="uploadable" name="uploadable" value="false">';
-	$width = 480;
+	$width = 610;
 	}
 else {
-	$width = 700;
+	$width = 830;
 	}
 ?>
 
@@ -134,7 +134,7 @@ else {
 			for( $i = 0; $i < count( $parts ); $i++ ) {
 				$type = $parts[$i]["name"];
 				$size = explode("x", $parts[$i]["size"] );
-				echo "<tr><td>";
+				echo '<tr><td style="white-space: nowrap;">';
 					echo '<span><select name="type[]">';
 						for( $y = 0; $y < count( $types ); $y++ ) {
 							$temp = array_search( $types[$y], PARTS );
@@ -199,7 +199,7 @@ function newLine() {
 		});
 		
 	<?php if( $newxml->Item[$x]->Workflow != "Full" and $newxml->Item[$x]->Workflow != "Hybrid" ) { ?>
-		var text = '<tr><td><span><select name="type[]">';
+		var text = '<tr><td style="white-space: nowrap;"><span><select name="type[]">';
 		
 		<?php
 		for( $i = 0; $i < count( $types ); $i++ ) {
@@ -217,7 +217,7 @@ function newLine() {
 		text += '</select></span><span><input type="hidden" name="trim_x[]" value="210" style="width: 35px;"><input type="hidden" name="trim_y[]" value="297"></span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ) ?>"><?= $lang["parts"]["Color"] ?>: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option><option value="PSO_INP">PSO_INP</option></select></span><?= grayscaleCheckbox() ?><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';		
 		<?php } ?>
 	<?php } else { ?>
-		var text = '<tr><td><span><select name="type[]">';
+		var text = '<tr><td style="white-space: nowrap;"><span><select name="type[]">';
 		<?php
 		for( $i = 0; $i < count( $types ); $i++ ) {
 			$temp = array_search( $types[$i], PARTS );

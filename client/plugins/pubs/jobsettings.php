@@ -27,7 +27,7 @@ $xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
 
 <div>
 	<div class='panelTitle'><?= $lang["publications"]["job"] ?> : <?= $magazine[0][2] ?></div>
-	<div class='panelControl' style='width: 480px;'>
+	<div class='panelControl' style='width: 610px;'>
 
 	<table class='panelTable' cellspacing='0' cellpadding='0'>
 		<?
@@ -221,7 +221,7 @@ $xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
 		for( $i = 0; $i < count( $parts ); $i++ ) {
 			$type = substr( $parts[$i]["name"], 0, 3 );
 			$size = explode("x", $parts[$i]["size"] );
-			echo "<tr><td>";
+			echo '<tr><td style="white-space: nowrap;">';
 				echo '<span style="display: inline-block; width: 105px; min-width: 105px;"><select name="type[]">';
 					for( $y = 0; $y < count( $types ); $y++ ) {
 						$temp = array_search( $types[$y], PARTS );
@@ -300,17 +300,17 @@ function setParts() {
 		
 		if( temp != "Full" && temp != "Hybrid" ) {
 			$(".trimsize").hide(0);
-			$(".panelControl").css("width", "470px");
+			$(".panelControl").css("width", "610px");
 			}
 		else {
 			$(".trimsize").show(0);
-			$(".panelControl").css("width", "670px");
+			$(".panelControl").css("width", "800px");
 			}
 		}
 	else {
 		saveParts = false;
 		$("#pub_parts").hide(0);
-		$(".panelControl").css("width", "470px");
+		$(".panelControl").css("width", "610px");
 		}
 	}
 
@@ -325,7 +325,7 @@ function newLine() {
 		have.push( $(this).val() );
 		});
 	
-	var text = '<tr><td><span><select name="parttype[]">';	
+	var text = '<tr><td style="white-space: nowrap;"><span><select name="parttype[]">';
 	<?php
 		for( $i = 0; $i < count( $types ); $i++ ) {
 			$temp = array_search( $types[$i], PARTS );

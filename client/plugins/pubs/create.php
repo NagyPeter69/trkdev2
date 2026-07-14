@@ -13,7 +13,7 @@ $types = PARTTYPES;
 
 <div>
 	<div class='panelTitle'><?= $lang["publications"]["new_mag"] ?></div>
-	<div class='panelControl' style='width: 470px;'>
+	<div class='panelControl' style='width: 600px;'>
 	<div class='panelSubTitle'><?= $lang["publications"]["workflow"] ?></div>
 	<table class='panelTable' cellspacing='0' cellpadding='0'>
 		<tr>
@@ -164,11 +164,11 @@ function setParts() {
 	
 	if( temp != "Full" && temp != "Hybrid" ) {
 		$(".trimsize").hide(0);
-		$(".panelControl").css("width", "470px");
+		$(".panelControl").css("width", "600px");
 		}
 	else {
 		$(".trimsize").show(0);
-		$(".panelControl").css("width", "660px");
+		$(".panelControl").css("width", "790px");
 		}
 	checkParts();
 	}
@@ -181,7 +181,7 @@ function newLine() {
 		have.push( $(this).val() );
 		});
 	
-	var text = '<tr><td><span><select name="parttype[]">';	
+	var text = '<tr><td style="white-space: nowrap;"><span><select name="parttype[]">';
 	<?php
 		for( $i = 0; $i < count( $types ); $i++ ) {
 			$temp = array_search( $types[$i], PARTS );
