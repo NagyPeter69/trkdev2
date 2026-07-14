@@ -1304,6 +1304,11 @@ function placeBox( force, source, from ) {
 function reloadBG( switchTo, from ) {
 	$(".pagePreview").css( 'background-image', 'url()' );
 	disableZoom = true;
+	// changePic() already does this on its own nav-arrow-click path, but
+	// toggleTool() (switching single/pair mode) calls reloadBG() directly,
+	// bypassing changePic() entirely - this covers that path too. Harmless
+	// to repeat here since .css() is idempotent.
+	$(".status1, .status2, #colorStdLabel1, #colorStdLabel2").css( "visibility", "hidden" );
 	$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )+1 ) ).trigger("onchange");
 	if( switchTo == undefined ) {
 		switchTo = $('#boxes').attr( 'src' ).split("/").pop(-1).split(".")[0];

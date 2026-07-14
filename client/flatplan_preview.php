@@ -2073,6 +2073,15 @@ function changePic( data ) {
 		// second rapid click still passed this same guard because
 		// disableZoom hadn't been flipped true yet.
 		disableZoom = true;
+		// Hide the approve/reject buttons (and their trailing color-standard
+		// label) the instant navigation starts, not just visually reposition
+		// them - otherwise they sit there fully clickable, still showing the
+		// PREVIOUS page's state, for the whole render round-trip (can be over
+		// a second), and a click during that window approves/rejects the
+		// wrong page. visibility (not display) so centerToolbar() can still
+		// measure their width once render completes and it's safe to show
+		// them again.
+		$(".status1, .status2, #colorStdLabel1, #colorStdLabel2").css( "visibility", "hidden" );
 		data = data.split( "&" );
 		$("#renderedIMG1").hide( 0 ).attr('src', '' );
 		$("#renderedIMG2").hide( 0 ).attr('src', '' );
@@ -2130,6 +2139,12 @@ function changePic( data ) {
 		// error shown, until a full page refresh reset the JS state.
 		else {
 			disableZoom = false;
+			// No actual navigation happened on this path (no page in that
+			// direction), so the currently displayed page - and its
+			// approve/reject state - never stopped being valid. Undo the
+			// hide from above rather than leaving the buttons stuck
+			// invisible with no render ever coming to reveal them again.
+			$(".status1, .status2, #colorStdLabel1, #colorStdLabel2").css( "visibility", "visible" );
 			}
 		}
 	}
@@ -2919,6 +2934,16 @@ function centerToolbar( animate ) {
 	// centering it independently would drift it away from the button.
 	setLeft( $("#colorStdLabel1"), status1Left+status1Width+8 );
 	if( isPair ) setLeft( $("#colorStdLabel2"), status2Left+parseInt( $(".status2").outerWidth() )+8 );
+
+	// Only reveal the approve/reject buttons (and their trailing label) once
+	// they're correctly positioned for whatever is actually on screen right
+	// now - if disableZoom is still true, a render is still in flight and
+	// changePic()/reloadBG() hid them for exactly that reason; showing them
+	// here too would undo that and risk an approve/reject click landing on
+	// the wrong, not-yet-superseded page.
+	if( !disableZoom ) {
+		$(".status1, .status2, #colorStdLabel1, #colorStdLabel2").css( "visibility", "visible" );
+		}
 
 	return pagesLeft;
 	}
