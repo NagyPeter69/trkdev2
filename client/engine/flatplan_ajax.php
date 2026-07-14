@@ -1514,14 +1514,23 @@
 				
 				while( $i <= $length ) {
 					if( $counter == 5 ) $counter = 1;
+					// A trailing final page with no partner (odd total page
+					// count) no longer reserves any space for one (see
+					// drawPage()'s $page > $length branch), so it would
+					// otherwise just float into whatever room is left at
+					// the end of the last row. Forced onto its own row
+					// instead, per explicit preference over the
+					// alternative (sharing a row, however much of the wide
+					// canvas trails after it either way).
+					$trailingClear = ( ( $i + 1 ) > $length ) ? "clear: left; " : "";
 					if( $_GET['opt'] == 'FIN' ) {
-						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i, "FIN" );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i, "FIN" );
 						$text .= "</div>";
 						}
 					else {
-						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i );
 						$text .= "</div>";
