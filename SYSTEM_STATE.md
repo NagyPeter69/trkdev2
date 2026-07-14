@@ -370,6 +370,30 @@ of type. Rewritten to use PHP's built-in `ZipArchive` (`php8.4-zip`, the Debian/
 already installed) instead, matching what `download_ajax.php`'s own zip handling already
 relied on.
 
+## Request timeouts (raised 2026-07-14, for the JPG download — affects everything)
+
+The JPG context-menu download (`client/engine/download_ajax.php`, `type=jpg`) is normally
+used to grab many or all of an issue's pages at once, each page costing ~2s of r3 render
+time. Even after parallelizing that render (4-way, via `client/engine/render_page_worker.php`
++ `proc_open()` — matches this box's core count), a full "select all" (84 pages) still takes
+~80s. Two timeouts had to be raised to let that complete, **neither lives in this git repo**:
+
+- **`request_terminate_timeout`** in `/etc/php/8.4/fpm/pool.d/www.conf`: `30s` → `90s` (plus
+  matching `max_execution_time` in `/etc/php/8.4/fpm/php.ini`). This is the whole `www` pool,
+  not scoped to just this endpoint — confirmed via `php8.4-fpm.log` that *other*, unrelated
+  scripts (`loadLog.php`, `flatplan_ajax.php`) were also silently hitting the same 30s wall
+  and getting killed. Raising it gives every slow request more headroom, for better or worse —
+  a genuinely stuck/runaway script now also takes up to 90s to get killed instead of 30s.
+- **`fastcgi_read_timeout` / `fastcgi_send_timeout`** in both server blocks of
+  `/etc/nginx/sites-enabled/trkdev`: nginx's own default (60s) was cutting the connection
+  before php-fpm's raised 90s limit ever had a chance to matter — set to `100s` to stay just
+  ahead of it.
+
+If large-selection downloads (or anything else long-running) start failing again after any
+infra change (nginx reinstall/config regen, php-fpm pool reset from a template, etc.), check
+both of these are still in place — `systemctl reload nginx` / `restart php8.4-fpm` after
+editing either.
+
 ## SSL
 
 Current cert: `*.colorcom.hu` wildcard, valid through 2026-10-06, installed at
