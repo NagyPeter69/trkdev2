@@ -352,18 +352,35 @@
 		
 		
 		if( $page > $length and $fPage[0][0] == "" and $pageType != "PRE" ) {
-				// This page number is genuinely beyond the issue's last page
-				// (the "right" partner a trailing odd-numbered final page
-				// doesn't have) - not a page that merely hasn't been
-				// uploaded/rendered yet. This used to render a float:right
-				// placeholder reserving a full page's width (later just
-				// width:0 on its inner div), but a zero-width float:right
-				// nested inside the pair wrapper's own float:left
-				// shrink-to-fit box is exactly the kind of ancient-CSS
-				// interaction that doesn't collapse reliably across
-				// browsers - render nothing at all instead, so there is no
-				// element left to contribute any width whatsoever.
-				return "";
+				// This page number is genuinely beyond the issue's last page:
+				// the "right" partner the trailing final page doesn't have.
+				//
+				// A group's in-flow width doesn't come from its visible page
+				// elements (selectors, left_page/right_page, pageBox - all
+				// position:absolute); it comes solely from the floated spacer
+				// div the RIGHT-slot page emits when it closes out the pair
+				// (the $page % 2 != 0 block below, spacer width =
+				// accumulated $holderWidth). Returning early here - as this
+				// branch always did, in every previous form - meant the
+				// trailing group never emitted any spacer at all, so it had
+				// literally ZERO in-flow width: its thumbnail just painted
+				// wherever the float cursor stopped, occupying no layout
+				// space (the "offshot last page" glitch, unfixable by
+				// styling the phantom's own contents).
+				//
+				// Do exactly what a real partner page would do instead:
+				// account for this slot's width and emit the closing spacer.
+				// The group then occupies a full pair's width in flow and
+				// wraps between rows precisely like every other spread -
+				// joining the last row when a whole spread fits, starting a
+				// fresh row when it doesn't - just with nothing drawn in the
+				// right half. (The $issue[0][6] == 0 sibling branch below
+				// already reserves $w*2 for this same situation, confirming
+				// pair-width reservation was always the intended design.)
+				$holderWidth += $w;
+				$txt = "<div style='float: left; height: ".($h+32)."px; width: ".($holderWidth+3)."px;'></div>";
+				$holderWidth = 0;
+				return $txt;
 				}
 		
 		
@@ -1514,23 +1531,14 @@
 				
 				while( $i <= $length ) {
 					if( $counter == 5 ) $counter = 1;
-					// A trailing final page with no partner (odd total page
-					// count) no longer reserves any space for one (see
-					// drawPage()'s $page > $length branch), so it would
-					// otherwise just float into whatever room is left at
-					// the end of the last row. Forced onto its own row
-					// instead, per explicit preference over the
-					// alternative (sharing a row, however much of the wide
-					// canvas trails after it either way).
-					$trailingClear = ( ( $i + 1 ) > $length ) ? "clear: left; " : "";
 					if( $_GET['opt'] == 'FIN' ) {
-						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i, "FIN" );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i, "FIN" );
 						$text .= "</div>";
 						}
 					else {
-						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i );
 						$text .= "</div>";
