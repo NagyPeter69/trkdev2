@@ -1296,15 +1296,30 @@ function fit_nav() {
 	// overflow-x:auto is the fallback if even the shrunk items don't fit
 	// in what's left.
 	if( !$.browser.device ) {
+		// #menuLine doesn't exist on every page (e.g. flatplan_preview.php).
+		// This used to throw here uncaught when it was missing - and because
+		// this same function is bound to the global window resize handler
+		// below, that uncaught exception aborted jQuery's entire dispatch for
+		// that resize event, silently skipping every OTHER resize handler
+		// registered on the page (jQuery 1.10.2 doesn't isolate handlers from
+		// each other's exceptions). On the Pages view specifically, that
+		// meant a genuine window resize - which Safari fires more readily
+		// than Chrome when a spread-mode page swap toggles scrollbar
+		// visibility - silently skipped flatplan_preview.php's own resize
+		// handler (the one that calls placeBox(), which drives the render
+		// pipeline that eventually resets the nav busy-guard), leaving
+		// navigation stuck with no error ever surfacing to the page.
+		var $menuLine = $("#menuLine");
+		if( $menuLine.length == 0 ) return;
 		var rightEdge = $("#header").width();
 		$("#member, #freespace, #publist, #menuClientBox").each(function(){
 			var left = $(this).offset().left;
 			if( left < rightEdge ) rightEdge = left;
 			});
-		var navLeft = $("#menuLine").offset().left;
+		var navLeft = $menuLine.offset().left;
 		var available = rightEdge - navLeft - 15;
 		if( available > 0 ) {
-			$("#menuLine").css( "width", available + "px" );
+			$menuLine.css( "width", available + "px" );
 			}
 		}
 	}
