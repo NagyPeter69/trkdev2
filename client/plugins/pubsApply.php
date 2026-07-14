@@ -83,10 +83,10 @@
 			$_POST['settings']['dl'] = str_replace( " ", "T", $_POST['settings']['dl'] );
 			sql_update( 'publications', "pages='".$_POST['page_nr']."', uploadable='".$_POST['uploadable']."', deadline='".$_POST['dl']."', enhance='".$_POST["enhance"]."', specificName='".$_POST["customname"]."'", 'id="'.$_POST['pub'].'"' );
 
-			$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
+			$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 			sql_delete( "parts", "pub_id='".$pub[0][0]."'" );
 			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-				$values = array( $pub[0][0], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'] );
+				$values = array( $pub[0][0], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'], $_POST["grayscale"][$i] );
 				sql_add( "parts", $names, $values );
 				}
 		
@@ -305,14 +305,14 @@ Tracker<br>";
 				$values = array( $aid, $hash, $mid, $_POST["Mails"], time() );
 				sql_add( "adhoc_hotlinks", $names, $values );
 				
-				$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
+				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 				for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
 					if( $_POST["Workflow"] != "Full" && $_POST["Workflow"] != "Hybrid" ) {
 						$_POST["trim_x"][$i] = "";
 						$_POST["trim_y"][$i] = "";
 						}
-						
-					$values = array( $id, $_POST["parttype"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid );
+
+					$values = array( $id, $_POST["parttype"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
 					}
 				
@@ -497,10 +497,10 @@ Tracker<br>";
 			if( $mag[0]["type"] == "Adhoc" ) {
 				$pub = sql_aget( "publications", "magazine_id='".$_POST["magazine"]."' AND code='".$_POST["code"]."'", "*" );
 				sql_delete( "parts", "pub_id='".$pub[0]["id"]."'" );
-				$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
+				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 
 				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-					$values = array( $pub[0]["id"], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"] );
+					$values = array( $pub[0]["id"], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
 					}
 
@@ -514,18 +514,18 @@ Tracker<br>";
 			if( $mag[0]["type"] == "Regular" ) {
 				sql_delete( "parts", "pub_id='0' AND mag_id='".$mag[0]["id"]."'" );
 
-				$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
+				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-					$values = array( "0", $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"] );
+					$values = array( "0", $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
 					}
 				}
 			}
-			
+
 		$result = array( $error );
 		}
 
-	if( $_GET["sub"] == "checkRegularClientChangeResponse" ) {		
+	if( $_GET["sub"] == "checkRegularClientChangeResponse" ) {
 		$pub = sql_get( 'magazines', 'code="'.$_POST["settings"].'"', '*' );
 		$result = $pub[0];
 		}
@@ -648,10 +648,10 @@ Tracker<br>";
 							error_log( "magazine_id='".$mag[0]["id"]."' AND code='".$magazine."'" );
 							$pub2 = sql_aget( "publications", "magazine_id='".$mag[0]["id"]."' AND code='".$magazine."'", "*" );
 							sql_delete( "parts", "pub_id='".$pub2[0]["id"]."'" );
-							$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
-							
+							$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
+
 							for( $p = 0; $p < count( $parts["type"] ); $p++ ) {
-								$values = array( $pub2[0]["id"], $parts["type"][$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"] );
+								$values = array( $pub2[0]["id"], $parts["type"][$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
 								sql_add( "parts", $names, $values );
 								}
 														
@@ -662,10 +662,10 @@ Tracker<br>";
 						
 						if( $mag[0]["type"] == "Regular" ) {
 							sql_delete( "parts", "pub_id='0' AND mag_id='".$mag[0]["id"]."'" );
-							
-							$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
+
+							$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 							for( $p = 0; $p < count( $parts["type"] ); $p++ ) {
-								$values = array( "0", $parts[$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"] );
+								$values = array( "0", $parts[$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
 								sql_add( "parts", $names, $values );
 								}
 							
@@ -848,13 +848,13 @@ Tracker<br>";
 			$values = array( $p_id, $_POST['magazine'], $_POST['page_nr'], $_POST['uploadable'], $_POST['job_code'], $_POST['dl'], $_POST["enhance"], $_POST["customname"] );
 			$id = sql_add( "publications", $names, $values );			
 			
-			$names = array( "pub_id", "name", "place", "color", "size", "mag_id" );
+			$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 
 			// A Regular magazine with no parts template configured yet
 			// (via jobsettings.php) submits no type[] rows at all, not an
 			// empty array - count(null) is a PHP 8 TypeError.
 			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-				$values = array( $id, $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'] );
+				$values = array( $id, $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'], $_POST["grayscale"][$i] );
 				sql_add( "parts", $names, $values );
 				}
 

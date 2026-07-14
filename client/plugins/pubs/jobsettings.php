@@ -233,6 +233,7 @@ $xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
 					echo '<span style="padding-left: 10px;">Color standard: <select name="color[]">'
 						.colorStandardOptions( $parts[$i]["color"] ).
 						'<option '.( $parts[$i]["color"] == "RGB" ? "selected" : "" ).' value="RGB">RGB</option></select></span>';
+					echo grayscaleCheckbox( $parts[$i]["grayscale"] == "true" );
 					echo '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span>';
 					echo "</td></tr>";
 			}
@@ -339,6 +340,7 @@ function newLine() {
 	text += '<span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span>';
 	text += '<span class="trimsize" style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span>';
 	text += '<span style="padding-left: 10px;">Color standard: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option value="RGB">RGB</option></select></span>';
+	text += '<?= grayscaleCheckbox() ?>';
 	text += '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
 	$("#partContent").append(text);
 	setParts();

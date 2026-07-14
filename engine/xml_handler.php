@@ -878,6 +878,7 @@
 							}
 							
 						$array['parts']['part|'.$i]['color'] = $parts[$i][4];
+						$array['parts']['part|'.$i]['grayscale'] = $parts[$i][7];
 						$array['parts']['part|'.$i]['size'] = $parts[$i][5];
 						}
 						
@@ -904,6 +905,7 @@
 							}						
 
 						$array['parts']['part|'.$i]['color'] = $parts[$i][4];
+						$array['parts']['part|'.$i]['grayscale'] = $parts[$i][7];
 						$array['parts']['part|'.$i]['size'] = $parts[$i][5];
 						}
 						

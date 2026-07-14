@@ -145,6 +145,28 @@ function colorStandardOptions( $selected = "", $class = "" ) {
 	return $txt;
 	}
 
+// "Grayscale" checkbox to place right after a colorStandardOptions() dropdown
+// - every color standard needs to be usable in grayscale too, per-Part.
+// Submits as one "grayscale[]" entry per Part, aligned by index with
+// type[]/position[]/color[] etc. A plain checkbox alone won't do this
+// reliably: unchecked checkboxes submit nothing at all, which would shift
+// every subsequent Part's array index out of alignment with the other
+// fields. Pairing a same-named hidden input (always "false") right before
+// the checkbox, then having the checkbox overwrite that hidden value via its
+// own onchange, guarantees exactly one "grayscale[]" entry per Part
+// regardless of checked state.
+// No single OR double quotes inside the onchange handler on purpose: several
+// call sites echo this inside a single-quoted JS template string (building
+// a new Part row's HTML dynamically), where either quote character would
+// need escaping - assigning the boolean directly sidesteps that (a
+// checkbox's .checked is coerced to the string "true"/"false" when read
+// back as a form value, same as a quoted literal would be).
+function grayscaleCheckbox( $checked = false ) {
+	$val = $checked ? "true" : "false";
+	$checkedAttr = $checked ? " checked" : "";
+	return '<span style="padding-left: 10px;">Grayscale <input type="hidden" name="grayscale[]" value="'.$val.'"><input type="checkbox"'.$checkedAttr.' onchange="this.previousElementSibling.value=this.checked"></span>';
+	}
+
 // Verifies a plaintext password against a stored hash. Stored hashes are
 // either a modern password_hash() output, or a legacy unsalted MD5 hash
 // (the format used everywhere before this fix). On a successful legacy
