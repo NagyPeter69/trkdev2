@@ -2059,9 +2059,22 @@ function changePic( data ) {
 				reloadBG( undefined, 'changePic' );
 				});
 			}
+		// "data" was reassigned to an array by data.split("&") above, then
+		// compared against a string - a single-element array coerces to just
+		// its element for == comparisons, so this branch IS reachable: it's
+		// what fires when the server had no prev/next page in this direction
+		// (the link falls back to the bare "?page=flatlpan_preview" with no
+		// params). disableZoom was already set true above, and reloadBG() -
+		// the only other place that ever clears it - is never called on this
+		// path, so hitting a "no page this way" boundary used to strand the
+		// guard true forever, silently deadening every future click with no
+		// error shown, until a full page refresh reset the JS state.
+		else {
+			disableZoom = false;
+			}
 		}
 	}
-	
+
 function panelElementClick( panel, state ) {
 	var same = false;
 	if( !disable ) {
