@@ -1503,16 +1503,24 @@
 						}
 					}
 				
-				while( $i <= $length ) {				
+				while( $i <= $length ) {
 					if( $counter == 5 ) $counter = 1;
+					// A trailing final page with no partner (odd total page
+					// count) reserves the same left+right width as every
+					// normal pair, so it just floats into whatever room is
+					// left at the end of the last row instead of starting a
+					// fresh one - clear:left forces it onto its own row
+					// instead, same as it would look if it had a partner.
+					$lastPageAlone = ( ( $i + 1 ) > $length );
+					$trailingClear = $lastPageAlone ? "clear: left; " : "";
 					if( $_GET['opt'] == 'FIN' ) {
-						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i, "FIN" );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i, "FIN" );
 						$text .= "</div>";
 						}
 					else {
-						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+						$text .= "<div style='position: relative; float: left; ".$trailingClear."margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 							$text .= drawPage( $_GET['id'], $i, 'left', $i );
 							$text .= drawPage( $_GET['id'], ($i+1), 'right', $i );
 						$text .= "</div>";
