@@ -92,8 +92,15 @@ if( $magazine[0][10] == "Regular" ) {
 		</tr>						
 	</table>
 	
-	<?php 
-	if( $pub[0][1] != "0" ) {
+	<?php
+	// Adhoc publications never edit Parts/Color here - that lives in their
+	// own "Parts & Color" dialog; Modify Issue only ever shows it for
+	// publications tied to a real publisher (Regular, or Adhoc with a known
+	// client). Capture that once, since $pub gets reassigned below for the
+	// Adhoc-known-client branch and would no longer be safe to re-check by
+	// the time the <script> block below needs the same answer.
+	$showParts = ( $pub[0][1] != "0" );
+	if( $showParts ) {
 	?>
 	<table class='panelTable' cellspacing='0' cellpadding='0'>
 		<tbody id="partContent">
@@ -152,7 +159,7 @@ if( $magazine[0][10] == "Regular" ) {
 		</tfoot>
 	</table>
 	<?php } ?>
-	
+
 	<table class='panelTable' cellspacing='0' cellpadding='0'>
 		<tbody>
 			<tr>
@@ -170,6 +177,7 @@ if( $magazine[0][10] == "Regular" ) {
 </div>
 </form>
 
+<?php if( $showParts ) { ?>
 <script>
 var posname = "<?= $posname ?>";
 var maxTypes = parseInt( "<?= count( $types ) ?>" );
@@ -247,3 +255,4 @@ function newLine() {
 	}
 
 </script>
+<?php } ?>
