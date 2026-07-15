@@ -72,7 +72,7 @@ function issueDefine() {
 			var ev = code.substr(0, 2);
 			var szam = code.substr(code.length - 2);
 			
-			var text = "publisher=<?= $order[0]["publisher_id"] ?>&magazine=<?= $order[0]["magazine_id"] ?>&ev="+ev+"&szam="+szam+"&job_code="+code+"&delimiter=_&proposed=&customname="+$("#customname").val()+"&page_nr="+$("#numofpages").val()+"&uploadable=true&dl="+$("#printorder").val()+"&counter=1%2C2&m_id=<?= $order[0]["magazine_id"] ?>&i_variable=before&i_var_del=_&i_delimiter=&i_code=<?= $order[0]["magCode"] ?>&i_base="+code+"&i_padding=3&i_aname=No&i_adelimiter=&u_variable=before&u_var_del=_&u_delimiter=&u_code=<?= $order[0]["magCode"] ?>&u_base="+code+"&u_padding=3&u_aname=No&u_adelimiter=&o_variable=before&o_var_del=_&o_delimiter=&o_code=<?= $order[0]["magCode"] ?>&o_base="+code+"&o_padding=3&o_aname=No&o_adelimiter=";
+			var text = "publisher=<?= $order[0]["publisher_id"] ?>&magazine=<?= $order[0]["magazine_id"] ?>&ev="+ev+"&szam="+szam+"&job_code="+code+"&delimiter=_&proposed=&customname="+$("#customname").val()+"&page_nr="+$("#numofpages").val()+"&dl="+$("#printorder").val()+"&counter=1%2C2&m_id=<?= $order[0]["magazine_id"] ?>&i_variable=before&i_var_del=_&i_delimiter=&i_code=<?= $order[0]["magCode"] ?>&i_base="+code+"&i_padding=3&i_aname=No&i_adelimiter=&u_variable=before&u_var_del=_&u_delimiter=&u_code=<?= $order[0]["magCode"] ?>&u_base="+code+"&u_padding=3&u_aname=No&u_adelimiter=&o_variable=before&o_var_del=_&o_delimiter=&o_code=<?= $order[0]["magCode"] ?>&o_base="+code+"&o_padding=3&o_aname=No&o_adelimiter=";
 			
 			console.log( text );
 			

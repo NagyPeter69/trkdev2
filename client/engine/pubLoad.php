@@ -242,9 +242,10 @@ if( $_GET['op'] == 'load_publications' ) {
 					if( $standard == "Web" ) {
 						$parts[$p]["color"] = "sRGB";
 						}
-					
-					$current .= "<div class='part_".$p." pubExtraInfo pubParts' style='float:left; margin-left: 5px; width: 155px;'>".$lang["parts_short"][$parts[$p]["name"]].": ".$parts[$p]["color"]."</div>";
-					}	
+
+					$grayTag = ( $parts[$p]["grayscale"] == "true" ? " K" : "" );
+					$current .= "<div class='part_".$p." pubExtraInfo pubParts' style='float:left; margin-left: 5px; width: 155px;'>".$lang["parts_short"][$parts[$p]["name"]].": ".$parts[$p]["color"].$grayTag."</div>";
+					}
 				}
 			else {
 				$current = "<div style='float:left; width: 90px; margin-left: 10px;'>".$lang["publications"]["no_current"]."</div>";

@@ -272,7 +272,6 @@
 							"settings" => 'Settings',
 							"iCode" => 'Issue code',
 							"length" => 'Number of Pages',
-							"approve_upload" => 'Upload after approve',
 							"yes" => 'Yes',
 							"no" => 'No',
 							"deadline" => 'Deadline',

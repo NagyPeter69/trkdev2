@@ -20,7 +20,6 @@ $xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
 <input type='hidden' id='pn' name='pn' value='<?= $xml->Item[$i]->PageNumbering ?>'>
 
 <input type='hidden' id='OutputFormat_hidden' disabled name='OutputFormat' value='TIFF'>
-<input type='hidden' id='Uploadable_hidden' disabled name='Uploadable' value='false'>
 <input type='hidden' id='PDFstandard_hidden' disabled name='PDFstandard' value='PDFX1A'>
 <input type='hidden' id='ArchiveStorage_hidden' disabled name='ArchiveStorage' value='Client Area'>
 <input type='hidden' id='WebImages_hidden' disabled name='WebImages' value='Yes'>
@@ -49,7 +48,7 @@ if( $magazine[0][10] == "Regular" ) {
 					}
 
 
-			$avaiable = array( 'Type', 'Name', 'Client', 'Code', 'Mails', 'Workflow', 'Enhance', 'PageNumbering', 'Deadline', 'Language', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'Uploadable', 'OutputFormat', 'WebImages' );
+			$avaiable = array( 'Type', 'Name', 'Client', 'Code', 'Mails', 'Workflow', 'Enhance', 'PageNumbering', 'Deadline', 'Language', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'OutputFormat', 'WebImages' );
 			// E-mail only applies to Adhoc publications (Regular pubs have
 			// no client mailing list here).
 			if( $magazine[0][10] != "Adhoc" ) {
@@ -96,9 +95,6 @@ if( $magazine[0][10] == "Regular" ) {
 					case 'OutputFormat':
 						$temp = array( 'TIFF', 'JPEG', 'Original' );
 						break;
-					case 'Uploadable':
-						$temp = array( 'true' =>'Yes', 'false' => 'No' );
-						break;
 					case 'WebImages':
 						$temp = array( 'Yes', 'No' );
 						break;						
@@ -140,16 +136,6 @@ if( $magazine[0][10] == "Regular" ) {
 								echo "<option ";
 								if( $value == $t ) echo "selected ";
 									echo "value='".$t."'>".$t."</option>";
-								}
-							echo "</select>";
-							}
-						
-						elseif( $key == 'Uploadable' ) {
-							echo "<select onchange='changeSettings()' style='margin-left: -1px;' id='".$key."' name='".$key."'>";
-							foreach( $temp as $t=>$k ) {
-								echo "<option ";
-								if( $pubs[0][8] == $t ) echo "selected ";
-									echo "value='".$t."'>".$k."</option>";
 								}
 							echo "</select>";
 							}
@@ -444,18 +430,16 @@ function changeSettings() {
 
 	// Per-workflow parameter visibility, per the Tracker Workflows matrix
 	// (2026-07): FlatplanStages, PDFstandard, ArchiveStorage and WebImages
-	// are Full-only; OutputFormat is the inverse (Hybrid/Resize only).
-	// Uploadable follows PDF Approval, which exists for Full and Hybrid
-	// but not Resize. The disabled-swap pairs submit their fixed _hidden
-	// default when hidden - PDFstandard's is PDFX1A, which the matrix
-	// explicitly mandates for Hybrid.
+	// are Full-only; OutputFormat is the inverse (Hybrid/Resize only). The
+	// disabled-swap pairs submit their fixed _hidden default when hidden -
+	// PDFstandard's is PDFX1A, which the matrix explicitly mandates for
+	// Hybrid.
 	switch( wf ) {
 		case "Full":
 			$("tr[class='FlatplanStages']").show(0);
 			$("tr[class='PDFstandard']").show(0);
 			$("tr[class='ArchiveStorage']").show(0);
 			$("tr[class='WebImages']").show(0);
-			$("tr[class='Uploadable']").show(0);
 			$("tr[class='OutputFormat']").hide(0);
 
 			$("#PDFstandard").removeAttr('disabled');
@@ -464,8 +448,6 @@ function changeSettings() {
 			$("#ArchiveStorage_hidden").attr('disabled','disabled');
 			$("#WebImages").removeAttr('disabled');
 			$("#WebImages_hidden").attr('disabled','disabled');
-			$("#Uploadable").removeAttr('disabled');
-			$("#Uploadable_hidden").attr('disabled','disabled');
 			$("#OutputFormat").attr('disabled','disabled');
 			$("#OutputFormat_hidden").removeAttr('disabled');
 			break;
@@ -475,7 +457,6 @@ function changeSettings() {
 			$("tr[class='PDFstandard']").hide(0);
 			$("tr[class='ArchiveStorage']").hide(0);
 			$("tr[class='WebImages']").hide(0);
-			$("tr[class='Uploadable']").show(0);
 			$("tr[class='OutputFormat']").show(0);
 
 			$("#PDFstandard").attr('disabled','disabled');
@@ -484,8 +465,6 @@ function changeSettings() {
 			$("#ArchiveStorage_hidden").removeAttr('disabled');
 			$("#WebImages").attr('disabled','disabled');
 			$("#WebImages_hidden").removeAttr('disabled');
-			$("#Uploadable").removeAttr('disabled');
-			$("#Uploadable_hidden").attr('disabled','disabled');
 			$("#OutputFormat").removeAttr('disabled');
 			$("#OutputFormat_hidden").attr('disabled','disabled');
 			break;
@@ -495,7 +474,6 @@ function changeSettings() {
 			$("tr[class='PDFstandard']").hide(0);
 			$("tr[class='ArchiveStorage']").hide(0);
 			$("tr[class='WebImages']").hide(0);
-			$("tr[class='Uploadable']").hide(0);
 			$("tr[class='OutputFormat']").show(0);
 
 			$("#PDFstandard").attr('disabled','disabled');
@@ -504,8 +482,6 @@ function changeSettings() {
 			$("#ArchiveStorage_hidden").removeAttr('disabled');
 			$("#WebImages").attr('disabled','disabled');
 			$("#WebImages_hidden").removeAttr('disabled');
-			$("#Uploadable").attr('disabled','disabled');
-			$("#Uploadable_hidden").removeAttr('disabled');
 			$("#OutputFormat").removeAttr('disabled');
 			$("#OutputFormat_hidden").attr('disabled','disabled');
 			break;

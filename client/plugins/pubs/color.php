@@ -22,7 +22,6 @@ if( $magazine[0][10] == "Adhoc" ) {
 <input type='hidden' id='pn' name='pn' value='<?= $newxml->Item[$x]->PageNumbering ?>'>
 <?php
 if( $newxml->Item[$x]->Workflow != "Full" and $newxml->Item[$x]->Workflow != "Hybrid" ) {
-	echo '<input type="hidden" id="uploadable" name="uploadable" value="false">';
 	$width = 610;
 	}
 else {

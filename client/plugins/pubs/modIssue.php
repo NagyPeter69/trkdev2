@@ -20,7 +20,6 @@ foreach($xpath as $temp) {
 <input type="hidden" id="pub" name="pub" value="<?= $pub[0][0]; ?>">
 <?php
 if( $newxml->Item[$x]->Workflow != "Full" and $newxml->Item[$x]->Workflow != "Hybrid" ) {
-	echo '<input type="hidden" id="uploadable" name="uploadable" value="false">';
 	$width = 610;
 	}
 else {
@@ -55,15 +54,6 @@ if( $magazine[0][10] == "Regular" ) {
 				<td align='left'><input onkeypress="return isNumberKey(event)" type='text' id='page_nr' value="<?= $pub[0][6] ?>" name='page_nr' style='width: 30px; margin-left: 2px;'></td>
 			</tr>
 		<?php } ?>
-		<tr>
-			<td align='left' width='50%' height='28px'><?= $lang["publications"]["approve_upload"] ?></td>
-			<td align='left'>
-				<select name='uploadable'>
-					<option <? if( $pub[0][8] == 'true' ) echo "selected" ?> value='true'><?= $lang["publications"]["yes"] ?></option>
-					<option <? if( $pub[0][8] == 'false' ) echo "selected" ?> value='false'><?= $lang["publications"]["no"] ?></option>
-				</select>
-			</td>
-		</tr>
 		<tr>
 			<td align='left' width='50%' height='28px'><?= $lang["publications"]["deadline"] ?></td>
 			<td align='left'>

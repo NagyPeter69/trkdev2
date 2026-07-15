@@ -327,7 +327,6 @@
 						"Deadline" => 'Határidő',
 						"WebImages" => 'Web képek az Archívban',
 						"Type" => 'Típus',
-						"Uploadable" => 'Feltöltés jóváhagyás után',
 						),
 			"menu" => array (
 						"planner" => 'Naptár',
@@ -426,7 +425,6 @@
 							"settings" => 'Beállítások',
 							"iCode" => 'megjelenés kód',
 							"length" => 'Oldalak száma',
-							"approve_upload" => 'Jóváhagyás után feltöltés',
 							"yes" => 'Igen',
 							"no" => 'Nem',
 							"deadline" => 'Határidő',

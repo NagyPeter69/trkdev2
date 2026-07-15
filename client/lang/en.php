@@ -327,7 +327,6 @@
 						"Deadline" => 'Deadline',
 						"WebImages" => 'Archive Web Images',
 						"Type" => 'Type',
-						"Uploadable" => 'Upload After Approve',
 						),
 			"menu" => array (
 						"planner" => 'Planner',
@@ -426,7 +425,6 @@
 							"settings" => 'Settings',
 							"iCode" => 'Issue code',
 							"length" => 'Number of Pages',
-							"approve_upload" => 'Upload after approve',
 							"yes" => 'Yes',
 							"no" => 'No',
 							"deadline" => 'Deadline',

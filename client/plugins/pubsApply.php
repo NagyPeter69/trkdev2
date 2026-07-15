@@ -81,7 +81,7 @@
 			$mag = sql_get( 'magazines', 'id="'.$pub[0][2].'"', 'code, id' );
 			
 			$_POST['settings']['dl'] = str_replace( " ", "T", $_POST['settings']['dl'] );
-			sql_update( 'publications', "pages='".$_POST['page_nr']."', uploadable='".$_POST['uploadable']."', deadline='".$_POST['dl']."', enhance='".$_POST["enhance"]."', specificName='".$_POST["customname"]."'", 'id="'.$_POST['pub'].'"' );
+			sql_update( 'publications', "pages='".$_POST['page_nr']."', deadline='".$_POST['dl']."', enhance='".$_POST["enhance"]."', specificName='".$_POST["customname"]."'", 'id="'.$_POST['pub'].'"' );
 
 			$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 			sql_delete( "parts", "pub_id='".$pub[0][0]."'" );
@@ -539,7 +539,7 @@ Tracker<br>";
 		
 	if( $_GET["sub"] == "jobsettings2" ) {
 		parse_str($_POST['settings'], $_POST);
-		sql_update( "publications", "uploadable='".$_POST["Uploadable"]."', deadline='".$_POST["Deadline"]."'", "id='".$pub[0][0]."'" );
+		sql_update( "publications", "deadline='".$_POST["Deadline"]."'", "id='".$pub[0][0]."'" );
 		sql_update( "magazines", "name='".$_POST["Name"]."'", "id='".$mag[0][0]."'" );
 					
 		changeXmlDatabase( 'modify', $_POST );
@@ -679,7 +679,7 @@ Tracker<br>";
 				error_log( (string) $xml->Item[$i]->Client );
 				$_POST["Client"] = (string) $xml->Item[$i]->Client;
 				$_POST["Publisher"] = (string) $xml->Item[$i]->Publisher;
-				sql_update( "publications", "uploadable='".$_POST["Uploadable"]."', deadline='".$_POST["Deadline"]."'", "id='".$pub[0][0]."'" );
+				sql_update( "publications", "deadline='".$_POST["Deadline"]."'", "id='".$pub[0][0]."'" );
 				//sql_update( "magazines", "name='".$_POST["Name"]."'", "id='".$mag[0]["id"]."'" );
 			
 				changeXmlDatabase( 'modify', $_POST );
@@ -845,7 +845,7 @@ Tracker<br>";
 			$p_id = $p_id[0][0];
 			
 			$names = array( "publisher_id", "magazine_id", "pages", "uploadable", "code", "deadline", "enhance", "specificName" );
-			$values = array( $p_id, $_POST['magazine'], $_POST['page_nr'], $_POST['uploadable'], $_POST['job_code'], $_POST['dl'], $_POST["enhance"], $_POST["customname"] );
+			$values = array( $p_id, $_POST['magazine'], $_POST['page_nr'], "false", $_POST['job_code'], $_POST['dl'], $_POST["enhance"], $_POST["customname"] );
 			$id = sql_add( "publications", $names, $values );			
 			
 			$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );

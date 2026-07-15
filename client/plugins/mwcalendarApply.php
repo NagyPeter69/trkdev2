@@ -53,7 +53,7 @@ if( $_GET["sub"] == "issueDefine" ) {
 	$p_id = $p_id[0][0];
 
 	$names = array( 'publisher_id', 'magazine_id', 'internal', 'upload', 'output', 'pages', 'uploadable', 'precounter', 'code', 'deadline', 'specificName', 'created', 'enhance' );
-	$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, $_POST['page_nr'], $_POST['uploadable'], 0, $_POST['job_code'], $_POST['dl'], $_POST['customname'], time(), $_POST['enhance'] );
+	$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, $_POST['page_nr'], "false", 0, $_POST['job_code'], $_POST['dl'], $_POST['customname'], time(), $_POST['enhance'] );
 	$id = sql_add( 'publications', $names, $values );
 
 	$names = array( 'pub_id', 'name', 'place', 'color' );

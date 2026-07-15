@@ -54,17 +54,8 @@
 											<td class='one right bottom' align='left' style='padding-left: 2px;'><input onkeypress="return isNumberKey(event)" type='text' id='page_nr' name='page_nr' style='width: 200px;'></td>
 										</tr>
 										<tr>
-											<td style='padding-left: 10px;' class='two left bottom' align='left' align='left' width='50%' height='28px'>Jóváhagyás után nyomdának feltölthető?</td>
+											<td style='padding-left: 10px;' class='two left bottom' align='left' align='left' width='50%' height='28px'>Határidő</td>
 											<td class='two right bottom' align='left' style='padding-left: 2px;'>
-												<select name='uploadable'>
-													<option value='true'>Igen</option>
-													<option value='false'>Nem</option>
-												</select>
-											</td>
-										</tr>
-										<tr>
-											<td style='padding-left: 10px;' class='one left bottom' align='left' align='left' width='50%' height='28px'>Határidő</td>
-											<td class='one right bottom' align='left' style='padding-left: 2px;'>
 												<input readonly class="datepicker" type="text" name='dl' id='dl'>
 											</td>
 										</tr>

@@ -43,7 +43,19 @@
 					break;
 					}
 				}
-			
+
+			// Resize workflow has no PDF approval, so Flatplan/Pages/Planner
+			// (all of which revolve around page approval) are hidden for it.
+			$actualCode = explode( "_", $user[0][11] )[0];
+			$currentProcess = "";
+			foreach($xpath as $temp) {
+				for( $x = 0; $x < count( $temp->Item ); $x++ ) {
+					if( $temp->Item[$x]->Code == $actualCode ) {
+						$currentProcess = (string) $xml->Item[$x]->Workflow;
+						}
+					}
+				}
+
 			if( 0 ) {
 				echo "<li class='planner'><a href='#'>Upload</a></li>";
 				}
@@ -71,14 +83,14 @@
 						}
 					}
 				
-				if( $user[0][11] != '' ) {
+				if( $user[0][11] != '' && $currentProcess != 'Resize' ) {
 					echo "<li class='"; if( $_GET['page'] == 'flatplan' ) { echo 'selected'; } echo "'><a href='?page=flatplan'>".$lang['menu']['flatplan']."</a></li>";
 					}
-		
-				if( $user[0][11] != '' ) {
+
+				if( $user[0][11] != '' && $currentProcess != 'Resize' ) {
 					echo "<li class='"; if( $_GET['page'] == 'flatplan_preview' ) { echo 'selected'; } echo "'><a href='?page=flatplan_preview'>".$lang['menu']['pages']."</a></li>";
 					}
-				
+
 				$tr = checkTransferRight( $user[0][0], "" );
 					
 				if( $tr["up"] ) {
@@ -96,8 +108,10 @@
 					}
 					
 				echo "<li class='planner "; if( $_GET['page'] == 'assets' ) { echo 'selected'; } echo "'><a href='?page=assets'>".$lang['menu']['download']."</a></li>";
-				echo "<li class='planner "; if( $_GET['page'] == 'flatplan_planner' ) { echo 'selected'; } echo "'><a href='?page=flatplan_planner'>".$lang['menu']['planner']."</a></li>";
-				//echo "<li><div style='height: 15px; margin-top: 19px; float: left; width:2px; background: rgb( 200, 200, 200 );'>&nbsp;</div></li>";	
+				if( $currentProcess != 'Resize' ) {
+					echo "<li class='planner "; if( $_GET['page'] == 'flatplan_planner' ) { echo 'selected'; } echo "'><a href='?page=flatplan_planner'>".$lang['menu']['planner']."</a></li>";
+					}
+				//echo "<li><div style='height: 15px; margin-top: 19px; float: left; width:2px; background: rgb( 200, 200, 200 );'>&nbsp;</div></li>";
 				//echo "<li class='"; if( $_GET['page'] == 'ad_hoc' ) { echo 'selected'; } echo "'><a href='?page=ad_hoc'>".$lang['menu']['direct']."</a></li>";
 				}
 			}

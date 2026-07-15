@@ -1776,7 +1776,7 @@
 		$p_id = $p_id[0][0];
 		
 		$names = array( 'publisher_id', 'magazine_id', 'internal', 'upload', 'output', 'pages', 'uploadable', 'precounter', 'code', 'deadline' );
-		$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, $_POST['page_nr'], $_POST['uploadable'], 0, $_POST['job_code'], $_POST['dl'] );
+		$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, $_POST['page_nr'], "false", 0, $_POST['job_code'], $_POST['dl'] );
 		$id = sql_add( 'publications', $names, $values );
 		
 		$names = array( 'pub_id', 'name', 'place', 'color' );
