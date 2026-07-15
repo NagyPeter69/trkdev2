@@ -1756,9 +1756,14 @@
 				
 				$fpstages = collectFromXml( "../xml/".PMD.".xml", $status[0][3], "FlatplanStages", $returnnode = '' );
 				$fpstages = $fpstages["FlatplanStages"];
+				$fpworkflow = collectFromXml( "../xml/".PMD.".xml", $status[0][3], "Workflow", $returnnode = '' );
+				$fpworkflow = $fpworkflow["Workflow"];
 				$allowed = false;
 				if( $_GET['fpver'] == "" && $fpstages == 1 ) $allowed = true;
-				if( $_GET['fpver'] == "FIN" && ( $fpstages == 2 or $fpstages == 3 ) ) $allowed = true;
+				// Hybrid: the single flatplan is FINAL regardless of the
+				// stored stage count (which is hidden/meaningless for
+				// Hybrid), so FIN-view approvals are always allowed.
+				if( $_GET['fpver'] == "FIN" && ( $fpstages == 2 or $fpstages == 3 or $fpworkflow == "Hybrid" ) ) $allowed = true;
 
 				//$text[] = $fpstages;
 				if( ( $status[0][2] == "ad" or $status[0][2] == "magazine" ) && $allowed ) {

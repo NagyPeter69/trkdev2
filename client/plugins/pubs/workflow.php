@@ -283,14 +283,27 @@ function saveJob() {
 
 function changeSettings() {
 	var wf = $("#Workflow").val();
-	
+
+	// Flatplan stages only exist in the Full workflow. Hybrid has exactly
+	// one flatplan, treated as FINAL throughout (page_pdf-handler.php
+	// coerces every incoming page's stage designation to FIN for Hybrid
+	// pubs), so a stage count is meaningless there and the row is hidden.
+	// Shown explicitly everywhere else so switching away from Hybrid
+	// doesn't leave it stuck hidden.
+	if( wf == "Hybrid" ) {
+		$("tr[class='FlatplanStages']").hide(0);
+		}
+	else {
+		$("tr[class='FlatplanStages']").show(0);
+		}
+
 	switch( wf ) {
 		case "Full":
 			$("tr[class='PDFstandard']").show(0);
 			$("tr[class='ArchiveStorage']").show(0);
 			$("tr[class='OutputFormat']").hide(0);
 			$("tr[class='WebImages']").show(0);
-			
+
 			$("#OutputFormat").attr('disabled','disabled');
 			$("#OutputFormat_hidden").removeAttr('disabled');
 
@@ -301,7 +314,7 @@ function changeSettings() {
 			$("#WebImages").removeAttr('disabled');
 			$("#WebImages_hidden").attr('disabled','disabled');
 			break;
-		
+
 		case "Hybrid":
 			$("tr[class='PDFstandard']").show(0);
 			$("tr[class='ArchiveStorage']").show(0);
@@ -310,7 +323,7 @@ function changeSettings() {
 
 			$("#OutputFormat").attr('disabled','disabled');
 			$("#OutputFormat_hidden").removeAttr('disabled');
-			
+
 			$("#PDFstandard").removeAttr('disabled');
 			$("#ArchiveStorage").removeAttr('disabled');
 			$("#PDFstandard_hidden").attr('disabled','disabled');

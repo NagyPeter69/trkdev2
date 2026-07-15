@@ -61,9 +61,28 @@ else {
 	$magazine = sql_get( 'magazines', 'id="'.$pub[0][2].'"', '*' );
 	}
  	
+// Hybrid workflow has no flatplan stages: its single flatplan IS the
+// FINAL one (page_pdf-handler.php coerces every incoming page's stage
+// designation to FIN for Hybrid pubs). Force the view to FIN here, before
+// either chip block's opt-defaulting logic runs, and remember the fact so
+// both blocks (mobile + desktop) can skip rendering the PRE/BASIC/FINAL
+// stage chips entirely.
+$wfXml = simplexml_load_file( 'xml/'.PMD.'.xml' );
+$wfXpath = $wfXml->xpath('/Publications');
+foreach( $wfXpath as $wfTemp ) {
+	for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+		if( $wfTemp->Item[$wfI]->Code == $magazine[0][3] )
+			break;
+		}
+	}
+$hybridFP = ( (string) $wfXml->Item[$wfI]->Workflow == "Hybrid" );
+if( $hybridFP ) {
+	$_GET['opt'] = "FIN";
+	}
+
 $time = strtotime( $pub[0][11] );
 setlocale(LC_ALL,'hungarian');
-$time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) ); 	
+$time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) );
 
 ?>
 
@@ -108,7 +127,10 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 					}
 				}
 			$process = (string) $xml->Item[$x]->Workflow;
-			if( $process != "Softproof" ) {
+			// Hybrid: single flatplan, no stage chips at all (the view is
+			// already forced to FIN near the top of this file).
+			$flatplans = array();
+			if( $process != "Softproof" and $process != "Hybrid" ) {
 				$flatplans = array(
 					"PRE" => 'pre',
 					"" => 'basic',
@@ -285,7 +307,11 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 										}
 									}
 								$process = (string) $xml->Item[$x]->Workflow;
-								if( $process != "Softproof" ) {
+								// Hybrid: single flatplan, no stage chips at all (the
+								// view is already forced to FIN near the top of this
+								// file).
+								$flatplans = array();
+								if( $process != "Softproof" and $process != "Hybrid" ) {
 									$flatplans = array(
 										"PRE" => 'pre',
 										"" => 'basic',

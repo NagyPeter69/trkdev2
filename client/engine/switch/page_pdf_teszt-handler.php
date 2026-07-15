@@ -22,6 +22,26 @@ if( $go ) {
 	$pageState = $_POST["pageState"];
 	$pageVersion = $_POST["pageVersion"];
 
+	// Hybrid workflow has no flatplan stages: its single flatplan IS the
+	// FINAL one, so whatever stage designation Switch sent with this page
+	// is ignored and the page lands as FIN. Everything downstream follows
+	// from $pageState alone (the /FIN file subdirectory, fin=1 in pageinfo,
+	// status, which stage view shows it), so coercing it here is the whole
+	// mechanism. Page TYPE (editorial vs ad) is a separate variable and
+	// stays untouched.
+	$wfXml = simplexml_load_file( TRKPATH.'/xml/'.PMD.'.xml' );
+	$wfXpath = $wfXml->xpath('/Publications');
+	foreach( $wfXpath as $wfTemp ) {
+		for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+			if( $wfTemp->Item[$wfI]->Code == $jcode )
+				break;
+			}
+		}
+	if( (string) $wfXml->Item[$wfI]->Workflow == "Hybrid" ) {
+		error_log( "Hybrid workflow: pageState '".$pageState."' coerced to FIN" );
+		$pageState = "FIN";
+		}
+
 	$handle = fopen( "pageversion.txt", 'a+');
 	if( $handle === false ) {
 		return false;
