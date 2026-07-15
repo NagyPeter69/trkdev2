@@ -418,6 +418,24 @@ function checkActual( $userID, $returninfo ) {
 			}
 		}
 	else {
+		// The magazine half of "actual" still resolves, but the issue half
+		// (the code after the underscore) may not any more - an issue's
+		// hard delete (delete_issue_results-handler.php, fired once Switch
+		// confirms) has no way to know which accounts had it selected, so
+		// nothing ever fixes up a stale issue code the way the magazine-not-
+		// found branches above already self-heal. Re-validate it here too,
+		// falling back to the magazine's most recent existing issue - same
+		// fallback shape as the rest of this function - rather than leaving
+		// "actual" pointing at a publication row that's gone.
+		$issueCode = $temp[1] ?? '';
+		$validIssue = sql_aget( 'publications', 'magazine_id="'.$job[0]["id"].'" AND code="'.$issueCode.'"', 'id' );
+		if( empty( $validIssue[0]["id"] ) ) {
+			$latestIssue = sql_aget( 'publications', 'magazine_id="'.$job[0]["id"].'" ORDER BY `deadline` DESC', 'code' );
+			if( !empty( $latestIssue[0]["code"] ) ) {
+				sql_update( 'accounts', 'actual="'.$job[0]["code"].'_'.$latestIssue[0]["code"].'"', 'id="'.$u[0]["id"].'"' );
+				}
+			}
+
 		if( $returninfo ) {
 			$return = array();
 			$return = $job[0];
@@ -426,7 +444,7 @@ function checkActual( $userID, $returninfo ) {
 			$return = false;
 			}
 		}
-		
+
 	return $return;
 	}
 
