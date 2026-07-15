@@ -67,7 +67,16 @@ if( $user[0][4] == "6" ) {
 	</div>
 </div>
 
-<div style="width: 100%; margin: 0; position: absolute; top: 50%; -ms-transform: translateY(-50%); transform: translateY(-50%); text-align: center;">
+<?php
+// #content (default.php) is `position: relative` with no explicit height -
+// its only children on this page are absolutely positioned, so it collapses
+// to zero height. `position: absolute; top: 50%` on a zero-height containing
+// block can't resolve, so the browser falls back to this element's static
+// (in-flow) position - right under the header - and translateY(-50%) then
+// shifts it up into the nav bar. `position: fixed` centers against the
+// viewport instead, which always has a real height.
+?>
+<div style="width: 100%; margin: 0; position: fixed; top: 50%; -ms-transform: translateY(-50%); transform: translateY(-50%); text-align: center;">
 	<div id="currentMag" class="switchDisplay" style="font-family: myriad_thin; color: #FFF; font-size: 22px; padding-bottom: 15px;"></div>
 	
 	<table id="transferTable" cellspacing="0" cellpadding="0" style="text-align: center;font-family: myriad">

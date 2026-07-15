@@ -3360,9 +3360,12 @@ function getshortpubs( $user ) {
 					}
 				}
 			}
-		$workflow = (string) $xml->Item[$x]->Workflow;	
-		
-		if( $workflow != "Resize" && $workflow != "Enhance" ) {
+		$workflow = (string) $xml->Item[$x]->Workflow;
+
+		// SuperUser (group 2) sees every publication in this switcher
+		// regardless of workflow - every other publication-based gate in
+		// the app already exempts them the same way.
+		if( ( $workflow != "Resize" && $workflow != "Enhance" ) || $user[8] == 2 ) {
 			for( $y = 0; $y < count( $temp ); $y++ ) {
 				//$pubs[] = $temp[$y];
 
