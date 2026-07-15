@@ -12,6 +12,16 @@ $publisher = sql_get( "publishers", "id='".$user[0][4]."'", "name" );
 <input type='hidden' id='PDFstandard_hidden' disabled name='PDFstandard' value='PDFX1A'>
 <input type='hidden' id='ArchiveStorage_hidden' disabled name='ArchiveStorage' value='Client Area'>
 <input type='hidden' id='WebImages_hidden' disabled name='WebImages' value='Yes'>
+<?php
+// LocalStorage left the UI entirely for Regular publications: every
+// Regular magazine stores PubFolder. Adhoc's LocalStorage is chosen at
+// creation time instead (known client -> PubFolder, unknown -> Adhoc
+// folder - see pubsApply.php's "create" handler), so it's left alone
+// here rather than clobbered on every settings save.
+if( $magazine[0][10] == "Regular" ) {
+	echo "<input type='hidden' name='LocalStorage' value='PubFolder'>";
+	}
+?>
 
 <div>
 	<div class='panelTitle'><?= $lang["publications"]["workflow"] ?> : <?= $magazine[0][2] ?></div>
@@ -26,8 +36,13 @@ $publisher = sql_get( "publishers", "id='".$user[0][4]."'", "name" );
 					}
 			$xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
 			
-			$avaiable = array( 'Type', 'Client', 'Name', 'Code', 'Workflow', 'LocalStorage', 'Enhance', 'PageNumbering', 'CustomCode', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'OutputFormat', 'WebImages', 'Language', 'ApprovedComments', 'Mails' );
-				
+			$avaiable = array( 'Type', 'Client', 'Name', 'Code', 'Mails', 'Workflow', 'Enhance', 'PageNumbering', 'CustomCode', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'OutputFormat', 'WebImages', 'Language', 'ApprovedComments' );
+			// E-mail only applies to Adhoc publications (Regular pubs have
+			// no client mailing list here).
+			if( $magazine[0][10] != "Adhoc" ) {
+				$avaiable = array_diff( $avaiable, array( 'Mails' ) );
+				}
+
 			$xpath = $xml->xpath('/Publications');
 			foreach($xpath as $temp) {
 				for( $i = 0; $i < count( $temp->Item ); $i++ ) {
@@ -47,14 +62,11 @@ $publisher = sql_get( "publishers", "id='".$user[0][4]."'", "name" );
 					case 'Type':
 						$temp = array( 'Adhoc', 'Regular' );
 						break;
-					case 'LocalStorage':
-						$temp = array( "Root", "PubFolder" );
-						break;
 					case 'CustomCode':
 						$temp = array( '1', '2', '3', 'No' );
 						break;
 					case 'Workflow':
-						$temp = array( 'Full', 'Hybrid', 'Repack', 'Resize', 'Enhance' );
+						$temp = array( 'Full', 'Hybrid', 'Resize' );
 						break;				
 					case 'FlatplanStages':
 						$temp = array( '1', '2', '3' );
@@ -102,11 +114,25 @@ $publisher = sql_get( "publishers", "id='".$user[0][4]."'", "name" );
 					else echo "<td align='left'>".$lang['xml'][$key]."</td>";
 					echo "<td align='left'>";
 						if( $key == 'Mails' ) {
-							echo "<textarea readonly id='".$key."' name='".$key."' style='width: 170px; height: 60px; resize: none;'>";
+							echo "<textarea id='".$key."' name='".$key."' style='width: 170px; height: 60px; resize: none;'>";
 								echo str_replace( ";", "\n", $value );
 							echo "</textarea>";
+
+							$pub = sql_aget( "publishers", "name='".$xml->Item[$i]->Client."'", "*" );
+							if( !empty( $pub[0]["id"] ) ) {
+								$u = sql_aget( "accounts", "publisher='".$pub[0]["id"]."'", "*" );
+								echo "<div>";
+									echo "<div style='float: left;'><select id='addRUser' name='addRUser'>";
+									for( $a = 0; $a < count( $u ); $a++ ) {
+										echo "<option value='".$u[$a]["email"]."'>".$u[$a]["full_name"]."</option>";
+										}
+									echo "</select></div>";
+
+									echo "<div style='float: left; margin-top: 4px; margin-left: 5px;'><img onclick='addEmail()' style='cursor: pointer;' src='images/trk_plus.png'></div>";
+								echo "</div>";
+								}
 							}
-							
+
 						elseif( $temp == '' ) {
 							echo "<input type='text' id='".$key."' name='".$key."' value='".$value."'>";
 							}
@@ -281,109 +307,65 @@ function saveJob() {
 		});
 	}
 
+function addEmail() {
+	var suser = $("#addRUser option:selected").val();
+	var mails = $("#Mails").val();
+	mails = mails.trim();
+	$("#Mails").val( mails+"\n"+suser );
+	}
+
 function changeSettings() {
 	var wf = $("#Workflow").val();
 
-	// Flatplan stages only exist in the Full workflow. Hybrid has exactly
-	// one flatplan, treated as FINAL throughout (page_pdf-handler.php
-	// coerces every incoming page's stage designation to FIN for Hybrid
-	// pubs), so a stage count is meaningless there and the row is hidden.
-	// Shown explicitly everywhere else so switching away from Hybrid
-	// doesn't leave it stuck hidden.
-	if( wf == "Hybrid" ) {
-		$("tr[class='FlatplanStages']").hide(0);
-		}
-	else {
-		$("tr[class='FlatplanStages']").show(0);
-		}
-
+	// Per-workflow parameter visibility, per the Tracker Workflows matrix
+	// (2026-07): CustomCode, FlatplanStages, PDFstandard, ArchiveStorage,
+	// WebImages and ApprovedComments are Full-only; OutputFormat is the
+	// inverse (Hybrid/Resize only). Rows that are merely hidden keep
+	// submitting their stored value; the disabled-swap pairs
+	// (PDFstandard/ArchiveStorage/WebImages/OutputFormat) submit their
+	// fixed _hidden default instead - PDFstandard's is PDFX1A, which the
+	// matrix explicitly mandates for Hybrid.
 	switch( wf ) {
 		case "Full":
+			$("tr[class='FlatplanStages']").show(0);
+			$("tr[class='CustomCode']").show(0);
+			$("tr[class='ApprovedComments']").show(0);
 			$("tr[class='PDFstandard']").show(0);
 			$("tr[class='ArchiveStorage']").show(0);
-			$("tr[class='OutputFormat']").hide(0);
 			$("tr[class='WebImages']").show(0);
-
-			$("#OutputFormat").attr('disabled','disabled');
-			$("#OutputFormat_hidden").removeAttr('disabled');
+			$("tr[class='OutputFormat']").hide(0);
 
 			$("#PDFstandard").removeAttr('disabled');
-			$("#ArchiveStorage").removeAttr('disabled');
 			$("#PDFstandard_hidden").attr('disabled','disabled');
+			$("#ArchiveStorage").removeAttr('disabled');
 			$("#ArchiveStorage_hidden").attr('disabled','disabled');
 			$("#WebImages").removeAttr('disabled');
 			$("#WebImages_hidden").attr('disabled','disabled');
+			$("#OutputFormat").attr('disabled','disabled');
+			$("#OutputFormat_hidden").removeAttr('disabled');
 			break;
 
 		case "Hybrid":
-			$("tr[class='PDFstandard']").show(0);
-			$("tr[class='ArchiveStorage']").show(0);
-			$("tr[class='OutputFormat']").hide(0);
-			$("tr[class='WebImages']").show(0);
-
-			$("#OutputFormat").attr('disabled','disabled');
-			$("#OutputFormat_hidden").removeAttr('disabled');
-
-			$("#PDFstandard").removeAttr('disabled');
-			$("#ArchiveStorage").removeAttr('disabled');
-			$("#PDFstandard_hidden").attr('disabled','disabled');
-			$("#ArchiveStorage_hidden").attr('disabled','disabled');
-			$("#WebImages").removeAttr('disabled');
-			$("#WebImages_hidden").attr('disabled','disabled');
-			break;
-		
-		case "Repack":
-			$("tr[class='PDFstandard']").hide(0);
-			$("tr[class='ArchiveStorage']").hide(0);
-			$("tr[class='OutputFormat']").show(0);
-			$("tr[class='WebImages']").hide(0);
-			
-			$("#OutputFormat").removeAttr('disabled');
-			$("#OutputFormat_hidden").attr('disabled','disabled');
-			
-			$("#PDFstandard").attr('disabled','disabled');
-			$("#ArchiveStorage").attr('disabled','disabled');
-			$("#PDFstandard_hidden").removeAttr('disabled');	
-			$("#ArchiveStorage_hidden").removeAttr('disabled');	
-			$("#WebImages").attr('disabled','disabled');
-			$("#WebImages_hidden").removeAttr('disabled');				
-			break;
-			
 		case "Resize":
+			$("tr[class='FlatplanStages']").hide(0);
+			$("tr[class='CustomCode']").hide(0);
+			$("tr[class='ApprovedComments']").hide(0);
 			$("tr[class='PDFstandard']").hide(0);
 			$("tr[class='ArchiveStorage']").hide(0);
-			$("tr[class='OutputFormat']").show(0);
 			$("tr[class='WebImages']").hide(0);
+			$("tr[class='OutputFormat']").show(0);
 
+			$("#PDFstandard").attr('disabled','disabled');
+			$("#PDFstandard_hidden").removeAttr('disabled');
+			$("#ArchiveStorage").attr('disabled','disabled');
+			$("#ArchiveStorage_hidden").removeAttr('disabled');
+			$("#WebImages").attr('disabled','disabled');
+			$("#WebImages_hidden").removeAttr('disabled');
 			$("#OutputFormat").removeAttr('disabled');
 			$("#OutputFormat_hidden").attr('disabled','disabled');
-			
-			$("#PDFstandard").attr('disabled','disabled');
-			$("#ArchiveStorage").attr('disabled','disabled');
-			$("#PDFstandard_hidden").removeAttr('disabled');	
-			$("#ArchiveStorage_hidden").removeAttr('disabled');	
-			$("#WebImages").attr('disabled','disabled');
-			$("#WebImages_hidden").removeAttr('disabled');			
-			break;
-			
-		case "Enhance":
-			$("tr[class='PDFstandard']").hide(0);
-			$("tr[class='ArchiveStorage']").hide(0);
-			$("tr[class='OutputFormat']").show(0);
-			$("tr[class='WebImages']").hide(0);
-			
-			$("#OutputFormat").removeAttr('disabled');
-			$("#OutputFormat_hidden").attr('disabled','disabled');	
-
-			$("#PDFstandard").attr('disabled','disabled');
-			$("#ArchiveStorage").attr('disabled','disabled');
-			$("#PDFstandard_hidden").removeAttr('disabled');	
-			$("#ArchiveStorage_hidden").removeAttr('disabled');	
-			$("#WebImages").attr('disabled','disabled');
-			$("#WebImages_hidden").removeAttr('disabled');			
 			break;
 		}
-	
+
 	}
 changeSettings();
 

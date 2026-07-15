@@ -41,7 +41,7 @@ $types = PARTTYPES;
 						$default[$key] = "European";
 						break;
 					case 'Workflow':
-						$temp = array( 'Full', 'Hybrid', 'Repack', 'Resize', 'Enhance' );
+						$temp = array( 'Full', 'Hybrid', 'Resize' );
 						$default[$key] = "Resize";
 						break;
 					case 'Enhance':

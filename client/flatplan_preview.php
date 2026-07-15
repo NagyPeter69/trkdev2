@@ -52,6 +52,25 @@ $time = strtotime( $pub[0][11] );
 setlocale(LC_ALL,'hungarian');
 $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) ); 	
 
+// Hybrid workflow has no flatplan stages: its single flatplan IS the FINAL
+// one (page_pdf-handler.php coerces every incoming page's stage designation
+// to FIN for Hybrid pubs). Force this view onto the FIN stage before the
+// alter-defaulting logic below - overriding both an unset alter and an
+// explicit non-FIN one in the URL - and remember the fact so both stage-chip
+// blocks (mobile + desktop) can skip rendering the PRE/BASIC/FINAL markers.
+$wfXml = simplexml_load_file( 'xml/'.PMD.'.xml' );
+$wfXpath = $wfXml->xpath('/Publications');
+foreach( $wfXpath as $wfTemp ) {
+	for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+		if( $wfTemp->Item[$wfI]->Code == $magazine[0][3] )
+			break;
+		}
+	}
+$hybridFP = ( (string) $wfXml->Item[$wfI]->Workflow == "Hybrid" );
+if( $hybridFP ) {
+	$_GET['alter'] = "FIN";
+	}
+
 if( !isset( $_GET['alter'] ) ) {	
 	switch( $user[0][19] ) {
 		case "FIN":
@@ -254,7 +273,10 @@ jQuery(document).ready(function(){
 			
 			$pdfstand = (string) $xml->Item[$x]->PDFstandard;
 			$process = (string) $xml->Item[$x]->Workflow;
-			if( $process != "Softproof" ) {
+			// Hybrid: single flatplan, no stage markers at all (the view is
+			// already forced to FIN near the top of this file).
+			$flatplans = array();
+			if( $process != "Softproof" and $process != "Hybrid" ) {
 				$flatplans = array(
 					"PRE" => 'pre',
 					"" => 'basic',
@@ -421,7 +443,10 @@ jQuery(document).ready(function(){
 					
 				$pdfstand = (string) $xml->Item[$x]->PDFstandard;
 				$process = (string) $xml->Item[$x]->Workflow;
-				if( $process != "Softproof" ) {
+				// Hybrid: single flatplan, no stage markers at all (the view
+				// is already forced to FIN near the top of this file).
+				$flatplans = array();
+				if( $process != "Softproof" and $process != "Hybrid" ) {
 					$flatplans = array(
 						"PRE" => 'pre',
 						"" => 'basic',

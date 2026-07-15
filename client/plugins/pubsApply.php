@@ -945,7 +945,7 @@ Tracker<br>";
 						$default[$key] = "American";
 						break;
 					case 'Workflow':
-						$temp = array( 'Full', 'Hybrid', 'Repack', 'Resize', 'Enhance' );
+						$temp = array( 'Full', 'Hybrid', 'Resize' );
 						$default[$key] = "Resize";
 						break;
 					case 'Enhance':
@@ -960,10 +960,10 @@ Tracker<br>";
 						$pubs = sql_get( 'publishers', '1 ORDER BY `name` ASC ', '*' );
 						for( $x = 0; $x < count( $pubs ); $x++ ) {
 							$temp[] = $pubs[$x][1];
-							}						
+							}
 						break;
-					}		
-							
+					}
+
 				$txt .= "<tr>";
 					if( $key == "Client" ) { $txt .= "<td valign='top' align='left'>".$lang['xml'][$key]."</td>"; }
 					elseif( $key == "Mails" ) {
@@ -1067,18 +1067,16 @@ Tracker<br>";
 			}
 			
 		if( $_GET["Type"] == "Regular" ) {
-			$avaiable = array( 'Client', 'Name', 'Code', 'Workflow', 'LocalStorage', 'Enhance', 'PageNumbering', 'Language' );
+			// LocalStorage left the UI entirely: every Regular publication
+			// stores PubFolder (hardwired via the hidden input below).
+			$avaiable = array( 'Client', 'Name', 'Code', 'Workflow', 'Enhance', 'PageNumbering', 'Language' );
 
 			foreach( $avaiable as $key ) {
 				$value = (string) $xml->Item[$i]->$key;
 				$temp = array();
 				switch( $key ) {
-					case 'LocalStorage':
-						$temp = array( 'Root', 'PubFolder', 'Parent' );
-						$default[$key] = "PubFolder";
-						break;
 					case 'Workflow':
-						$temp = array( 'Full', 'Repack', 'Resize', 'Enhance' );
+						$temp = array( 'Full', 'Hybrid', 'Resize' );
 						$default[$key] = "Resize";
 						break;
 					case 'Enhance':
@@ -1143,14 +1141,15 @@ Tracker<br>";
 				$txt .= "</tr>";			
 				}
 
-			$txt .= "<input type='hidden' name='FlatplanStages' id='FlatplanStages' value='1'>";			
-			$txt .= "<input type='hidden' name='Resolution' id='Resolution' value='300'>";			
-			$txt .= "<input type='hidden' name='PDFstandard' id='PDFstandard' value='PDFX1A'>";			
-			$txt .= "<input type='hidden' name='OutputFormat' id='OutputFormat' value='TIFF'>";			
-			$txt .= "<input type='hidden' name='CustomCode' id='CustomCode' value='No'>";			
-			$txt .= "<input type='hidden' name='ImageRename' id='ImageRename' value='No'>";				
+			$txt .= "<input type='hidden' name='FlatplanStages' id='FlatplanStages' value='1'>";
+			$txt .= "<input type='hidden' name='Resolution' id='Resolution' value='300'>";
+			$txt .= "<input type='hidden' name='PDFstandard' id='PDFstandard' value='PDFX1A'>";
+			$txt .= "<input type='hidden' name='OutputFormat' id='OutputFormat' value='TIFF'>";
+			$txt .= "<input type='hidden' name='CustomCode' id='CustomCode' value='No'>";
+			$txt .= "<input type='hidden' name='ImageRename' id='ImageRename' value='No'>";
 			$txt .= "<input type='hidden' name='WebImages' id='WebImages' value='No'>";
 			$txt .= "<input type='hidden' name='ArchiveMode' id='ArchiveMode' value='RGB'>";
+			$txt .= "<input type='hidden' name='LocalStorage' id='LocalStorage' value='PubFolder'>";
 			}
 			
 		$result = $txt;
