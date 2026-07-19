@@ -44,11 +44,11 @@
 					}
 				}
 
-			// Resize workflow has no PDF approval, so Flatplan/Pages/Planner
-			// (all of which revolve around page approval) are hidden for it.
-			// SuperUser (group 2) is exempt from this and every other
-			// publication-based gate - they see every menu item regardless
-			// of the current publication's workflow.
+			// Resize and Auto workflows have no PDF approval, so Flatplan/
+			// Pages/Planner (all of which revolve around page approval) are
+			// hidden for them. SuperUser (group 2) is exempt from this and
+			// every other publication-based gate - they see every menu item
+			// regardless of the current publication's workflow.
 			$actualCode = explode( "_", $user[0][11] )[0];
 			$currentProcess = "";
 			foreach($xpath as $temp) {
@@ -58,8 +58,9 @@
 						}
 					}
 				}
+			$noApprovalWorkflow = in_array( $currentProcess, array( 'Resize', 'Auto' ) );
 			if( $user[0][8] == 2 ) {
-				$currentProcess = "";
+				$noApprovalWorkflow = false;
 				}
 
 			if( 0 ) {
@@ -89,11 +90,11 @@
 						}
 					}
 				
-				if( $user[0][11] != '' && $currentProcess != 'Resize' ) {
+				if( $user[0][11] != '' && !$noApprovalWorkflow ) {
 					echo "<li class='"; if( $_GET['page'] == 'flatplan' ) { echo 'selected'; } echo "'><a href='?page=flatplan'>".$lang['menu']['flatplan']."</a></li>";
 					}
 
-				if( $user[0][11] != '' && $currentProcess != 'Resize' ) {
+				if( $user[0][11] != '' && !$noApprovalWorkflow ) {
 					echo "<li class='"; if( $_GET['page'] == 'flatplan_preview' ) { echo 'selected'; } echo "'><a href='?page=flatplan_preview'>".$lang['menu']['pages']."</a></li>";
 					}
 
@@ -114,7 +115,7 @@
 					}
 					
 				echo "<li class='planner "; if( $_GET['page'] == 'assets' ) { echo 'selected'; } echo "'><a href='?page=assets'>".$lang['menu']['download']."</a></li>";
-				if( $currentProcess != 'Resize' ) {
+				if( !$noApprovalWorkflow ) {
 					echo "<li class='planner "; if( $_GET['page'] == 'flatplan_planner' ) { echo 'selected'; } echo "'><a href='?page=flatplan_planner'>".$lang['menu']['planner']."</a></li>";
 					}
 				//echo "<li><div style='height: 15px; margin-top: 19px; float: left; width:2px; background: rgb( 200, 200, 200 );'>&nbsp;</div></li>";

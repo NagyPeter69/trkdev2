@@ -23,6 +23,7 @@ $xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
 <input type='hidden' id='PDFstandard_hidden' disabled name='PDFstandard' value='PDFX1A'>
 <input type='hidden' id='ArchiveStorage_hidden' disabled name='ArchiveStorage' value='Client Area'>
 <input type='hidden' id='WebImages_hidden' disabled name='WebImages' value='Yes'>
+<input type='hidden' id='Enhance_hidden' disabled name='Enhance' value='General'>
 <?php
 // LocalStorage left the UI entirely for Regular publications: every
 // Regular magazine stores PubFolder. Adhoc's LocalStorage is chosen at
@@ -67,8 +68,8 @@ if( $magazine[0][10] == "Regular" ) {
 						$temp = array( $value );
 						break;
 					case 'Workflow':
-						$temp = array( 'Full', 'Hybrid', 'Resize' );
-						break;				
+						$temp = array( 'Full', 'Hybrid', 'Resize', 'Auto' );
+						break;
 					case 'FlatplanStages':
 						$temp = array( '1', '2', '3' );
 						break;					
@@ -261,7 +262,7 @@ if( $magazine[0][10] == "Regular" ) {
 
 <script>
 var origWorkflow = $("#Workflow option:selected").val();
-var miniParts = new Array( "Repack", "Resize", "Enhance" );
+var miniParts = new Array( "Repack", "Resize", "Enhance", "Auto" );
 var longParts = new Array( "Hybrid", "Full" );
 var saveParts = false;
 console.log( origWorkflow );
@@ -429,8 +430,12 @@ function changeSettings() {
 	var wf = $("#Workflow").val();
 
 	// Per-workflow parameter visibility, per the Tracker Workflows matrix
-	// (2026-07): FlatplanStages, PDFstandard, ArchiveStorage and WebImages
-	// are Full-only; OutputFormat is the inverse (Hybrid/Resize only). The
+	// (2026-07, "Auto" added): FlatplanStages, PDFstandard, ArchiveStorage
+	// and WebImages are Full-only. OutputFormat is shown for Hybrid/Resize
+	// only - Full fixes it to TIFF, Auto fixes it to Original (both via the
+	// same hidden fallback input, whose value this function sets before
+	// disabling the real select). Enhance (Image Enhancement) is shown for
+	// everything except Auto, whose processing is fully automatic. The
 	// disabled-swap pairs submit their fixed _hidden default when hidden -
 	// PDFstandard's is PDFX1A, which the matrix explicitly mandates for
 	// Hybrid.
@@ -440,6 +445,7 @@ function changeSettings() {
 			$("tr[class='PDFstandard']").show(0);
 			$("tr[class='ArchiveStorage']").show(0);
 			$("tr[class='WebImages']").show(0);
+			$("tr[class='Enhance']").show(0);
 			$("tr[class='OutputFormat']").hide(0);
 
 			$("#PDFstandard").removeAttr('disabled');
@@ -448,32 +454,19 @@ function changeSettings() {
 			$("#ArchiveStorage_hidden").attr('disabled','disabled');
 			$("#WebImages").removeAttr('disabled');
 			$("#WebImages_hidden").attr('disabled','disabled');
+			$("#Enhance").removeAttr('disabled');
+			$("#Enhance_hidden").attr('disabled','disabled');
 			$("#OutputFormat").attr('disabled','disabled');
-			$("#OutputFormat_hidden").removeAttr('disabled');
+			$("#OutputFormat_hidden").attr('value','TIFF').removeAttr('disabled');
 			break;
 
 		case "Hybrid":
-			$("tr[class='FlatplanStages']").hide(0);
-			$("tr[class='PDFstandard']").hide(0);
-			$("tr[class='ArchiveStorage']").hide(0);
-			$("tr[class='WebImages']").hide(0);
-			$("tr[class='OutputFormat']").show(0);
-
-			$("#PDFstandard").attr('disabled','disabled');
-			$("#PDFstandard_hidden").removeAttr('disabled');
-			$("#ArchiveStorage").attr('disabled','disabled');
-			$("#ArchiveStorage_hidden").removeAttr('disabled');
-			$("#WebImages").attr('disabled','disabled');
-			$("#WebImages_hidden").removeAttr('disabled');
-			$("#OutputFormat").removeAttr('disabled');
-			$("#OutputFormat_hidden").attr('disabled','disabled');
-			break;
-
 		case "Resize":
 			$("tr[class='FlatplanStages']").hide(0);
 			$("tr[class='PDFstandard']").hide(0);
 			$("tr[class='ArchiveStorage']").hide(0);
 			$("tr[class='WebImages']").hide(0);
+			$("tr[class='Enhance']").show(0);
 			$("tr[class='OutputFormat']").show(0);
 
 			$("#PDFstandard").attr('disabled','disabled');
@@ -482,8 +475,30 @@ function changeSettings() {
 			$("#ArchiveStorage_hidden").removeAttr('disabled');
 			$("#WebImages").attr('disabled','disabled');
 			$("#WebImages_hidden").removeAttr('disabled');
+			$("#Enhance").removeAttr('disabled');
+			$("#Enhance_hidden").attr('disabled','disabled');
 			$("#OutputFormat").removeAttr('disabled');
 			$("#OutputFormat_hidden").attr('disabled','disabled');
+			break;
+
+		case "Auto":
+			$("tr[class='FlatplanStages']").hide(0);
+			$("tr[class='PDFstandard']").hide(0);
+			$("tr[class='ArchiveStorage']").hide(0);
+			$("tr[class='WebImages']").hide(0);
+			$("tr[class='Enhance']").hide(0);
+			$("tr[class='OutputFormat']").hide(0);
+
+			$("#PDFstandard").attr('disabled','disabled');
+			$("#PDFstandard_hidden").removeAttr('disabled');
+			$("#ArchiveStorage").attr('disabled','disabled');
+			$("#ArchiveStorage_hidden").removeAttr('disabled');
+			$("#WebImages").attr('disabled','disabled');
+			$("#WebImages_hidden").removeAttr('disabled');
+			$("#Enhance").attr('disabled','disabled');
+			$("#Enhance_hidden").removeAttr('disabled');
+			$("#OutputFormat").attr('disabled','disabled');
+			$("#OutputFormat_hidden").attr('value','Original').removeAttr('disabled');
 			break;
 		}
 

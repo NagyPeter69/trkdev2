@@ -3362,8 +3362,12 @@ function getshortpubs( $user ) {
 
 		// SuperUser (group 2) sees every publication in this switcher
 		// regardless of workflow - every other publication-based gate in
-		// the app already exempts them the same way.
-		if( ( $workflow != "Resize" && $workflow != "Enhance" ) || $user[8] == 2 ) {
+		// the app already exempts them the same way. Resize and Auto have
+		// no Flatplan/Pages access at all (see menu.php), so neither
+		// belongs in this Flatplan/Pages/Adverts publication switcher for
+		// anyone else; Enhance is a retired workflow name kept here only
+		// for any pub still carrying it in the PMD.
+		if( ( !in_array( $workflow, array( "Resize", "Enhance", "Auto" ) ) ) || $user[8] == 2 ) {
 			for( $y = 0; $y < count( $temp ); $y++ ) {
 				//$pubs[] = $temp[$y];
 

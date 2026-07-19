@@ -945,7 +945,7 @@ Tracker<br>";
 						$default[$key] = "American";
 						break;
 					case 'Workflow':
-						$temp = array( 'Full', 'Hybrid', 'Resize' );
+						$temp = array( 'Full', 'Hybrid', 'Resize', 'Auto' );
 						$default[$key] = "Resize";
 						break;
 					case 'Enhance':
@@ -1076,7 +1076,7 @@ Tracker<br>";
 				$temp = array();
 				switch( $key ) {
 					case 'Workflow':
-						$temp = array( 'Full', 'Hybrid', 'Resize' );
+						$temp = array( 'Full', 'Hybrid', 'Resize', 'Auto' );
 						$default[$key] = "Resize";
 						break;
 					case 'Enhance':
