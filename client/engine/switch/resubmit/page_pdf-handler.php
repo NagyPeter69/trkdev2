@@ -1,5 +1,7 @@
 <?PHP
 
+require_once( "/var/www/html/engine/r3client.php" );
+
 $status = $_POST["result"];
 $jcode = $_POST["jobCode"];
 $issue = $_POST["issue"];
@@ -333,12 +335,9 @@ if( $go ) {
 						$a = substr( $file, 0, -4 ).'.pdf';
 						$b = '/var/www/intra/client/'.substr( $prevDir , 3 ).'/'.$oldFile.'.pdf';
 						
-						$command = './r3 -mode:AUTOCOMPARE '.$a.' '.$b.' | tee /var/www/intra/client/tests/B-E.out 2>&1';
-						echo "<br>".$command."<br>";
-						$end = shell_exec('
-							cd /var/www/intra/client/engine/r3 2>&1;
-							'.$command.';
-							');	
+						echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
+						$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
+						file_put_contents( '/var/www/intra/client/tests/B-E.out', $end );
 						echo $end."<br>";
 						sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
 						}															

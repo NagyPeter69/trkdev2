@@ -3,6 +3,7 @@ header('Content-Type: text/html; charset=utf-8');
 include("/var/www/server_constans.php");
 include("/var/www/html/engine/constans.php");
 include_once("/var/www/html/engine/build_info.php");
+require_once("/var/www/html/engine/r3client.php");
 
 function GetHighestPageNumber( $xml, $pub ) {
 	$pn = 0;
@@ -547,12 +548,7 @@ function PDF_prework( $id ) {
 		//error_log( "HELY: ".$dir."/".$file );
 		if( is_file( $dir."/".$file ) ) {
 			//Méret lekérése, tárolása
-			$command = "./r3 -mode:GETDATA -metadata ".$dir."/".$file;
-			//error_log( $command );
-			$command = shell_exec('
-					cd /var/www/html/r3API/r3 2>&1;
-					'.$command.';
-					');			
+			$command = r3run( 'GETDATA', array(), $dir."/".$file );
 			//error_log( $command );
 			$text = "";
 			$temp = array();
@@ -565,11 +561,7 @@ function PDF_prework( $id ) {
 			sql_update( "pageinfo", "boxes='".$text."'", "id='".$pageinfo[0]["id"]."'" );
 			
 			//Színek lekérése, tárolása
-			$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.$color.'.icc '.$dir.'/'.$file.' 2>&1';
-			$command = shell_exec('
-					cd /var/www/html/r3API/r3 2>&1;
-					'.$command.';
-					');
+			$command = r3run( 'MEASURE', array( 'x' => 596, 'y' => 760, 'd' => 1, 'r' => 600, 'tprofile' => $color.'.icc' ), $dir.'/'.$file );
 
 			sql_update( "pageinfo", "colors='".$command."'", "id='".$pageinfo[0]["id"]."'" );
 			
@@ -2631,27 +2623,31 @@ function adThumbCreate3( $path, $file, $to ) {
 	$from = $terminal."/".$file;
 	$to = $terminal."/".$path."/".$to;
 		
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
-	
+	$renderParams = array(
+		'left' => $trim[0], 'right' => $trim[2]-14.1732,
+		'bottom' => $trim[1], 'top' => $trim[3]-14.1732,
+		'width' => $tWidth, 'height' => $tHeight,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+		);
+	$command = json_encode( $renderParams )." ".$from." -> ".$to;
+
 	error_log( $command );
-	
-	$result = shell_exec('
-		cd /var/www/html/r3API/r3 2>&1;
-		'.$command.';
-		');	
-	
+
+	$result = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $result );
+
 	error_log( $command );
-	
+
 	$handle = fopen( "r3Thumb.txt", 'a+');
 	if( $handle === false ) {
 		return false;
 		}
-	
+
 	if( fwrite( $handle, $command . "\n\n" ) === false ) {
 		return false;
 		}
 
-	if( fwrite( $handle, $result . "\n\n" ) === false ) {
+	if( fwrite( $handle, strlen( $result )." bytes written to ".$to . "\n\n" ) === false ) {
 		return false;
 		}
 
@@ -2689,25 +2685,29 @@ function adThumbCreate2( $path, $file, $to ) {
 	$from = $terminal."/engine/switch/".$file;
 	$to = $terminal."/".$path."/".$to;
 		
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
-	
+	$renderParams = array(
+		'left' => $trim[0], 'right' => $trim[2]-14.1732,
+		'bottom' => $trim[1], 'top' => $trim[3]-14.1732,
+		'width' => $tWidth, 'height' => $tHeight,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+		);
+	$command = json_encode( $renderParams )." ".$from." -> ".$to;
+
 	error_log( $command );
-	
-	$result = shell_exec('
-		cd /var/www/html/r3API/r3 2>&1;
-		'.$command.';
-		');	
-	
+
+	$result = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $result );
+
 	$handle = fopen( "r3Thumb.txt", 'a+');
 	if( $handle === false ) {
 		return false;
 		}
-	
+
 	if( fwrite( $handle, $command . "\n\n" ) === false ) {
 		return false;
 		}
 
-	if( fwrite( $handle, $result . "\n\n" ) === false ) {
+	if( fwrite( $handle, strlen( $result )." bytes written to ".$to . "\n\n" ) === false ) {
 		return false;
 		}
 
@@ -2746,24 +2746,28 @@ function adThumbCreate( $path, $file, $to ) {
 	
 	$to = $terminal."/".$path."/".$to;
 	
-	$command = './r3 -binary -mode:RENDER -left:'.($trim[0]).' -right:'.($trim[2]-14.1732).' -bottom:'.$trim[1].' -top:'.($trim[3]-14.1732).' -width:'.$tWidth.' -height:'.$tHeight.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
-	
+	$renderParams = array(
+		'left' => $trim[0], 'right' => $trim[2]-14.1732,
+		'bottom' => $trim[1], 'top' => $trim[3]-14.1732,
+		'width' => $tWidth, 'height' => $tHeight,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+		);
+	$command = json_encode( $renderParams )." ".$from." -> ".$to;
+
 	echo $command."<br>";
-	$result = shell_exec('
-		cd /var/www/html/r3API/r3 2>&1;
-		'.$command.';
-		');	
+	$result = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $result );
 
 	$handle = fopen( "r3Thumb.txt", 'a+');
 	if( $handle === false ) {
 		return false;
 		}
-	
+
 	if( fwrite( $handle, $command . "\n\n" ) === false ) {
 		return false;
 		}
 
-	if( fwrite( $handle, $result . "\n\n" ) === false ) {
+	if( fwrite( $handle, strlen( $result )." bytes written to ".$to . "\n\n" ) === false ) {
 		return false;
 		}
 
@@ -2790,29 +2794,31 @@ function thumbCreate2( $file, $pageWidth, $color = "" ) {
 		}
 	$iccProfile = resolveIccProfileByName( $color );
 
-	error_log( "R3 DEBUG" );
-	error_log( './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' $@ >'.$to.' 2>&1' );
+	$renderParams = array(
+		'left' => $trim[0], 'right' => $trim[2],
+		'bottom' => $trim[1], 'top' => $trim[3],
+		'width' => $width, 'height' => $height,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $iccProfile,
+		);
+	$command = json_encode( $renderParams )." ".$from." -> ".$to;
 
-	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' $@ >'.$to.' 2>&1';
-	
+	error_log( "R3 DEBUG" );
 	error_log( $command );
-	
-	$result = shell_exec('
-		cd /var/www/html/r3API/r3 2>&1;
-		'.$command.';
-		');	
+
+	$result = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $result );
 
 	$handle = fopen( "r3Thumb.txt", 'a+');
 	if( $handle === false ) {
 		return false;
 		}
-	
+
 	if( fwrite( $handle, $command . "\n\n" ) === false ) {
 		return false;
 		}
 	fclose( $handle );
 	}
-	
+
 function thumbCreate( $path, $file, $to, $pageWidth ) {
 	$terminal = "/var/www/html/client";
 	$file = substr( $file, 3 );
@@ -2830,18 +2836,22 @@ function thumbCreate( $path, $file, $to, $pageWidth ) {
 	$to = substr($to[( count($to)-1 )], 0, -4).".jpg";
 	$to = $terminal."/".substr( $path, 3 )."/".$to;
 	
-	$command = './r3 -binary -mode:RENDER -left:'.$trim[0].' -right:'.$trim[2].' -bottom:'.$trim[1].' -top:'.$trim[3].' -width:'.$width.' -height:'.$height.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
-		
-	$result = shell_exec('
-		cd /var/www/html/r3API/r3 2>&1;
-		'.$command.';
-		');	
+	$renderParams = array(
+		'left' => $trim[0], 'right' => $trim[2],
+		'bottom' => $trim[1], 'top' => $trim[3],
+		'width' => $width, 'height' => $height,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+		);
+	$command = json_encode( $renderParams )." ".$from." -> ".$to;
+
+	$result = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $result );
 
 	$handle = fopen( "r3Thumb.txt", 'a+');
 	if( $handle === false ) {
 		return false;
 		}
-	
+
 	if( fwrite( $handle, $command . "\n\n" ) === false ) {
 		return false;
 		}
@@ -3052,12 +3062,8 @@ function isWeekend($date) {
 	}
 
 function colorPick( $pdfPath, $x, $y ) {
-	$command = './r3 -mode:MEASURE -x:'.$x.' -y:'.$y.' -tprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$pdfPath.' 2>&1';
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
-	
+	$command = r3run( 'MEASURE', array( 'x' => $x, 'y' => $y, 'tprofile' => resolveIccProfileByName( "FOGRA_39" ) ), $pdfPath );
+
 	return preg_split('/[\r\n]+/', $command);
 	}
 
@@ -3097,11 +3103,7 @@ function getAllColors( $pageinfo ) {
 
 function getColorTitles( $pdfPath ) {
 	$titles = array();
-	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$pdfPath.' 2>&1';
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
+	$command = r3run( 'MEASURE', array( 'x' => 596, 'y' => 760, 'd' => 1, 'r' => 600, 'tprofile' => resolveIccProfileByName( "FOGRA_39" ) ), $pdfPath );
 	
 	$pantone = preg_split('/[\r\n]+/', $command);
 	$defcolors = array( "CYAN", "MAGENTA", "YELLOW", "BLACK" );
@@ -3117,11 +3119,7 @@ function getColorTitles( $pdfPath ) {
 
 function getColors( $pdfPath ) {
 	$colors = array();
-	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$pdfPath.' 2>&1';
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
+	$command = r3run( 'MEASURE', array( 'x' => 596, 'y' => 760, 'd' => 1, 'r' => 600, 'tprofile' => resolveIccProfileByName( "FOGRA_39" ) ), $pdfPath );
 	
 	$pantone = preg_split('/[\r\n]+/', $command);
 	for( $i = 0; $i < count( $pantone )-1; $i++ ) {
@@ -3398,14 +3396,7 @@ function mmToPsp( $mm ) {
 function getPDFBox2( $box, $file ) {
 	$data = array();
 	$boxes = explode( " ", $box );
-	$command = "./r3 -mode:GETDATA -metadata ".$file;
-	
-	//error_log( $command );
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
-	//error_log( $command );
+	$command = r3run( 'GETDATA', array(), $file );
 	
 	$command = explode( "\n", $command );
 	for( $i = 0; $i < 4; $i++ ) {
@@ -3461,16 +3452,9 @@ function getPDFBox( $box, $pageinfo ) {
 		
 		$file = $dir."/".$file;
 		
-		$command = "./r3 -mode:GETDATA -metadata ".$file;
-		
-		//error_log( $command );
-		$command = shell_exec('
-				cd /var/www/html/r3API/r3 2>&1;
-				'.$command.';
-				');
-		//error_log( $command );
-		
-		$command = explode( "\n", $command );	
+		$command = r3run( 'GETDATA', array(), $file );
+
+		$command = explode( "\n", $command );
 		for( $t = 0; $t < 4; $t++ ) {
 			$temp[] = $command[$t];
 			}
@@ -3499,12 +3483,8 @@ function getPDFBox_TEMP( $box, $file ) {
 	$data = array();
 	$boxes = explode( " ", $box );
 	
-	$command = "./r3 -mode:GETDATA -metadata ".$file;	
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
-	
+	$command = r3run( 'GETDATA', array(), $file );
+
 	$command = explode( "\n", $command );
 	for( $i = 0; $i < 4; $i++ ) {
 		$temp = explode( " = ", $command[$i] );
@@ -3567,16 +3547,8 @@ function getBBox( $file, $path, $box = 'mediabox' ) {
 	
 	// echo $file."<br>";
 	
-	$command = "./r3 -mode:GETDATA -metadata ".$file;
-	// echo $command."<br>";
-	//error_log( $command );
-	
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');	
-	
-	//error_log( $command );
+	$command = r3run( 'GETDATA', array(), $file );
+
 	// echo $command."<br>";
 	$command = explode( "\n", $command );
 	for( $i = 0; $i < 4; $i++ ) {
@@ -4619,27 +4591,33 @@ function PDFtoImage_TEMP( $sizes, $from, $to, $icc, $colors = "" ) {
 			}
 		
 		$iccProfile = resolveIccProfileByName( $icc );
-		error_log( './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'' );
-
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
+		$renderParams = array(
+			'left' => $sizes["Left"], 'right' => $sizes["Right"],
+			'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+			'width' => $sizes["Width"], 'height' => $sizes["Height"],
+			'colors' => $color,
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $iccProfile,
+			);
 		}
 	else {
 		$iccProfile = resolveIccProfileByName( $icc );
-		error_log( './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'' );
-
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
+		$renderParams = array(
+			'left' => $sizes["Left"], 'right' => $sizes["Right"],
+			'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+			'width' => $sizes["Width"], 'height' => $sizes["Height"],
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $iccProfile,
+			);
 		}
-	
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3
-			'.$command.';
-			');	
+	error_log( json_encode( $renderParams )." ".$from." -> ".$to );
+
+	$command = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $command );
 
 	//generateImage( $result["img"], TRKPATH."/engine/r3/".$to );
-	
+
 	return $command;
 	}
-	
+
 function PDFtoImage_( $sizes, $from, $to, $colors = "" ) {
 	error_log( "WARNING! PDFtoImage_" );
 	$iccProfile = resolveIccProfileByName( "FOGRA_39" );
@@ -4653,18 +4631,27 @@ function PDFtoImage_( $sizes, $from, $to, $colors = "" ) {
 					$color .= $key;
 				}
 			}
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
+		$renderParams = array(
+			'left' => $sizes["Left"], 'right' => $sizes["Right"],
+			'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+			'width' => $sizes["Width"], 'height' => $sizes["Height"],
+			'colors' => $color,
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $iccProfile,
+			);
 		}
 	else {
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
+		$renderParams = array(
+			'left' => $sizes["Left"], 'right' => $sizes["Right"],
+			'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+			'width' => $sizes["Width"], 'height' => $sizes["Height"],
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $iccProfile,
+			);
 		}
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3
-			'.$command.';
-			');	
+	$command = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( TRKPATH.'/engine/r3/'.$to, $command );
 
 	//generateImage( $result["img"], TRKPATH."/engine/r3/".$to );
-	
+
 	return $command;
 	}
 
@@ -4681,22 +4668,31 @@ function PDFtoImage_Measure( $sizes, $from, $to, $colors = "" ) {
 					$color .= $key;
 				}
 			}
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
+		$renderParams = array(
+			'left' => $sizes["Left"], 'right' => $sizes["Right"],
+			'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+			'width' => $sizes["Width"], 'height' => $sizes["Height"],
+			'colors' => $color,
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $iccProfile,
+			);
 		}
 	else {
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].' -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$iccProfile.' '.$from.' > '.$to.'';
+		$renderParams = array(
+			'left' => $sizes["Left"], 'right' => $sizes["Right"],
+			'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+			'width' => $sizes["Width"], 'height' => $sizes["Height"],
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $iccProfile,
+			);
 		}
-	
-	echo $command."<br>";
-	
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3
-			'.$command.';
-			');	
+
+	echo json_encode( $renderParams )."<br>";
+
+	$command = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $command );
 
 	$ru = microtime(true);
 	echo "Rendering time: " . rutime($ru, $rustart, "utime") ." ms ";
-	
+
 	return $command;
 	}
 

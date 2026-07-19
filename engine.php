@@ -1,5 +1,7 @@
 <?php
 
+require_once( "/var/www/html/engine/r3client.php" );
+
 function fontcolor( $hex ) {
 	if( strpos( $hex, "rgb" ) !== false ) {
 		$c = getBetween( $hex, "(", ")" );
@@ -69,13 +71,7 @@ function getPDFBox( $box, $file ) {
 	$data = array();
 	$boxes = explode( " ", $box );
 	
-	$terminal = "/var/www/html/r3API";
-	$command = "./r3 -mode:GETDATA -metadata ".$file;
-	
-	$command = shell_exec('
-			cd '.$terminal.'/r3 2>&1;
-			'.$command.';
-			');
+	$command = r3run( 'GETDATA', array(), $file );
 	
 	$command = explode( "\n", $command );
 	for( $i = 0; $i < 4; $i++ ) {

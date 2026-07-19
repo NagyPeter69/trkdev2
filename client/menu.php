@@ -46,6 +46,9 @@
 
 			// Resize workflow has no PDF approval, so Flatplan/Pages/Planner
 			// (all of which revolve around page approval) are hidden for it.
+			// SuperUser (group 2) is exempt from this and every other
+			// publication-based gate - they see every menu item regardless
+			// of the current publication's workflow.
 			$actualCode = explode( "_", $user[0][11] )[0];
 			$currentProcess = "";
 			foreach($xpath as $temp) {
@@ -54,6 +57,9 @@
 						$currentProcess = (string) $xml->Item[$x]->Workflow;
 						}
 					}
+				}
+			if( $user[0][8] == 2 ) {
+				$currentProcess = "";
 				}
 
 			if( 0 ) {

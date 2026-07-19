@@ -1,6 +1,7 @@
 <?php
 header('Content-type: text/html; charset=UTF-8');
 include( "../engine.php" );
+require_once( "/var/www/html/engine/r3client.php" );
 
 define( "SFOLDER", "/var/www/html/r3API/source");
 define( "RFOLDER", "/var/www/html/r3API/rendered");
@@ -14,11 +15,7 @@ error_log( $_FILES["file"]["name"][0]["file"] );
 if( move_uploaded_file( $_FILES["file"]["tmp_name"][0]["file"], SFOLDER."/".$_FILES["file"]["name"][0]["file"] ) ) {
 	$from = SFOLDER."/".$_FILES["file"]["name"][0]["file"];
 	
-	$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:ISOcoated_v2_eci.icc '.$from.' 2>&1';
-	$command = shell_exec('
-			cd '.$terminal.'/r3;
-			'.$command.';
-			');
+	$command = r3run( 'MEASURE', array( 'x' => 596, 'y' => 760, 'd' => 1, 'r' => 600, 'tprofile' => 'ISOcoated_v2_eci.icc' ), $from );
 	
 	$pantones = array( "Cyan", "Magenta", "Yellow", "Black" );
 	$pantone = preg_split('/[\r\n]+/', $command);

@@ -62,14 +62,17 @@ $to = $terminalPath."/tests/".$file_name."_check.jpg";
 $sizes["Width"] = pixel_( $sizes["Width"], 100 );
 $sizes["Height"] = pixel_( $sizes["Height"], 100 );
 			
-$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$from.' $@ >'.$to.' 2>&1';
-echo $command;
-$command = shell_exec('
-	cd /var/www/intra/client/engine/r3 2>&1;
-	'.$command.';
-	');	
+$renderParams = array(
+	'left' => $sizes["Left"], 'right' => $sizes["Right"],
+	'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+	'width' => $sizes["Width"], 'height' => $sizes["Height"],
+	'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => 'ISOcoated_v2_eci.icc',
+	);
+echo json_encode( $renderParams );
+$imgData = r3run( 'RENDER', $renderParams, $from );
+file_put_contents( $to, $imgData );
 echo "<br>";
-echo $command;
+echo "wrote ".strlen( $imgData )." bytes to ".$to;
 
 if( $errors['lowres'] == 'true' ) {
 	unset( $pdf );

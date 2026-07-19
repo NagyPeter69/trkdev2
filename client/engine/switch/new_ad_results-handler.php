@@ -1,5 +1,7 @@
 <?PHP
 
+require_once( "/var/www/html/engine/r3client.php" );
+
 $publisher = $_POST["client"];
 $code = $_POST["jobCode"];
 $name = $_POST["description"];
@@ -129,13 +131,15 @@ if( $ad[0][0] != '' ) {
 		$to_ = $terminalPath."/engine/switch/".$file_name."_check.jpg";
 		
 		//echo implode( " | ", $sizes );
-		$command = './r3 -binary -mode:RENDER -left:0 -right:'.( $sizes["Right"] - $sizes["Left"] ).' -bottom:0 -top:'.( $sizes["Top"] - $sizes["Bottom"] ).' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from_.' $@ >'.$to_.' 2>&1';
-		
-		$command = shell_exec('
-			cd /var/www/html/client/engine/r3 2>&1;
-			'.$command.';
-			');	
-	
+		$imgData = r3run( 'RENDER', array(
+			'left' => 0, 'right' => $sizes["Right"] - $sizes["Left"],
+			'bottom' => 0, 'top' => $sizes["Top"] - $sizes["Bottom"],
+			'width' => $sizes["Width"], 'height' => $sizes["Height"],
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+			), $from_ );
+		file_put_contents( $to_, $imgData );
+
+
 		if( $errors['lowres'] == 'true' ) {		
 			error_log( "VAN LOWRES");
 			

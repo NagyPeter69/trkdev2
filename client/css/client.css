@@ -1480,6 +1480,14 @@ animation-iteration-count:infinite;
 animation-direction:linear;
 }
 
+/* Shown instead of the default gray while a page render is being served by
+   the remote render-VM (see r3client_config.php) rather than local r3 -
+   round-trips over the network, so a render taking noticeably longer here
+   is expected, not a stall. */
+#loading.remote-render .blockG{
+background-color:red;
+}
+
 #rotateG_01{
 left:0;
 top:7px;

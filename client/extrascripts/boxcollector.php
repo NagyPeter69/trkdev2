@@ -30,12 +30,9 @@ for( $i = 0; $i < count( $pages ); $i++ ) {
 			}
 		
 		if( is_file( $dir."/".$file ) ) {
-			$command = "./r3 -mode:GETDATA -metadata ".$dir."/".$file;
-			$command = shell_exec('
-					cd /var/www/html/r3API/r3 2>&1;
-					'.$command.';
-					');			
-			
+			$command = r3run( 'GETDATA', array(), $dir."/".$file );
+
+
 			$text = "";
 			$temp = array();
 			$command = explode( "\n", $command );

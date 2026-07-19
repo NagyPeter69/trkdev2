@@ -46,12 +46,19 @@ function PDFtoImage__( $sizes, $to ) {
 			}
 		}
 
-	$command = './r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -colors:'.$color.' -height:'.$sizes["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$from.' $@ >'.$to.' 2>&1';
+	$renderParams = array(
+		'left' => $sizes["left"], 'right' => $sizes["right"],
+		'bottom' => $sizes["bottom"], 'top' => $sizes["top"],
+		'width' => $sizes["width"], 'height' => $sizes["height"],
+		'colors' => $color,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => 'ISOcoated_v2_eci.icc',
+		);
+	$command = json_encode( $renderParams )." ".$from." -> ".$to;
 	logToFile( 'pageGenerate.txt' , $command );
-	shell_exec('
-			cd engine/r3 2>&1;
-			'.$command.';
-			');
+
+	$imgData = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( "/var/www/html/client/engine/r3/".$to, $imgData );
+
 	return $command;
 	}
 
@@ -255,5 +262,5 @@ else {
 $width = floatval( str_replace( ",", ".", $cbox[0]['Right'] ) ) - floatval( str_replace( ",", ".", $cbox[0]['Left'] ) );
 
 $result = $imgData;
-print json_encode( array( $result, $debug ) );
+print json_encode( array( $result, $debug, R3_REMOTE_MODE ) );
 ?>

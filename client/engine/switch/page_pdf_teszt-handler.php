@@ -1,5 +1,7 @@
 <?PHP
 
+require_once( "/var/www/html/engine/r3client.php" );
+
 error_log( "PAGEINFO LOG START");
 
 $status = $_POST["result"];
@@ -377,12 +379,9 @@ if( $go ) {
 						$a = $path.'/_old'.( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) ).'/'.$oldFile.'_'.$pageInfo[0][3].'.pdf';
 						$b = $prevDir.'/'.$oldFile.'.pdf';
 						
-						$command = './r3 -mode:AUTOCOMPARE '.$a.' '.$b.' | tee /var/www/html/client/tests/B-E.out';
-						echo "<br>".$command."<br>";
-						$end = shell_exec('
-							cd /var/www/html/r3API/r3 2>&1;
-							'.$command.';
-							');	
+						echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
+						$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
+						file_put_contents( '/var/www/html/client/tests/B-E.out', $end );
 						echo $end."<br>";
 						sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
 						$id = $pageInfo[0][0];

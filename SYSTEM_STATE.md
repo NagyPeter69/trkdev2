@@ -335,6 +335,63 @@ read, not narrowly scoped to the DMI table this specific binary wants) — accep
 the basis that this box sits behind a dedicated firewall gateway (Sophos) and isn't exposed
 to raw internet. Worth re-litigating if this system's network exposure ever changes.
 
+### R3's CPU/license conflict with this VM, and the render-VM workaround
+
+The `/dev/mem` read described above isn't just reading arbitrary bytes — R3's license is
+bound to the motherboard/CPU identity it finds there, and it only accepts a genuine `kvm64`
+QEMU CPU signature. That's a problem on trkdev2 specifically: Claude Code's own tooling
+(its Bun-based CLI) hangs silently during install/startup on `kvm64` and needs a real,
+modern CPU generation (Broadwell tested and working) with a full instruction set. One VM
+can't satisfy both constraints at once — whichever CPU type it runs, one side breaks.
+
+**Tried and deliberately abandoned (fully removed from the system 2026-07-19, no residue
+should remain)**: spoofing R3 into accepting Broadwell as `kvm64`. This started as ELF
+interpreter-based CPU *feature* masking (an `LD_PRELOAD`-style loader swapped in as R3's
+`PT_INTERP`, faulting out SSE/AVX/FMA/BMI instructions so R3 would tolerate a CPU that
+lacks them) and escalated into full CPU-identity spoofing — overriding family/model/
+stepping/brand string, then byte-for-byte substituting the entire physical memory region
+R3 reads via a seccomp+ptrace supervisor. The substitution was verified byte-perfect
+against a genuine kvm64 reference capture, and R3's license check *still* failed — the
+real check apparently isn't purely a function of those bytes, and R3's obfuscation
+resisted further static/dynamic analysis without disproportionate effort. If you ever
+find fragments of this (`libcpuidoverride`, `libdevmemspoof`, `r3ptrace`/`memspoof_trace`,
+`kvm64_devmem_reference.bin`, `r3API/r3-spoofed/`, a `r3_patched` binary with its
+interpreter pointed at `/usr/lib/cpuid.so`) — it's dead, unfinished exploration that
+should have been deleted; don't resume from it, the two-VM approach below superseded it
+entirely.
+
+**What's actually in place**: a second, dedicated **render-VM (10.10.30.22)** — an old
+Debian 8 / PHP 5.6 box kept running on `kvm64` — does nothing but real R3 rendering.
+trkdev2 stays on Broadwell so Claude Code's own tooling keeps working, and every R3 call
+routes through `engine/r3client.php`'s single `r3run($mode, $params, $inputPath, ...)`
+entry point, which replaced ~29 inline `shell_exec('cd .../r3; ./r3 ...')` call sites
+across `r3API/*.php`, `engine/engine.php`, and `client/*.php`. `r3run()` picks local vs.
+remote automatically via the `R3_REMOTE_MODE` constant in `engine/r3client_config.php`,
+which parses `/proc/cpuinfo` (`vendor_id`/`cpu family`/`model`) at request time — a
+genuine kvm64 signature (`GenuineIntel`, family 15, model 6) runs R3 locally; anything
+else (trkdev2's own Broadwell included) sends the job to the render-VM's
+`r3remote/run.php` over HTTP (multipart file upload + shared-token auth, base64-encoded
+JSON response). This means the exact same PHP code path works unmodified on trkdev2, on
+the render-VM, and eventually in production — it self-detects which side it's on.
+
+The shared auth token lives in `engine/r3client_config.php` (trkdev2) and the matching
+`r3remote/config.php` (render-VM) — both files are untracked/gitignored, not committed,
+consistent with how the DB password above is kept out of the repo. Rotate by editing both
+sides together.
+
+Two small UX consequences of remote rendering being visibly slower (network round-trip on
+top of the render itself): the Pages-view spinner turns red instead of the default gray
+while a render is being served remotely (`.remote-render` rule in `client/css/client.css`,
+toggled by `updateRenderModeIndicator()` in `flatplan_preview.php`/`vflatplan_preview.php`
+off the `R3_REMOTE_MODE` flag threaded through the AJAX response); and the stuck-spinner
+recovery watchdog and AJAX timeout are tuned per mode (15s local / 30s remote) rather than
+one flat ceiling, since a legitimately-slow remote round-trip shouldn't be mistaken for a
+lost response.
+
+**Moot in production**: production's own hardware is genuine kvm64, so none of this detour
+applies there — `r3run()` will simply always take the local path once this ships. See
+"Deploying to production" below.
+
 ## dynAPI/tracker/, client/temp/, and filedownload.php's zip library
 
 Same shape as R3 above: things absent on trkdev2 because they fell outside the "copy the

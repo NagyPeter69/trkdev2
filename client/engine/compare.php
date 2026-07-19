@@ -35,14 +35,21 @@ function PDFtoImage( $sizes, $to ) {
 			}
 		}
 		
-	$command = './r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -colors:'.$color.' -height:'.$sizes["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@ >'.$to.' 2>&1';
-	
+	$renderParams = array(
+		'left' => $sizes["left"], 'right' => $sizes["right"],
+		'bottom' => $sizes["bottom"], 'top' => $sizes["top"],
+		'width' => $sizes["width"], 'height' => $sizes["height"],
+		'colors' => $color,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+		);
+	$command = json_encode( $renderParams )." ".$from." -> ".$to;
+
 	error_log( $command );
 	logToFile( 'pageGenerate.txt' , $command );
-	shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
+
+	$imgData = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $imgData );
+
 	return $command;
 	}
 
@@ -82,15 +89,18 @@ if( $_GET['op'] == "loaddiff" ) {
 	$sizes['width'] = ceil( pixel__( $sizes['right'] - $sizes['left'], 100 ) )+1;
 	$sizes['height'] = ceil( pixel__($sizes['top'] - $sizes['bottom'], 100 ) );	
 	
-	$command = './r3 -mode:COMPARE -other_left:'.$sizes["left"].' -other_bottom:'.$sizes["bottom"].' -left:'.$sizes["left"].' -bottom:'.$sizes["bottom"].' -right:'.$sizes["right"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -height:'.$sizes["height"].' '.$a.' '.$b.' $@ > '.$to.' 2>&1';
+	$compareParams = array(
+		'other_left' => $sizes["left"], 'other_bottom' => $sizes["bottom"],
+		'left' => $sizes["left"], 'bottom' => $sizes["bottom"],
+		'right' => $sizes["right"], 'top' => $sizes["top"],
+		'width' => $sizes["width"], 'height' => $sizes["height"],
+		);
 	error_log( "Difference" );
-	error_log( $command );
-	
-	$debug = shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
-	
+	error_log( json_encode( $compareParams )." ".$a." ".$b." -> ".$to );
+
+	$debug = r3run( 'COMPARE', $compareParams, $a, $b );
+	file_put_contents( $to, $debug );
+
 	$imgData = base64_encode(file_get_contents( $to ) );
 	$imgData = 'data:'.mime_content_type( $to ).';base64,'.$imgData;
 	//@unlink( "r3/".$to );

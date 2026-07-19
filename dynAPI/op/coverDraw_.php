@@ -1,5 +1,7 @@
 <?php
 
+require_once( "/var/www/html/engine/r3client.php" );
+
 $havePDF = true;
 
 $maxwidth = 0;
@@ -188,15 +190,16 @@ if( $pages <= 1 ) {
 	$w = round( ( $crop["Right"] - $crop["Left"] ) * 100 / 72 );
 	$h = round( ( $crop["Top"] - $crop["Bottom"] ) * 100 / 72 );
 	
-	$terminal = "/var/www/html/r3API";
-	$command = './r3 -binary: -mode:RENDER -left:'.$crop["Left"].' -right:'.$crop["Right"].' -bottom:'.$crop["Bottom"].' -top:'.$crop["Top"].' -width:'.$w.' -height:'.$h.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$from.' > '.$to.'';
-	//$command = "./r3 -left:0 -right:864 -bottom:0 -top:828 -binary: -mode:RENDER -width:1200 -height:1656 -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc spot.pdf > spot.jpg";
-	error_log( $command );	
-	$command = shell_exec('
-		cd '.$terminal.'/r3;
-		'.$command.';
-		');
-	error_log( $command );
+	$renderParams = array(
+		'left' => $crop["Left"], 'right' => $crop["Right"],
+		'bottom' => $crop["Bottom"], 'top' => $crop["Top"],
+		'width' => $w, 'height' => $h,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => 'ISOcoated_v2_eci.icc',
+		);
+	error_log( json_encode( $renderParams ) );
+	$imgData = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( $to, $imgData );
+	error_log( "wrote ".strlen( $imgData )." bytes to ".$to );
 	//R3 IMG Render vége
 	//$pdf->RenderPageToImage(1, "./rendered/".$img, 200, 0, 0, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmJPEG);	
 	

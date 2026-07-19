@@ -651,6 +651,19 @@ function selectAllText( el ) {
         }
 	}
 
+// vtesztAjax.php's response is [imgData, debug, isRemoteRender] - see
+// updateRenderModeIndicator() in flatplan_preview.php for why.
+function updateRenderModeIndicator( data ) {
+	$("#loading").toggleClass( "remote-render", data[2] == true );
+	}
+
+// See RENDER_WATCHDOG_MS in flatplan_preview.php for why this exists: a
+// lost response (dropped connection, etc.) never reaches the vtesztAjax.php
+// success/error handler, leaving renderCounter - and so the spinner - stuck
+// on indefinitely. This guarantees recovery regardless of cause.
+var renderWatchdogTimer = null;
+var RENDER_WATCHDOG_MS = <?php echo R3_REMOTE_MODE ? 30000 : 15000; ?>;
+
 function loadingBar( val ) {
 	if( parseInt( val ) > 0 ) {
 		$("#loading").fadeIn( 100 );
@@ -658,12 +671,23 @@ function loadingBar( val ) {
 		
 		$('select[name="comp_operation"]').prop('disabled', 'disabled');
 		$('#fake').addClass("ui-state-disabled");
+
+		if( renderWatchdogTimer ) clearTimeout( renderWatchdogTimer );
+		renderWatchdogTimer = setTimeout(function() {
+			console.log( "render watchdog fired - renderCounter stuck at "+$("#renderCounter").val()+", forcing spinner off" );
+			$("#renderCounter").val( 0 ).trigger( "onchange" );
+			}, RENDER_WATCHDOG_MS );
 		}
 	if( parseInt( val ) == 0 ) {
 		$("#loading").fadeOut( 100 );
 		$("#compRange").slider( "enable" );
-		$('select[name="comp_operation"]').prop('disabled', false);		
+		$('select[name="comp_operation"]').prop('disabled', false);
 		$('#fake').removeClass("ui-state-disabled");
+
+		if( renderWatchdogTimer ) {
+			clearTimeout( renderWatchdogTimer );
+			renderWatchdogTimer = null;
+			}
 		}
 	}
 
@@ -1153,14 +1177,15 @@ function rendering( command, newZoom ) {
 			data: { positions : positions, file: file, colors: sendcolors, cBox: cBox, fpBox: fpBox, trimbox: trimbox, corr: correction },
 			dataType: 'json',
 			success:function( data ) {
+				updateRenderModeIndicator( data );
 				if( img > 2 ) img = 1;
 				$("#renderedIMG"+img).css({
 					left: $('#content_box').scrollLeft()+"px",
 					top: $('#content_box').scrollTop()+"px",
 					});
-					
+
 				$("#renderedSRC"+img).attr('src', data[0] );
-			
+
 				switch( img ) {
 					case 1:
 						$("#renderedIMG2").hide( 20 );				

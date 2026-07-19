@@ -1,6 +1,7 @@
 <?php
 header('Content-type: text/html; charset=UTF-8');
 include( "../engine.php" );
+require_once( "/var/www/html/engine/r3client.php" );
 
 define( "SFOLDER", "/var/www/html/r3API/source");
 define( "RFOLDER", "/var/www/html/r3API/rendered");
@@ -35,12 +36,14 @@ if( move_uploaded_file( $_FILES["file"]["tmp_name"][0]["file"], SFOLDER."/".$_FI
 	$w = ( $crop["Right"] - $crop["Left"] ) * 100 / 72;
 	$h = ( $crop["Top"] - $crop["Bottom"] ) * 100 / 72;
 	
-	$command = './r3 -binary -mode:RENDER -left:'.$crop["Left"].' -right:'.$crop["Right"].' -bottom:'.$crop["Bottom"].' -top:'.$crop["Top"].' -width:'.$w.' -height:'.$h.' -colors:'.$_POST["colors"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$from.' > '.$to.'';
-	
-	$command = shell_exec('
-		cd '.$terminal.'/r3;
-		'.$command.';
-		');	
+	$imgData = r3run( 'RENDER', array(
+		'left' => $crop["Left"], 'right' => $crop["Right"],
+		'bottom' => $crop["Bottom"], 'top' => $crop["Top"],
+		'width' => $w, 'height' => $h,
+		'colors' => $_POST["colors"],
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => 'ISOcoated_v2_eci.icc',
+		), $from );
+	file_put_contents( $to, $imgData );
 	
 	$path = $to;
 	$type = pathinfo($path, PATHINFO_EXTENSION);

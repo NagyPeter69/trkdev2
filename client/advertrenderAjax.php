@@ -43,14 +43,19 @@ function PDFtoImage__( $sizes, $to ) {
 			}
 		}
 
-	$command = './r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -colors:'.$color.' -height:'.$sizes["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from.' $@> /var/www/html/client/engine/r3/'.$to.' 2>&1';
+	$renderParams = array(
+		'left' => $sizes["left"], 'right' => $sizes["right"],
+		'bottom' => $sizes["bottom"], 'top' => $sizes["top"],
+		'width' => $sizes["width"], 'height' => $sizes["height"],
+		'colors' => $color,
+		'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+		);
+	$command = json_encode( $renderParams )." ".$from." -> /var/www/html/client/engine/r3/".$to;
 	logToFile( 'pageGenerate.txt' , $command );
-	
-	shell_exec('
-			cd /var/www/html/r3API/r3 2>&1;
-			'.$command.';
-			');
-			
+
+	$imgData = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( '/var/www/html/client/engine/r3/'.$to, $imgData );
+
 	return $command;
 	}
 

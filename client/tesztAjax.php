@@ -49,7 +49,7 @@ if( is_file( $renderCacheFile ) ) {
 	$imgData = 'data:image/jpeg;base64,'.$imgData;
 	$debug = 'cached';
 	$result = $imgData;
-	print json_encode( array( $result, $debug ) );
+	print json_encode( array( $result, $debug, R3_REMOTE_MODE ) );
 	exit;
 	}
 
@@ -99,23 +99,28 @@ function PDFtoImage__( $sizes, $to ) {
 				}
 			}
 			
-		//error_log('COLORS NEM URES => ./r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -height:'.$sizes["height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$col.'.icc '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'');
-		
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -height:'.$sizes["height"].' -colors:'.$color.' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$col.'.icc '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
-		error_log( $command );
+		$renderParams = array(
+			'left' => $sizes["left"], 'right' => $sizes["right"],
+			'bottom' => $sizes["bottom"], 'top' => $sizes["top"],
+			'width' => $sizes["width"], 'height' => $sizes["height"],
+			'colors' => $color,
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $col.'.icc',
+			);
+		error_log( json_encode( $renderParams ) );
 		}
 	else {
-		//error_log('./r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -height:'.$sizes["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$col.'.icc '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'');
-		
-		$command = './r3 -binary -mode:RENDER -left:'.$sizes["left"].' -right:'.$sizes["right"].' -bottom:'.$sizes["bottom"].' -top:'.$sizes["top"].' -width:'.$sizes["width"].' -height:'.$sizes["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$col.'.icc '.$from.' > '.TRKPATH.'/engine/r3/'.$to.'';
+		$renderParams = array(
+			'left' => $sizes["left"], 'right' => $sizes["right"],
+			'bottom' => $sizes["bottom"], 'top' => $sizes["top"],
+			'width' => $sizes["width"], 'height' => $sizes["height"],
+			'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $col.'.icc',
+			);
 		}
 
-	$command = shell_exec('
-			cd /var/www/html/r3API/r3
-			'.$command.';
-			');
-	error_log( $command );
-	
+	$imgData = r3run( 'RENDER', $renderParams, $from );
+	file_put_contents( TRKPATH.'/engine/r3/'.$to, $imgData );
+	error_log( "wrote ".strlen( $imgData )." bytes to ".$to );
+
 	return true;
 	}
 
@@ -321,5 +326,5 @@ if( !empty( $imgData ) && strpos( $imgData, 'base64,' ) !== false ) {
 		}
 	}
 
-print json_encode( array( $result, $debug ) );
+print json_encode( array( $result, $debug, R3_REMOTE_MODE ) );
 ?>

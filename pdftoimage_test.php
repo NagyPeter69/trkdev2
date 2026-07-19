@@ -13,13 +13,15 @@ $a_size = $a_size["Trimbox"];
 $a_size['width'] = ceil( pixel_( $a_size[2] - $a_size[0], 100 ) )+1;
 $a_size['height'] = ceil( pixel_( $a_size[3] - $a_size[1], 100 ) );	
 
-$command = './r3 -binary -mode:RENDER -left:'.$a_size[0].' -bottom:'.$a_size[1].' -right:'.$a_size[2].' -top:'.$a_size[3].' -width:'.$a_size["width"].' -height:'.$a_size["height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:ISOcoated_v2_eci.icc '.$terminal.'/'.$from.' > '.$terminal.'/rendertest.jpg';
-echo $command."<br>";
-$command = shell_exec('
-		cd '.$terminal.'r3API//r3;
-		'.$command.';
-		');
+$renderParams = array(
+	'left' => $a_size[0], 'bottom' => $a_size[1], 'right' => $a_size[2], 'top' => $a_size[3],
+	'width' => $a_size["width"], 'height' => $a_size["height"],
+	'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => 'ISOcoated_v2_eci.icc',
+	);
+echo json_encode( $renderParams )."<br>";
+$imgData = r3run( 'RENDER', $renderParams, $terminal.'/'.$from );
+file_put_contents( $terminal.'/rendertest.jpg', $imgData );
 
-var_dump( $command );
+var_dump( strlen( $imgData )." bytes written" );
 
 ?>

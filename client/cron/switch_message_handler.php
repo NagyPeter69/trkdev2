@@ -300,14 +300,14 @@
 
 						
 						echo implode( " | ", $sizes );
-						$command = './r3 -binary -mode:RENDER -left:0 -right:'.( $sizes["Right"] - $sizes["Left"] ).' -bottom:0 -top:'.( $sizes["Top"] - $sizes["Bottom"] ).' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.resolveIccProfileByName( "FOGRA_39" ).' '.$from_.' $@ >'.$to_.' 2>&1';
-						echo "<br>".$command;
-						
-						$command = shell_exec('
-							cd /var/www/intra/client/engine/r3 2>&1;
-							'.$command.';
-							');	
-						echo "<br>".$command."<br>";
+						$imgData = r3run( 'RENDER', array(
+							'left' => 0, 'right' => $sizes["Right"] - $sizes["Left"],
+							'bottom' => 0, 'top' => $sizes["Top"] - $sizes["Bottom"],
+							'width' => $sizes["Width"], 'height' => $sizes["Height"],
+							'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => resolveIccProfileByName( "FOGRA_39" ),
+							), $from_ );
+						file_put_contents( $to_, $imgData );
+						echo "<br>wrote ".strlen( $imgData )." bytes to ".$to_."<br>";
 									
 						if( $errors['lowres'] == 'true' ) {						
 							unset( $pdf );

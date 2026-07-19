@@ -28,9 +28,11 @@ $sizes["Height"] = pixel_( $sizes["Height"], 200 );
 // moment that ever isn't true.
 $col = resolveIccProfileByName( partDetect( $pubId, $page ) );
 
-$command = './r3 -binary -mode:RENDER -left:'.$sizes["Left"].' -right:'.$sizes["Right"].' -bottom:'.$sizes["Bottom"].' -top:'.$sizes["Top"].' -width:'.$sizes["Width"].'  -height:'.$sizes["Height"].' -tprofile:sRGB_Color_Space_Profile.icc -sprofile:'.$col.' '.$sourceFile.' $@ >'.$outputFile.' 2>&1';
-shell_exec('
-	cd /var/www/html/r3API/r3 2>&1;
-	'.$command.';
-	');
+$imgData = r3run( 'RENDER', array(
+	'left' => $sizes["Left"], 'right' => $sizes["Right"],
+	'bottom' => $sizes["Bottom"], 'top' => $sizes["Top"],
+	'width' => $sizes["Width"], 'height' => $sizes["Height"],
+	'tprofile' => 'sRGB_Color_Space_Profile.icc', 'sprofile' => $col,
+	), $sourceFile );
+file_put_contents( $outputFile, $imgData );
 ?>

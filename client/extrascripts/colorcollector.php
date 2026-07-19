@@ -30,13 +30,9 @@ for( $i = 0; $i < count( $pages ); $i++ ) {
 			}
 		
 		if( is_file( $dir."/".$file ) ) {
-			$command = './r3 -mode:MEASURE -x:596 -y:760 -d:1 -r:600 -tprofile:ISOcoated_v2_eci.icc '.$dir.'/'.$file.' 2>&1';
-			$command = shell_exec('
-					cd /var/www/html/r3API/r3 2>&1;
-					'.$command.';
-					');
+			$command = r3run( 'MEASURE', array( 'x' => 596, 'y' => 760, 'd' => 1, 'r' => 600, 'tprofile' => 'ISOcoated_v2_eci.icc' ), $dir.'/'.$file );
 
-			
+
 			var_dump( $command );
 			sql_update( "pageinfo", "colors='".$command."'", "id='".$pages[$i]["id"]."'" );
 			}

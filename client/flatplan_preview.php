@@ -865,7 +865,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 
 				?>
 				
-				<img id='backgroundImage' src='<?php /* ( !empty( $imgData ) ? "data:image/jpg;base64,".$imgData : "" ) */ ?>' style='width: 100%; height: 100%;'>
+				<img id='backgroundImage' src='<?php echo ( !empty( $imgData ) ? "data:image/jpg;base64,".$imgData : "" ); ?>' style='width: 100%; height: 100%;'>
 			</div>
 						
 			<div id='renderedIMG1' style='width: 100% !important; height: 100% !important; position: absolute;'>
@@ -1154,22 +1154,65 @@ function selectAllText( el ) {
         }
 	}
 
+// tesztAjax.php/vtesztAjax.php's response is [imgData, debug, isRemoteRender] -
+// isRemoteRender reflects r3client_config.php's live CPU-based local/remote
+// detection, i.e. whether THIS render was served by the render-VM over the
+// network rather than local r3. Toggling the spinner's color on that (see
+// #loading.remote-render in client.css) makes a render taking noticeably
+// longer read as "expected, it's over the network" rather than "stalled".
+function updateRenderModeIndicator( data ) {
+	$("#loading").toggleClass( "remote-render", data[2] == true );
+	}
+
+// Watchdog for a stuck spinner: renderCounter is incremented before every
+// tesztAjax.php call and decremented in that call's success/error handler,
+// but a request whose response the browser gives up on for any reason
+// (client-side ajax timeout firing while the render-VM round-trip is still
+// in flight server-side, a dropped connection, etc.) never reaches either
+// handler - the counter then never returns to 0 and the spinner spins
+// forever even after a later render completes normally. This doesn't fix
+// the underlying loss of that one response, but it guarantees the UI
+// recovers instead of staying stuck: if the spinner has been showing for
+// this long, something has already gone wrong, so force it back to a
+// clean state rather than trust a counter that's demonstrably out of sync.
+// Must stay comfortably above every server-side ceiling a legitimate (if
+// slow) render can hit - PHP-FPM's request_terminate_timeout (90s) is the
+// tightest of those on this stack - or this fires on a render that's still
+// genuinely in progress rather than actually lost, hiding the spinner
+// before its real completion arrives.
+var renderWatchdogTimer = null;
+// Local r3 renders finish in seconds; remote ones add a network round-trip
+// (upload + queue + download) on top, so the remote ceiling needs headroom
+// the local one doesn't.
+var RENDER_WATCHDOG_MS = <?php echo R3_REMOTE_MODE ? 30000 : 15000; ?>;
+
 function loadingBar( val ) {
 	console.log( "Rendercounter: "+val );
 	if( parseInt( val ) > 0 ) {
 		$("#loading").fadeIn( 100 );
 		$("#compRange").slider( "disable" );
-		
+
 		$('select[name="comp_operation"]').prop('disabled', 'disabled');
 		$('#fake').addClass("ui-state-disabled");
+
+		if( renderWatchdogTimer ) clearTimeout( renderWatchdogTimer );
+		renderWatchdogTimer = setTimeout(function() {
+			console.log( "render watchdog fired - renderCounter stuck at "+$("#renderCounter").val()+", forcing spinner off" );
+			$("#renderCounter").val( 0 ).trigger( "onchange" );
+			}, RENDER_WATCHDOG_MS );
 		}
 	if( parseInt( val ) == 0 ) {
 		$("#loading").fadeOut( 100 );
 		$("#compRange").slider( "enable" );
-		$('select[name="comp_operation"]').prop('disabled', false);		
+		$('select[name="comp_operation"]').prop('disabled', false);
 		$('#fake').removeClass("ui-state-disabled");
+
+		if( renderWatchdogTimer ) {
+			clearTimeout( renderWatchdogTimer );
+			renderWatchdogTimer = null;
+			}
 		}
-		
+
 	if( mobile ) {
 		if( $("#renderCounter").val() == 0 ) {
 			$('#content_box').kinetic( 'attach' );
@@ -1815,7 +1858,7 @@ function rendering( command, newZoom ) {
 						type: "POST",
 						data: { positions : positions, file: file, colors: sendcolors, cBox: cBox, fpBox: fpBox, trimbox: trimbox, corr: correction },
 						dataType: 'json',
-						timeout: 6000,
+						timeout: 30000, // was 6000 - too short for a render-VM round-trip (upload + remote r3 + download); see RENDER_WATCHDOG_MS above for the reasoning on the ceiling this needs to stay under
 						// This fallback (retried after the primary request above
 						// already errored/timed out) had no error handler at all -
 						// if it also failed, #renderCounter (incremented once before
@@ -1834,31 +1877,32 @@ function rendering( command, newZoom ) {
 							disableZoom = false;
 							},
 						success:function( data ) {
+							updateRenderModeIndicator( data );
 							if( img > 2 ) img = 1;
-							
-							
+
+
 							$("#renderedIMG"+img).css({
 								left: ( $('#content_box').scrollLeft())+"px",
 								top: $('#content_box').scrollTop()+"px",
 								});
-								
+
 							$("#renderedSRC"+img).attr('src', data[0] );
-						
+
 							switch( img ) {
 								case 1:
-									$("#renderedIMG2").hide( 20 );				
-									break;					
-								case 2:	
+									$("#renderedIMG2").hide( 20 );
+									break;
+								case 2:
 									$("#renderedIMG1").hide( 20 );
 									break;
 								}
 							$("#renderedIMG"+img).fadeIn(0).show(0);
-			
+
 							ajaxDisabled = false;
-						
-							img++;	
-			
-							$( '.pagePreview' ).mousemove();							
+
+							img++;
+
+							$( '.pagePreview' ).mousemove();
 							if( viewComment && !loadedCommandBindings ) {
 								setTimeout( function(){
 									refreshComments('');
@@ -1902,16 +1946,17 @@ function rendering( command, newZoom ) {
 							}
 						});
 					},
-				timeout: 6000,
+				timeout: 30000, // was 6000 - too short for a render-VM round-trip (upload + remote r3 + download); see RENDER_WATCHDOG_MS above for the reasoning on the ceiling this needs to stay under
 				success:function( data ) {
+					updateRenderModeIndicator( data );
 					if( img > 2 ) img = 1;
-					
-					
+
+
 					$("#renderedIMG"+img).css({
 						left: ( $('#content_box').scrollLeft())+"px",
 						top: $('#content_box').scrollTop()+"px",
 						});
-						
+
 					$("#renderedSRC"+img).attr('src', data[0] );
 				
 					switch( img ) {
