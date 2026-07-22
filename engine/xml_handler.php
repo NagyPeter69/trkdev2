@@ -15,9 +15,24 @@
 	// partial_ads has to be looked up by ad id while the ads rows still
 	// exist.
 	function cleanupPublicationRemnants( $pubId, $magazineCode, $issueCode ) {
-		$adIds = sql_aget( 'ads', "pub_id='".$pubId."'", "id" );
-		for( $i = 0; $i < count( $adIds ); $i++ ) {
-			sql_delete( 'partial_ads', "ads_id='".$adIds[$i]["id"]."'" );
+		// Ad assets on disk (advertisements/{NAME}_{magazineCode}_{issueCode}_*
+		// - PDF, XML, thumb/check JPEGs) are named from the ad's own name,
+		// not from ads.file_name (that column holds the original upload's
+		// filename, not the processed asset base name - see
+		// new_ad_results-handler.php's $checker construction), so the row
+		// has to be read before it's deleted to know what to glob for.
+		// Confirmed orphaned via the test protocol: pub_id/ads rows were
+		// gone but every one of an ad's on-disk files survived a real
+		// issue delete.
+		$adRows = sql_aget( 'ads', "pub_id='".$pubId."'", "*" );
+		for( $i = 0; $i < count( $adRows ); $i++ ) {
+			sql_delete( 'partial_ads', "ads_id='".$adRows[$i]["id"]."'" );
+			if( !empty( $adRows[$i]["name"] ) ) {
+				$adFiles = glob( TRKPATH.'/advertisements/'.strtoupper( $adRows[$i]["name"] ).'_'.$magazineCode.'_'.$issueCode.'_*' );
+				for( $y = 0; $y < count( $adFiles ); $y++ ) {
+					@unlink( $adFiles[$y] );
+					}
+				}
 			}
 		sql_delete( 'ads', "pub_id='".$pubId."'" );
 
@@ -52,8 +67,21 @@
 		$handouts = sql_aget( 'flatplan_handout', "pub_id='".$pubId."'", "*" );
 		for( $i = 0; $i < count( $handouts ); $i++ ) {
 			sql_delete( 'flatplan_handout_hotlink', "handoutid='".$handouts[$i]["id"]."'" );
-			if( !empty( $handouts[$i]["filename"] ) && is_file( TRKPATH.'/handout/'.$handouts[$i]["filename"] ) ) {
-				@unlink( TRKPATH.'/handout/'.$handouts[$i]["filename"] );
+			if( !empty( $handouts[$i]["filename"] ) ) {
+				if( is_file( TRKPATH.'/handout/'.$handouts[$i]["filename"] ) ) {
+					@unlink( TRKPATH.'/handout/'.$handouts[$i]["filename"] );
+					}
+				// flatplan_ajax.php's loadhandoutmenu op derives a second,
+				// separate on-disk file for in-browser viewing by swapping
+				// "handout" for "stream" in this same filename (e.g.
+				// PLRY_2601_handout.pdf -> PLRY_2601_stream.pdf) - only the
+				// stored filename above was ever unlinked, so this variant
+				// (often the larger of the two) survived every deletion.
+				// Confirmed orphaned via the test protocol.
+				$streamFile = str_replace( "handout", "stream", $handouts[$i]["filename"] );
+				if( $streamFile != $handouts[$i]["filename"] && is_file( TRKPATH.'/handout/'.$streamFile ) ) {
+					@unlink( TRKPATH.'/handout/'.$streamFile );
+					}
 				}
 			}
 		sql_delete( 'flatplan_handout', "pub_id='".$pubId."'" );
@@ -368,7 +396,7 @@
 		global $token;
 
 		if( !switchBulkSyncAllowed() ) {
-			error_log( "SendPmdXmlToSwitch blocked: DEV environment restricts Switch communication to Colorcom/TestCo, and the local dataset currently references another publisher." );
+			error_log( "SendPmdXmlToSwitch blocked: DEV environment restricts Switch communication to TestCo, and the local dataset currently references another publisher." );
 			return false;
 			}
 
@@ -666,12 +694,26 @@
 								error_log( "--".$key." => ".$val."--" );
 								$xml->Item[$i]->$key = $val;
 								break;
-							}	
-			
+							}
+
+						}
+					}
+
+				// Client edits change who "owns" this magazine, which MariaDB
+				// tracks separately (magazines.publisher_id) from the PMD XML
+				// (this Item's <Client>/<Publisher> nodes) - the loop above only
+				// ever touches the XML side. Without this, a Client change here
+				// would silently desync MariaDB from what PMD/Switch now say,
+				// breaking the three-way consistency (MariaDB -> PMD -> Switch)
+				// this file exists to keep.
+				if( array_key_exists( 'Client', $values ) && $values['Client'] != '' ) {
+					$publisher = sql_get( 'publishers', 'name="'.$values['Client'].'"', 'id' );
+					if( !empty( $publisher[0][0] ) ) {
+						sql_update( 'magazines', 'publisher_id="'.$publisher[0][0].'"', 'code="'.$values['old_code'].'"' );
 						}
 					}
 				break;
-				
+
 			case 'delete':
 				$code = $values['old_code'];
 				$magazine = sql_get( 'magazines', 'code="'.$code.'"', '*' );
