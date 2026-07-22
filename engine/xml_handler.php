@@ -15,19 +15,42 @@
 	// partial_ads has to be looked up by ad id while the ads rows still
 	// exist.
 	function cleanupPublicationRemnants( $pubId, $magazineCode, $issueCode ) {
-		// Ad assets on disk (advertisements/{NAME}_{magazineCode}_{issueCode}_*
-		// - PDF, XML, thumb/check JPEGs) are named from the ad's own name,
-		// not from ads.file_name (that column holds the original upload's
-		// filename, not the processed asset base name - see
-		// new_ad_results-handler.php's $checker construction), so the row
-		// has to be read before it's deleted to know what to glob for.
-		// Confirmed orphaned via the test protocol: pub_id/ads rows were
-		// gone but every one of an ad's on-disk files survived a real
-		// issue delete.
+		// An ad has files in three places, none of them found by the same
+		// key, all confirmed orphaned via the test protocol (pub_id/ads
+		// rows gone, every one of these survived a real issue delete):
+		//   1. uploads/ads/{ads.file_name} (+ the same base name with a
+		//      .xml extension) - the raw upload, staged there by
+		//      ad_upload.php before Switch ever sees it. Named exactly by
+		//      ads.file_name, so this one's a direct match.
+		//   2. advertisements/{ads.name}_preview.jpg - the upload-time
+		//      preview, also from ad_upload.php, named from the ad's own
+		//      name (exact stored case, not uppercased).
+		//   3. advertisements/{STRTOUPPER(ads.name)}_{magazineCode}_
+		//      {issueCode}_* (PDF, XML, thumb/check JPEGs) - the
+		//      processed/finalized files new_ad_results-handler.php writes
+		//      once Switch confirms. ads.file_name is the wrong key here
+		//      (it's the upload's original filename, not this derived
+		//      base name), so this location needs the ad's name instead.
+		// The row has to be read (not just its id) before it's deleted to
+		// have any of this available.
 		$adRows = sql_aget( 'ads', "pub_id='".$pubId."'", "*" );
 		for( $i = 0; $i < count( $adRows ); $i++ ) {
 			sql_delete( 'partial_ads', "ads_id='".$adRows[$i]["id"]."'" );
+
+			if( !empty( $adRows[$i]["file_name"] ) ) {
+				if( is_file( TRKPATH.'/uploads/ads/'.$adRows[$i]["file_name"] ) ) {
+					@unlink( TRKPATH.'/uploads/ads/'.$adRows[$i]["file_name"] );
+					}
+				$uploadXml = preg_replace( '/\.[^.]+$/', '.xml', $adRows[$i]["file_name"] );
+				if( is_file( TRKPATH.'/uploads/ads/'.$uploadXml ) ) {
+					@unlink( TRKPATH.'/uploads/ads/'.$uploadXml );
+					}
+				}
+
 			if( !empty( $adRows[$i]["name"] ) ) {
+				if( is_file( TRKPATH.'/advertisements/'.$adRows[$i]["name"].'_preview.jpg' ) ) {
+					@unlink( TRKPATH.'/advertisements/'.$adRows[$i]["name"].'_preview.jpg' );
+					}
 				$adFiles = glob( TRKPATH.'/advertisements/'.strtoupper( $adRows[$i]["name"] ).'_'.$magazineCode.'_'.$issueCode.'_*' );
 				for( $y = 0; $y < count( $adFiles ); $y++ ) {
 					@unlink( $adFiles[$y] );
