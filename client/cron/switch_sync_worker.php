@@ -44,6 +44,49 @@ for( $i = 0; $i < count( $jobs ); $i++ ) {
 				}
 			break;
 
+		case 'switch_send_rename':
+			// Queued by download_ajax.php's "accept" (page approve) handler
+			// - see the comment there. SwitchSend_Rename() itself still
+			// carries its own fixed 5s/15s curl timeouts; that's fine here
+			// since nobody's waiting on this request.
+			if( !empty( $payload["datas"] ) && !empty( $payload["file"] ) && !empty( $payload["newname"] ) ) {
+				$response = SwitchSend_Rename( $payload["datas"], $payload["file"], $payload["newname"] );
+				// SwitchSend_Rename() returns array($response["status"], ...)
+				// on a completed call, or array("blocked", ...) if the DEV
+				// TestCo-only gate refused it outright - either way that's
+				// not something a retry will ever fix, so only a genuine
+				// connection/timeout failure (null status - curl_exec()
+				// returned nothing decodable) is treated as retryable here.
+				if( $response[0] === null ) {
+					$error = "Switch delivery failed or timed out";
+					}
+				else {
+					$ok = true;
+					}
+				}
+			else {
+				$error = "Malformed payload";
+				}
+			break;
+
+		case 'upload_ad':
+			// Queued by ajax.php's push_ad handler - see the comment there.
+			// SwitchSend_TESZT() itself still carries its own fixed 5s/15s
+			// curl timeouts; that's fine here since nobody's waiting on
+			// this request.
+			$response = SwitchSend_TESZT( $payload );
+			// Same convention as switch_send_rename: only a genuine
+			// connection/timeout failure (null status) is retryable -
+			// "blocked" (DEV TestCo-only gate) or any other real response
+			// from Switch is a completed attempt either way.
+			if( $response[0] === null ) {
+				$error = "Switch delivery failed or timed out";
+				}
+			else {
+				$ok = true;
+				}
+			break;
+
 		default:
 			$error = "Unknown job_type: ".$job["job_type"];
 			break;

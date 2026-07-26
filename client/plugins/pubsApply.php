@@ -24,7 +24,7 @@
 
 	if( $_GET["sub"] == "getUsers" ) {
 		$pub = sql_aget( "publishers", "name='".$_GET["publisher"]."'", "*" );
-		$u = sql_aget( "accounts", "publisher='".$pub[0]["id"]."'", "*" );
+		$u = sql_aget( "accounts", "publisher='".$pub[0]["id"]."' OR `group`='2'", "*" );
 		$txt = "<select id='adhocUser' name='adhocUser'>";
 		for( $i = 0; $i < count( $u ); $i++ ) {
 			$txt .= "<option value='".$u[$i]["id"]."'>".$u[$i]["full_name"]."</option>";
@@ -211,55 +211,26 @@ Tracker<br>";
 
 			$checker = sql_get( "magazines", "code='".$_POST["Code"]."'", "*" );
 			if( $checker[0][0] != "" ) $error[] = "Code";
-			}		
 
-		if( $_POST["PageNumbering"] == "European" ) {
-			// Regular-type publications don't collect parts at creation
-			// time (create.php's loadPub/Regular branch has no parttype
-			// fields at all - Regular parts are configured afterward via
-			// jobsettings.php), so $_POST["parttype"] is legitimately
-			// absent here; only Adhoc submits it. count(null) is a
-			// PHP 8 TypeError, so guard with ?? [] rather than assume
-			// it's always set.
-			for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
-				$pos = explode( ",", $_POST["position"][$i] );
-				for( $p = 0; $p < count( $pos ); $p++ ) {
-					$pages = explode( "-", $pos[$p] );
-					if( count($pages) != 2 ) {
-						$error[] = "position_".$i;
-						break;
-						}
-
-					if( !preg_match("/^[0-9-]+$/", $pos[$p] ) ) {
-						$error[] = "position_".$i;
-						}
-					}
+			// The Client dropdown (loadPub's Regular branch) has no default
+			// selection on purpose - a blank/unselected/tampered submission
+			// must be rejected here rather than silently falling through to
+			// whatever sql_aget('publishers', "name=''", ...) would resolve to.
+			if( empty( $_POST["Client"] ) ) {
+				$error[] = "Client";
+				}
+			else {
+				$validClient = sql_get( "publishers", "name='".$_POST["Client"]."'", "id" );
+				if( empty( $validClient[0][0] ) ) $error[] = "Client";
 				}
 			}
 
-		if( $_POST["PageNumbering"] == "American" ) {
-			for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
-				$pos = explode( ",", $_POST["position"][$i] );
-				for( $p = 0; $p < count( $pos ); $p++ ) {
-					$pages = explode( "-", $pos[$p] );
-					if( count($pages) != 1 ) {
-						$error[] = "position_".$i;
-						break;
-						}
+		// Adhoc's part rows no longer collect a page count/range at creation
+		// time (the "Pages" field was removed from create.php's newLine() -
+		// parts.place is left blank here and filled in later, same as it
+		// already is for Regular jobs via jobsettings.php), so there's
+		// nothing left to validate here.
 
-					if( !preg_match("/^[0-9]+$/", $pos[$p] ) ) {
-						$error[] = "position_".$i;
-						}
-					else{
-						if ( $pos[$p] > 0 && $pos[$p] <= 9999 ) {}
-						else {
-							$error[] = "position_".$i;
-							}
-						}
-					}
-				}			
-			}
-		
 		if( count( $error ) == 0 ) {
 			$guide = $lang["publications"]["mail_guide"];
 			
@@ -312,10 +283,14 @@ Tracker<br>";
 						$_POST["trim_y"][$i] = "";
 						}
 
-					$values = array( $id, $_POST["parttype"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
+					$values = array( $id, $_POST["parttype"][$i], "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
+					if( $_POST["parttype"][$i] == "BEL" ) {
+						$insideWidth = $_POST["trim_x"][$i];
+						$insideHeight = $_POST["trim_y"][$i];
+						}
 					}
-				
+
 				$link = "https://".URL."/index.php?hash=".$hash;
 				$subject = $_POST["Name"]." létrehozva a Colorcom Trackeren";
 				$to = $_POST["Mails"]."|".$_POST["Mails"];
@@ -331,8 +306,12 @@ Tracker<br>";
 				Colorcom Media";
 				produkcioSendmail( $subject, $body, $to );
 				
-				changeXmlDatabase( 'add', $_POST );	
+				changeXmlDatabase( 'add', $_POST );
 				toSwitch( 'new_publication' , 'publications|'.$id, 'C_database/'.$_POST["Code"].''.ISSUEPOSTFIX.'', 'issueData' );
+
+				if( isset( $insideWidth ) ) {
+					syncInsidePartAdSize( $mid, $_POST["Code"], $_POST["Workflow"], $insideWidth, $insideHeight );
+					}
 				}
 				
 			if( $_POST["Type"] == "Regular" ) {
@@ -494,6 +473,9 @@ Tracker<br>";
 		$mag = sql_aget( "magazines", "code='".$_POST["code"]."'", "*" );
 		error_log( "MAGID: ".$mag[0]["id"] );
 		if( empty( $error ) ) {
+			$wf = collectFromXml( TRKPATH.'/xml/'.PMD.'.xml', $_POST["code"], 'Workflow' );
+			$workflow = (string) $wf['Workflow'];
+
 			if( $mag[0]["type"] == "Adhoc" ) {
 				$pub = sql_aget( "publications", "magazine_id='".$_POST["magazine"]."' AND code='".$_POST["code"]."'", "*" );
 				sql_delete( "parts", "pub_id='".$pub[0]["id"]."'" );
@@ -502,15 +484,18 @@ Tracker<br>";
 				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 					$values = array( $pub[0]["id"], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
+					if( $_POST["type"][$i] == "BEL" ) {
+						syncInsidePartAdSize( $mag[0]["id"], $_POST["code"], $workflow, $_POST["trim_x"][$i], $_POST["trim_y"][$i] );
+						}
 					}
 
 				sql_update( "publications", "pages='".$_POST["numOfPages"]."'", "id='".$pub[0]["id"]."'" );
-				
+
 				if( $pub[0]["publisher_id"] == "0" ) {
 					toSwitch( 'new_publication' , 'publications|'.$pub[0]["id"], 'C_database/'.$_POST["code"].''.ISSUEPOSTFIX.'', 'issueData' );
 					}
 				}
-			
+
 			if( $mag[0]["type"] == "Regular" ) {
 				sql_delete( "parts", "pub_id='0' AND mag_id='".$mag[0]["id"]."'" );
 
@@ -518,6 +503,9 @@ Tracker<br>";
 				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 					$values = array( "0", $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
+					if( $_POST["type"][$i] == "BEL" ) {
+						syncInsidePartAdSize( $mag[0]["id"], $_POST["code"], $workflow, $_POST["trim_x"][$i], $_POST["trim_y"][$i] );
+						}
 					}
 				}
 			}
@@ -626,7 +614,7 @@ Tracker<br>";
 				if( $_GET["saveParts"] == "true" ) {
 					error_log( "bent" );				
 					
-					for( $p = 0; $i < count( $parts["type"] ); $p++ ) {
+					for( $p = 0; $p < count( $parts["type"] ); $p++ ) {
 						if( $_GET["type"] == "long" ) {
 							if( empty( $parts["trim_x"][$p] ) ) {
 								$error[] = "trim_x_".$p;
@@ -665,7 +653,7 @@ Tracker<br>";
 
 							$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 							for( $p = 0; $p < count( $parts["type"] ); $p++ ) {
-								$values = array( "0", $parts[$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
+								$values = array( "0", $parts["type"][$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
 								sql_add( "parts", $names, $values );
 								}
 							
@@ -849,6 +837,8 @@ Tracker<br>";
 			$id = sql_add( "publications", $names, $values );			
 			
 			$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
+			$wf = collectFromXml( TRKPATH.'/xml/'.PMD.'.xml', $_POST['mcode'], 'Workflow' );
+			$workflow = (string) $wf['Workflow'];
 
 			// A Regular magazine with no parts template configured yet
 			// (via jobsettings.php) submits no type[] rows at all, not an
@@ -856,6 +846,9 @@ Tracker<br>";
 			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
 				$values = array( $id, $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'], $_POST["grayscale"][$i] );
 				sql_add( "parts", $names, $values );
+				if( $_POST["type"][$i] == "BEL" ) {
+					syncInsidePartAdSize( $_POST['magazine'], $_POST['mcode'], $workflow, $_POST["trim_x"][$i], $_POST["trim_y"][$i] );
+					}
 				}
 
 			$mag = sql_get( 'magazines', 'id="'.$_POST['magazine'].'"', 'code, name' );
@@ -983,9 +976,21 @@ Tracker<br>";
 							$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;";
 							$txt .= "<input type='radio' name='ClientType' class='ClientType' value='known'>Registered";
 							$txt .= "<br>";
-							$txt .= "<span id='unknownClient'><input type='text' id='".$key."' name='".$key."' value=''></span>";
+							// A clientless Adhoc job's Client must always be an empty
+							// string, never a free-typed name - Switch has its own
+							// hardwired, designated folder for clientless jobs, keyed
+							// off that field being empty (see SYSTEM_STATE.md's
+							// "Publication ownership model" section). A free-text
+							// input here used to make it possible to type a name for
+							// a nominally clientless job, which would have leaked
+							// into some but not all of the Switch touchpoints a
+							// creation triggers. Hidden input keeps $_POST['Client']
+							// defined (avoiding an undefined-array-key warning further
+							// down) while making "" the only possible value.
+							$txt .= "<span id='unknownClient'><input type='hidden' id='".$key."' name='".$key."' value=''></span>";
 							$txt .= "<span id='knownClient' style='display: none;'>";
 								$txt .= "<select style='margin-left: -1px;' id='".$key."2' name='".$key."2'>";
+								$txt .= "<option value='' selected disabled>--- Select Client ---</option>";
 								foreach( $temp as $t ) {
 									$txt .= "<option value='".$t."'>".$t."</option>";
 									}
@@ -1127,7 +1132,22 @@ Tracker<br>";
 								}
 							$txt .= "</select>";
 							}
-						else {					
+						elseif( $key == 'Client' ) {
+							// No sensible default exists for who owns a new
+							// publication - unlike Workflow/Enhance/Language, this
+							// must never silently pre-select a real client (e.g. the
+							// browser defaulting to whichever publisher sorts first
+							// alphabetically). Leading blank option forces an
+							// explicit choice; server-side (pubsApply.php's 'create'
+							// handler) rejects submission if it's left unselected.
+							$txt .= "<select style='margin-left: -1px;' id='".$key."' name='".$key."'>";
+								$txt .= "<option value=''>-- ".$lang['xml']['SelectClient']." --</option>";
+								foreach( $temp as $t ) {
+									$txt .= "<option value='".$t."'>".$t."</option>";
+									}
+							$txt .= "</select>";
+							}
+						else {
 							$txt .= "<select style='margin-left: -1px;' id='".$key."' name='".$key."'>";
 							foreach( $temp as $t ) {
 								$txt .= "<option ";
@@ -1138,7 +1158,7 @@ Tracker<br>";
 							$txt .= "</select>";
 							}
 					$txt .= "</td>";
-				$txt .= "</tr>";			
+				$txt .= "</tr>";
 				}
 
 			$txt .= "<input type='hidden' name='FlatplanStages' id='FlatplanStages' value='1'>";

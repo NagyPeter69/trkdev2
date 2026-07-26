@@ -15,7 +15,29 @@
 		$pub = sql_get( 'publications', 'id="'.$pub_id.'"', '*' );
 		$issue = $pub[0][10];
 		$magazine = sql_get( 'magazines', 'id="'.$pub[0][2].'"', '*' );
-		
+
+		// A job with FlatplanStages==1 has only one flatplan - the fin bit
+		// some of its pages carry isn't a second stage to filter these
+		// queries by (see page_pdf-handler.php's $stages1 handling and
+		// SYSTEM_STATE.md's domain-model section). Without this, bulk
+		// actions here (approve/reject/download/...) silently skip any
+		// selected page whose fin doesn't match $_GET['alter'] - no error,
+		// the page is just quietly left out, which is exactly what made
+		// "approve all" on a Cover part (cover page fin=0, its ad slots
+		// fin=1) approve the ads but leave the cover page untouched.
+		$stages1 = false;
+		if( !empty( $magazine[0][3] ) ) {
+			$wfXml = simplexml_load_file( TRKPATH.'/xml/'.PMD.'.xml' );
+			$wfXpath = $wfXml->xpath('/Publications');
+			foreach( $wfXpath as $wfTemp ) {
+				for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+					if( $wfTemp->Item[$wfI]->Code == $magazine[0][3] )
+						break;
+					}
+				}
+			$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
+			}
+
 		$path = "/var/www/html/client/packages/".$magazine[0][3]."/".$issue;
 		$abspath = "packages/".$magazine[0][3]."/".$issue;
 		$jpegPath = "packages/".$magazine[0][3]."/".$issue;
@@ -23,20 +45,25 @@
 		
 		$pack_info = array();
 		
-		for ($i = 0; $i < count($pages); $i++) {	
-			if( $_GET['alter'] == "NOR" )
+		for ($i = 0; $i < count($pages); $i++) {
+			if( $stages1 && ( $_GET['alter'] == "NOR" or $_GET['alter'] == "FIN" or $_GET['alter'] == "" ) )
+				$pack = sql_get('pageinfo', 'type!="PRE" AND type!="PSTR" AND page="'.$pages[$i].'" AND issue="'.$issue.'" AND code="'.$magazine[0][3].'" AND state="'.$states[$i].'" AND part="'.$_GET["part"].'" LIMIT 1', '*' );
+			elseif( $_GET['alter'] == "NOR" )
 				$pack = sql_get('pageinfo', 'type!="PRE" AND type!="PSTR" AND page="'.$pages[$i].'" AND issue="'.$issue.'" AND code="'.$magazine[0][3].'" AND state="'.$states[$i].'" AND part="'.$_GET["part"].'" LIMIT 1', '*' );
 			elseif( $_GET['alter'] == "FIN" )
 				$pack = sql_get('pageinfo', 'type!="PRE" AND type!="PSTR" AND page="'.$pages[$i].'" AND issue="'.$issue.'" AND code="'.$magazine[0][3].'" AND state="'.$states[$i].'" AND fin="1" AND part="'.$_GET["part"].'" LIMIT 1', '*' );
 			else
 				$pack = sql_get('pageinfo', 'type="'.$_GET['alter'].'" AND page="'.$pages[$i].'" AND issue="'.$issue.'" AND code="'.$magazine[0][3].'" AND state="'.$states[$i].'" AND fin="0" AND part="'.$_GET["part"].'" LIMIT 1', '*' );
-			
+
 			if( $pack[0][6] == "ad" ) {
 				$files[] = "_ads/".str_pad($pages[$i], 3, '0', STR_PAD_LEFT)."_".$pack[0][1]."_ad_preview.pdf";
 				}
 			elseif( $pack[0][6] == "magazine" ) {
 				$subDir = sql_get('packages', 'id="'.$pack[0][1].'"', '*' );
-				if( $_GET['alter'] == "FIN" ) {
+				// A 1-stage job's file lives wherever page_pdf-handler.php
+				// actually stored it based on this row's own fin (index
+				// 11), not wherever the requested alter would imply.
+				if( $stages1 ? $pack[0][11] == 1 : $_GET['alter'] == "FIN" ) {
 					$files[] = $subDir[0][4]."/FIN/".str_pad($pages[$i], 3, '0', STR_PAD_LEFT)."_".$pack[0][1]."_".$states[$i]."preview.pdf";
 					}
 				else {
@@ -226,8 +253,13 @@
 	elseif( $_GET['type'] == 'accept' ) {
 		$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
 		for ($i = 0; $i < count($pages); $i++) {
-			$fin = ( $_GET["alter"] == "FIN" ? "1" : "0" );
-			$check = sql_get( "pageinfo", "(type='ad' OR type='magazine') AND page='".$pages[$i]."' AND code='".$magazine[0][3]."' AND issue='".$issue."' AND (status='0' OR status='1' OR status='3' OR status='2' ) AND fin='".$fin."' AND state='".$states[$i]."' AND part='".$_GET["part"]."'", "*" );
+			if( $stages1 ) {
+				$check = sql_get( "pageinfo", "(type='ad' OR type='magazine') AND page='".$pages[$i]."' AND code='".$magazine[0][3]."' AND issue='".$issue."' AND (status='0' OR status='1' OR status='3' OR status='2' ) AND state='".$states[$i]."' AND part='".$_GET["part"]."'", "*" );
+				}
+			else {
+				$fin = ( $_GET["alter"] == "FIN" ? "1" : "0" );
+				$check = sql_get( "pageinfo", "(type='ad' OR type='magazine') AND page='".$pages[$i]."' AND code='".$magazine[0][3]."' AND issue='".$issue."' AND (status='0' OR status='1' OR status='3' OR status='2' ) AND fin='".$fin."' AND state='".$states[$i]."' AND part='".$_GET["part"]."'", "*" );
+				}
 			if( $check[0][0] != "" ) {
         		$publisher = sql_get( "publishers", "id='".$pub[0][1]."'", "name" );
 
@@ -262,7 +294,32 @@
 					$newname = $check[0][17];
 					}
 				error_log("File neve a switchen: ".$newname );
-				$error = SwitchSend_Rename( $array, $file, $newname );
+				// Approving a page needs Switch to know about it (it renames
+				// the file at Switch's end), but the user shouldn't have to
+				// wait on that network round-trip - a bulk approve of dozens
+				// of pages used to block the whole request on that many
+				// sequential SwitchSend_Rename() calls (5s connect + 15s
+				// timeout each, worst case). The pageinfo/action_log update
+				// below (what the user actually sees) still happens
+				// immediately; the Switch notification itself is queued and
+				// delivered in the background by
+				// client/cron/switch_sync_worker.php instead - same durable
+				// queue+retry pattern already used for
+				// XMLUpload2()/SendPmdXmlToSwitch() (see SYSTEM_STATE.md) -
+				// QueueSwitchRetry() (xml_handler.php) is that same path's
+				// own enqueue helper, reused here rather than writing to
+				// switch_sync_queue directly, since it also
+				// mysqli_real_escape_string()s both fields - sql_add()
+				// itself does zero escaping, and this payload's JSON
+				// routinely contains backslash escapes from json_encode()
+				// (e.g. í for an accented "í" in a package directory
+				// name, \/ for path separators) that MySQL's own string-
+				// literal parser silently mangles - it drops the backslash
+				// on any escape sequence it doesn't itself recognize -
+				// if the string is passed through unescaped, corrupting
+				// the stored JSON (confirmed live: a real queued job had
+				// "címlap" stored as "cu00edmlap").
+				QueueSwitchRetry( 'switch_send_rename', array( 'datas' => $array, 'file' => $file, 'newname' => $newname ) );
 				
 				/*$array["client"] = $publisher[0][0];
 				$array["jobCode"] = $check[0][7];
@@ -423,7 +480,7 @@
 		// neither of them has this problem.
 		$standards = array();
 		for( $i = 0; $i < count( $pages ); $i++ ) {
-			$standards[ partDetect( $pub_id, $pages[$i] ) ] = true;
+			$standards[ partDetect( $pub_id, $pages[$i], "color", $_GET["part"] ) ] = true;
 			}
 
 		if( count( $standards ) > 1 ) {

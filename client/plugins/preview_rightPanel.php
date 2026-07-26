@@ -1233,12 +1233,21 @@ function placeBox( force, source, from ) {
 	if( starting_zoom != zoom || fpPages == "pair" ) {
 		$("#widePage_div").hide( 0 );
 		$("#single_div").show( 0 );
-		$
+		if( !mobile ) {
+			$("#pair").attr( "src", "plugins/images/"+( fpPages == "pair" ? "pairOn" : "pair" )+".png" );
+			$("#single").attr( "src", "plugins/images/"+( fpPages == "pair" ? "single" : "singleOn" )+".png" );
+			$("#widePage").attr( "src", "plugins/images/widePage.png" );
+			}
 		}
 	else {
 		$("#widePage_div").show( 0 );
-		$("#single_div").hide( 0 );		
-		}	
+		$("#single_div").hide( 0 );
+		if( !mobile ) {
+			$("#pair").attr( "src", "plugins/images/pair.png" );
+			$("#widePage").attr( "src", "plugins/images/widePageOn.png" );
+			$("#single").attr( "src", "plugins/images/single.png" );
+			}
+		}
 	
 	if( cMode != "SideBySide" ) {
 		data = posPreview();
@@ -1488,6 +1497,33 @@ function reloadBG( switchTo, from ) {
 						'Top': data[11][1]["Top"]
 						}
 					}
+				// Refreshes both preflight indicators on every AJAX page
+				// navigation - previously these were only ever set once in
+				// the initial server-rendered HTML (reflecting whichever
+				// page loaded first) and never touched again, so the
+				// indicator either never appeared or stayed stuck lit for
+				// every page navigated to afterward.
+				$("#preflightMarker").attr( "data-pageid", data[18][0] ).attr( "onclick", 'downloadPreflight("'+data[18][0]+'")' );
+				if( data[17][0] == 1 ) {
+					$("#preflightMarker").addClass( "preflightError" );
+					}
+				else {
+					$("#preflightMarker").removeClass( "preflightError" );
+					}
+
+				if( data[18][1] != undefined ) {
+					$("#preflightMarker2").attr( "data-pageid", data[18][1] ).attr( "onclick", 'downloadPreflight("'+data[18][1]+'")' );
+					if( data[17][1] == 1 ) {
+						$("#preflightMarker2").addClass( "preflightError" );
+						}
+					else {
+						$("#preflightMarker2").removeClass( "preflightError" );
+						}
+					}
+				else {
+					$("#preflightMarker2").removeClass( "preflightError" ).attr( "data-pageid", "" ).attr( "onclick", "" );
+					}
+
 				cBox[0] = {
 					'Left': data[2][0]['Left'].toString().replace( ",", "." ),
 					'Bottom':data[2][0]['Bottom'].toString().replace( ",", "." ),
@@ -1694,12 +1730,9 @@ function createBoxes() {
 				"left": Math.floor( pixel( bleedbox[0]["Left"] - cropbox[0]["Left"] ) ),
 				"right": Math.floor( pixel( ( parseFloat(file[0]["Right"])-parseFloat(bleedbox[0]["Right"]) ) ) ),
 				"top": Math.floor( pixel( ( parseFloat(file[0]["Top"])+parseFloat(file[0]["Bottom"])-parseFloat(bleedbox[0]["Top"]) ) ) ),
-				"bottom": Math.floor( pixel( parseFloat(bleedbox[0]["Bottom"])-correction["Bottom"] ) )
+				"bottom": Math.floor( pixel( parseFloat(bleedbox[0]["Bottom"])-parseFloat(cropbox[0]["Bottom"]) ) )
 				}
 			
-			if( correction.Left < 0 ) {
-				margin.left -= Math.floor( pixel(correction["Left"] ) );
-				}
 				
 			if( parseFloat( file[0]["Left"] ) < 0 ) {
 				margin.left -= Math.floor( pixel( parseFloat(file[0]["Left"]) ) );
@@ -1718,12 +1751,9 @@ function createBoxes() {
 				"left": Math.floor( pixel( bleedbox[0]["Left"] - cropbox[0]["Left"] ) ),
 				"right": Math.floor( pixel( ( parseFloat(file[0]["Right"])-parseFloat(bleedbox[0]["Right"]) ) ) ),
 				"top": Math.floor( pixel( ( parseFloat(file[0]["Top"])+parseFloat(file[0]["Bottom"])-parseFloat(bleedbox[0]["Top"]) ) ) ),
-				"bottom": Math.floor( pixel( parseFloat(bleedbox[0]["Bottom"])-correction["Bottom"] ) )
+				"bottom": Math.floor( pixel( parseFloat(bleedbox[0]["Bottom"])-parseFloat(cropbox[0]["Bottom"]) ) )
 				}
 			
-			if( correction.Left < 0 ) {
-				margin.left -= Math.floor( pixel(correction["Left"] ) );
-				}
 
 			if( parseFloat( file[0]["Left"] ) < 0 ) {
 				margin.left -= Math.floor( pixel( parseFloat(file[0]["Left"]) ) );
@@ -1749,14 +1779,11 @@ function createBoxes() {
 				
 			margin = {
 				"left": Math.floor( pixel( trimbox[0]["Left"] - cropbox[0]["Left"] ) ),
-				"right": ( pixel( ( parseFloat(file[0]["Right"])-parseFloat(trimbox[0]["Right"]) ), zoom-(zoom/80) ) ),
+				"right": Math.floor( pixel( ( parseFloat(file[0]["Right"])-parseFloat(trimbox[0]["Right"]) ) ) ),
 				"top": Math.floor( pixel( ( parseFloat(file[0]["Top"])-parseFloat(trimbox[0]["Top"])+parseFloat(cropbox[0]["Bottom"]) ) ) ),
-				"bottom": Math.floor( pixel( trimbox[0]["Bottom"] - correction["Bottom"] ) )
+				"bottom": Math.floor( pixel( trimbox[0]["Bottom"] - cropbox[0]["Bottom"] ) )
 				}
 
-			if( correction.Left < 0 ) {
-				margin.left -= Math.floor( pixel(correction["Left"] ) );
-				}
 
 			if( parseFloat( file[0]["Left"] ) < 0 ) {
 				margin.left -= Math.floor( pixel( parseFloat(file[0]["Left"]) ) );
@@ -1773,14 +1800,11 @@ function createBoxes() {
 				
 			margin = {
 				"left": Math.floor( pixel( trimbox[0]["Left"] - cropbox[0]["Left"] ) ),
-				"right": ( pixel( ( parseFloat(file[0]["Right"])-parseFloat(trimbox[0]["Right"]) ), zoom-(zoom/80) ) ),
+				"right": Math.floor( pixel( ( parseFloat(file[0]["Right"])-parseFloat(trimbox[0]["Right"]) ) ) ),
 				"top": Math.floor( pixel( ( parseFloat(file[0]["Top"])-parseFloat(trimbox[0]["Top"])+parseFloat(cropbox[0]["Bottom"]) ) ) ),
-				"bottom": Math.floor( pixel( trimbox[0]["Bottom"] - correction["Bottom"] ) )
+				"bottom": Math.floor( pixel( trimbox[0]["Bottom"] - cropbox[0]["Bottom"] ) )
 				}
 
-			if( correction.Left < 0 ) {
-				margin.left -= Math.floor( pixel(correction["Left"] ) );
-				}
 
 			if( parseFloat( file[0]["Left"] ) < 0 ) {
 				margin.left -= Math.floor( pixel( parseFloat(file[0]["Left"]) ) );
@@ -1844,7 +1868,7 @@ function createBoxes() {
 				"left": Math.floor( pixel( trimbox[0]["Right"]-parseFloat(cropbox[0]["Left"]) ) ),
 				"right": Math.floor( pixel( ( parseFloat(file[1]["Right"]) ) ) ),
 				"top": Math.floor( pixel( ( parseFloat(file[1]["Top"])+parseFloat(file[1]["Bottom"])-parseFloat(bleedbox[1]["Top"]) ) ) ),
-				"bottom": Math.floor( pixel( parseFloat(bleedbox[1]["Bottom"])-correction["Bottom"] ) )
+				"bottom": Math.floor( pixel( parseFloat(bleedbox[1]["Bottom"])-parseFloat(cropbox[1]["Bottom"]) ) )
 				}
 			tempWidth = Math.floor(pixel( ( parseFloat( bleedbox[1]["Right"] )-parseFloat( trimbox[1]["Left"] ) ) ) )-1;
 			tempHeight = Math.floor( pixel( ( parseFloat( bleedbox[1]["Top"] )-parseFloat( bleedbox[1]["Bottom"] ) ) ) )-1;
@@ -1860,7 +1884,7 @@ function createBoxes() {
 				"left": ( margin.left ),
 				"right": ( pixel( ( parseFloat(file[1]["Right"])-parseFloat(trimbox[1]["Right"]) ) ) ),
 				"top": Math.floor( pixel( ( parseFloat(file[1]["Top"])-parseFloat(trimbox[1]["Top"])+parseFloat(cropbox[1]["Bottom"]) ) ) ),
-				"bottom": Math.floor( pixel( trimbox[1]["Bottom"] - correction["Bottom"] ) )
+				"bottom": Math.floor( pixel( trimbox[1]["Bottom"] - cropbox[1]["Bottom"] ) )
 				}
 				
 			tempWidth = Math.floor( pixel( ( parseFloat( trimbox[1]["Right"] )-parseFloat( trimbox[1]["Left"] ) ) ) )-1;

@@ -38,7 +38,8 @@
 			}
 		
 		$workflow = (string) $xml->Item[$x]->Workflow;
-		
+		$pn = (string) $xml->Item[$x]->PageNumbering;
+
 		$user = sql_aget( "accounts", "id='".$_SESSION['intra_user']."'", "*" );
 		$parts = sql_aget( "parts", "pub_id='".$pub[0]["id"]."' order by id ASC", "*" );
 		$uploader = new file( $parts, $user[0]["id"] );
@@ -49,6 +50,23 @@
 			unset( $uploader->filetype_array["pdf_to_flatplan"] );
 			unset( $uploader->filetypefull_array["pdf_to_flatplan"] );
 			}
+		// Hybrid jobs upload either a full InDesign package or the whole
+		// print-ready PDF Switch slices into pages - there's no article
+		// concept and no per-image/per-file upload path for this workflow
+		// (see page_pdf-handler.php's Hybrid-specific package-by-Part
+		// handling), so every other asset type is meaningless here.
+		else {
+			foreach( $uploader->filetype_array as $key => $val ) {
+				if( $key != "indesign_pack" && $key != "pdf_to_flatplan" ) {
+					unset( $uploader->filetype_array[$key] );
+					}
+				}
+			foreach( $uploader->filetypefull_array as $key => $val ) {
+				if( $key != "indesign_pack" && $key != "pdf_to_flatplan" ) {
+					unset( $uploader->filetypefull_array[$key] );
+					}
+				}
+			}
 
 		$picturePackAllow = array( "Resize", "Repack", "Enhance" );
 		if( in_array( $workflow, $picturePackAllow ) ) {
@@ -57,10 +75,8 @@
 		else {
 			$txt = $uploader->getSelectList( "filetype", "type" );
 			}
-		
-		
-		
-		$result = $txt;
+
+		$result = array( $txt, $pn );
 		}
 		
 	if( $_GET["op"] == "getfreespace" ) {
@@ -1420,7 +1436,17 @@
 			error_log( print_r( $array, true ) );
 			
 			if( $ad[0][3] == '2/1' or $ad[0][3] == '1/1' ) {
-				$error = SwitchSend_TESZT( $array );
+				// Queued instead of calling SwitchSend_TESZT() inline - that's
+				// a blocking curl call (5s connect / 15s total worst case)
+				// the user would otherwise sit through on every Upload
+				// click. The ads.uploaded update below (what the UI
+				// actually reflects) happens immediately either way;
+				// delivery to Switch itself happens in the background via
+				// client/cron/switch_sync_worker.php - same durable
+				// queue+retry pattern already used for
+				// XMLUpload2()/SendPmdXmlToSwitch() and SwitchSend_Rename()
+				// (see download_ajax.php's accept/page-approve handler).
+				QueueSwitchRetry( 'upload_ad', $array );
 				}
 			
 			else {
@@ -1499,8 +1525,15 @@
 			
 			}*/
 			
-		$names = array( 'uploaded' );
-		$values = array( 'Feltöltés alatt' );
+		// booked_page/booked_part record where this ad is CURRENTLY booked,
+		// re-written on every push_ad (the user can move an ad around
+		// before settling on a final placement, uploading it again each
+		// time) - this is what lets the Switch page_pdf callback match the
+		// returning PDF back to this ad by position instead of by name,
+		// since Hybrid jobs overwrite the posted name/description with the
+		// target Part code before that match would otherwise run.
+		$names = array( 'uploaded', 'booked_page', 'booked_part' );
+		$values = array( 'Feltöltés alatt', $_GET['pages'], $_GET['part'] );
 		$command = '';
 		for( $i = 0; $i < count( $names ); $i++ ) {
 			$command .= $names[$i].'=\''.$values[$i].'\'';

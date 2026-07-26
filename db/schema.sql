@@ -159,6 +159,8 @@ CREATE TABLE `ads` (
   `uploaded` varchar(20) NOT NULL DEFAULT '',
   `reason` varchar(255) NOT NULL DEFAULT '',
   `proofCounter` int(11) NOT NULL DEFAULT 0,
+  `booked_page` int(11) NOT NULL DEFAULT 0,
+  `booked_part` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -627,6 +629,9 @@ CREATE TABLE `pageinfo` (
   `colors` text DEFAULT NULL,
   `part` varchar(255) NOT NULL DEFAULT '',
   `origname` varchar(255) NOT NULL DEFAULT '',
+  `preflight_error` tinyint(1) NOT NULL DEFAULT 0,
+  `preflight_report` varchar(255) NOT NULL DEFAULT '',
+  `preflight_origname` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

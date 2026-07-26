@@ -43,6 +43,17 @@ if( $go ) {
 		error_log( "Hybrid workflow: pageState '".$pageState."' coerced to FIN" );
 		$pageState = "FIN";
 		}
+	// A job configured with FlatplanStages=1 has only the one, unnamed
+	// flatplan (see flatplan_ajax.php's refreshPageStatus approve-control
+	// gate, which only allows approvals on fpver=="" when $fpstages==1).
+	// Switch still tags individual submissions NOR/FIN on its own terms
+	// regardless of our stage count (ad submissions in particular are
+	// conventionally always sent as FIN) - that tag is real Switch data
+	// and isn't relabelled, but for a 1-stage job it must not be used to
+	// split a page's history across two separate fin buckets: every
+	// lookup/conflict-check below is scoped to match on the page/part
+	// alone, ignoring fin, whenever $stages1 is true.
+	$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
 
 	$handle = fopen( "pageversion.txt", 'a+');
 	if( $handle === false ) {
@@ -74,9 +85,75 @@ if( $go ) {
 
 	$p_id = sql_get( 'magazines', 'code="'.$jcode.'"', '*' );
 	$p_id = sql_get( 'publications', 'magazine_id="'.$p_id[0][0].'" AND code="'.$issue.'"', '*' );
+
+	// Switch reuses this SAME page_pdf event for the pdfToolbox preflight
+	// report rather than a dedicated one - the only signal distinguishing
+	// it from a real page resubmission is this filename suffix (confirmed
+	// live 2026-07-24: the report for 001_PRHE2688 arrived as
+	// fileName=001_PRHE2688_report, same event, same
+	// jobCode/issue/page/part/state as the real page). Without this check
+	// it fell through to the normal replace/version/archive/render path
+	// below and got treated as a legitimate new version of the real page -
+	// archiving the actual print page to _old and putting the report PDF
+	// in its place. Must return before any of that runs.
+	if( str_ends_with( $_POST["fileName"], "_report" ) ) {
+		$pn = (string) $wfXml->Item[$wfI]->PageNumbering;
+		$extra = ( $pn == "American" ) ? ' AND part="'.$_POST["part"].'"' : '';
+		$tag = ( $pageVersion != "-baseversion-" and $pageVersion != "" ) ? $pageVersion."_" : "";
+
+		// Store the report unconditionally, even if no matching pageinfo
+		// row exists yet - Switch doesn't guarantee the report arrives
+		// AFTER the real page (confirmed live 2026-07-24: on a retest, the
+		// report for page 1 arrived first, before the page's row even
+		// existed - the original version of this code only updated an
+		// EXISTING row and silently dropped the flag when one didn't exist
+		// yet). The new-pageinfo-row insert path below checks for this same
+		// deterministic path and picks it up retroactively either way.
+		$dir = TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight';
+		if( !is_dir( $dir ) ) {
+			$oldmask = umask(0);
+			mkdir( $dir, 0777, true );
+			umask($oldmask);
+			}
+		$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.pdf';
+		rename( $file, $dir.'/'.$reportName );
+
+		if( $stages1 ) {
+			$pageInfo = sql_get( 'pageinfo', '`type`!="PRE" AND `type`!="PSTR" AND `code`="'.$jcode.'" AND `issue`="'.$issue.'" AND `page`="'.$page.'" AND `state`="'.$tag.'" '.$extra, '*' );
+			}
+		elseif( $pageState == "FIN" ) {
+			$pageInfo = sql_get( 'pageinfo', '`type`!="PRE" AND `type`!="PSTR" AND `code`="'.$jcode.'" AND `issue`="'.$issue.'" AND `page`="'.$page.'" AND `state`="'.$tag.'" AND fin="1" '.$extra, '*' );
+			}
+		else {
+			$pageInfo = sql_get( 'pageinfo', '`type`!="PRE" AND `type`!="PSTR" AND `code`="'.$jcode.'" AND `issue`="'.$issue.'" AND `page`="'.$page.'" AND `state`="'.$tag.'" AND fin="0" '.$extra, '*' );
+			}
+
+		if( $pageInfo[0][0] != '' ) {
+			sql_update( 'pageinfo', 'preflight_error="1", preflight_report="'.$reportName.'", preflight_origname="'.$_POST["fileName"].'.pdf"', 'id="'.$pageInfo[0][0].'"' );
+			}
+
+		return;
+		}
+
 	error_log( "namecalc elott" );
-	$name = nameCalculator2( $_POST );
-	$name = str_replace( " ", "", $name );
+	if( (string) $wfXml->Item[$wfI]->Workflow == "Hybrid" ) {
+		// Hybrid packages group by Part (Cover/Inside/etc.), not by a
+		// description-derived article name - there are no "articles"
+		// once the client just uploads a straight, pre-sliced print PDF.
+		// Both $name (this file's own duplicate package-creation
+		// fallback below, ~line 101) and $description (what
+		// searchArticlePost() actually matches/creates packages by)
+		// need to agree on the same key, so both become the Part code
+		// Switch already sends. Booked ads (Adverts Page) arrive via a
+		// separate Switch event, never through this Hybrid-coerced
+		// path, so there's no real ad-name match to preserve here.
+		$name = $_POST["part"];
+		$description = $_POST["part"];
+		}
+	else {
+		$name = nameCalculator2( $_POST );
+		$name = str_replace( " ", "", $name );
+		}
 	error_log( $name );
 	$result = searchArticlePost( $_POST, $description, $page );
 	var_dump( $result );
@@ -256,6 +333,16 @@ if( $go ) {
 			if( $type == "alter" ) {
 				$pageInfo = sql_get( 'pageinfo', 'type="'.$alter[1].'" AND code="'.$jcode.'" AND issue="'.$issue.'" AND page="'.$page.'" '.$extra.'', '*' );
 				}
+			// A 1-stage job's fin bit is real Switch-reported data (kept as
+			// sent - see the $stages1 comment above) but must not be used to
+			// decide which row THIS page's submission matches: matching
+			// ignores fin entirely so a page's later submissions always
+			// land on the same one row regardless of what fin either one
+			// carries, instead of the job accumulating a parallel fin=0 and
+			// fin=1 row per page.
+			else if( $stages1 ) {
+				$pageInfo = sql_get( 'pageinfo', '`type`!="PRE" AND `type`!="PSTR" AND `code`="'.$jcode.'" AND `issue`="'.$issue.'" AND `page`="'.$page.'" AND `state`="'.$tag.'" '.$extra.'', '*' );
+				}
 			else {
 				if( $pageState == "FIN" ) {
 					$pageInfo = sql_get( 'pageinfo', '`type`!="PRE" AND `type`!="PSTR" AND `code`="'.$jcode.'" AND `issue`="'.$issue.'" AND `page`="'.$page.'" AND `state`="'.$tag.'" AND fin="1" '.$extra.'', '*' );
@@ -265,8 +352,9 @@ if( $go ) {
 					}
 				}
 
-			if( $type != "alter" && $tag == "" && $pageState != "FIN" ) {	
-				$checker = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND code="'.$jcode.'" AND issue="'.$issue.'" AND pack_id!="'.$pack_id.'" AND page="'.$page.'" AND fin="0"', '*' ); 
+			if( $type != "alter" && $tag == "" && ( $stages1 or $pageState != "FIN" ) ) {
+				$finClause = ( $stages1 ? '' : 'AND fin="0" ' );
+				$checker = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND code="'.$jcode.'" AND issue="'.$issue.'" AND pack_id!="'.$pack_id.'" AND page="'.$page.'" '.$finClause.$extra, '*' );
 				if( $checker[0][0] != "" ) {
 					echo $check;
 					$remove[] = fileRemove( $checker[0], $path, $ext );
@@ -275,8 +363,8 @@ if( $go ) {
 						}
 					}
 				else {
-					if( $pageState == "FIN" ) {
-						$checker = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND code="'.$jcode.'" AND issue="'.$issue.'" AND pack_id!="'.$pack_id.'" AND page="'.$page.'" AND fin="1"', '*' ); 
+					if( !$stages1 && $pageState == "FIN" ) {
+						$checker = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND code="'.$jcode.'" AND issue="'.$issue.'" AND pack_id!="'.$pack_id.'" AND page="'.$page.'" AND fin="1" '.$extra.'', '*' );
 						if( $checker[0][0] != "" ) {
 							echo $check;
 							$remove[] = fileRemove( $checker[0], $path, $ext );
@@ -370,10 +458,19 @@ if( $go ) {
 					error_log( $path."/_old".( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) )."/".$oldFile."_".$pageInfo[0][3].".jpg" );
 					
 					if( copy( $prevDir."/".$oldFile.".jpg", $path."/_old".( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) )."/".$oldFile."_".$pageInfo[0][3].".jpg" ) ) {
+						// A fresh page replaces whatever preflight result the
+						// PREVIOUS version of this page had - any past error
+						// no longer applies to what's actually on disk now.
+						// A "_report" submission for the new version (see the
+						// str_ends_with() check above) re-flags this row if it
+						// fails too, but until/unless that arrives the marker
+						// must not survive a resubmission - otherwise a page
+						// the client already fixed would keep showing a stale
+						// error forever.
 						if( $type == "alter" )
-							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view=""', 'id="'.$pageInfo[0][0].'"' );
+							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
 						else
-							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view=""', 'id="'.$pageInfo[0][0].'"' );
+							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
 						$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'info' );
 						$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
 						$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
@@ -409,7 +506,29 @@ if( $go ) {
 
 					$names[] = "origname";
 					$values[] = $_POST["fileName"].".pdf";
-					
+
+					// A preflight "_report" submission for this same page
+					// may have already arrived and stored its file before
+					// this row even existed (see the str_ends_with() check
+					// above) - pick it up here rather than losing it, since
+					// that report update had nothing to attach itself to
+					// yet at the time it ran.
+					$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.pdf';
+					if( is_file( TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight/'.$reportName ) ) {
+						$names[] = "preflight_error";
+						$values[] = "1";
+						$names[] = "preflight_report";
+						$values[] = $reportName;
+						// The "_report" submission's own request never had a
+						// pageinfo row to read this page's real filename from,
+						// so it couldn't record the true original name itself -
+						// reconstruct it from THIS request's fileName instead,
+						// per the established "<real name>_report" convention.
+						$names[] = "preflight_origname";
+						$values[] = $_POST["fileName"]."_report.pdf";
+						}
+
+
 					$id = sql_add( 'pageinfo', $names, $values );
 					$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'info' );
 					$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
@@ -509,7 +628,15 @@ if( $go ) {
 							}
 						}
 					
-					$color = partDetect( $p_id[0][0], $page );
+					// American-numbering page numbers are part-relative and
+					// collide across Parts, so partDetect()'s page-range
+					// matching can't resolve anything meaningful for them
+					// (Parts define page numbering by count, not absolute
+					// position) - passing the part Switch actually submitted
+					// resolves the color standard directly and unambiguously
+					// for both numbering schemes; harmless no-op for a
+					// European job where $_POST["part"] is empty.
+					$color = partDetect( $p_id[0][0], $page, "color", $_POST["part"] );
 					
 					$hand = sql_aget( "flatplan_handout", "pubid='".$p_id[0][0]."' order by id DESC", "*" );
 					if( !empty( $hand[0]["id"] ) ) {
@@ -529,6 +656,21 @@ if( $go ) {
 					
 					if( $type == "ad" ) {
 						$temp = sql_aget( "ads", "name='".$description."' AND pub_id='".$p_id[0][0]."' AND publisher='".$p_id[0][1]."'", "*" );
+						if( empty( $temp[0]["id"] ) ) {
+							// Same Hybrid name-corruption gap as
+							// searchArticlePost() (engine.php) - $description
+							// was already overwritten with the Part code
+							// above for Hybrid jobs, so this name match can
+							// never succeed for a booked ad. Fall back to
+							// matching by the position the ad was most
+							// recently booked to (booked_page/booked_part,
+							// rewritten on every push_ad in ajax.php).
+							$adCondition = "pub_id='".$p_id[0][0]."' AND publisher='".$p_id[0][1]."' AND booked_page='".$pageNum."'";
+							if( !empty( $_POST["part"] ) ) {
+								$adCondition .= " AND booked_part='".$_POST["part"]."'";
+								}
+							$temp = sql_aget( "ads", $adCondition, "*" );
+							}
 						error_log( print_r( $temp, true ) );
 						if( !empty( $temp[0]["id"] ) ) {
 							if( $temp[0]["size"] == "2/1" ) {

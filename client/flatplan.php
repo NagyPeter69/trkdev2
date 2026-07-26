@@ -79,6 +79,24 @@ $hybridFP = ( (string) $wfXml->Item[$wfI]->Workflow == "Hybrid" );
 if( $hybridFP ) {
 	$_GET['opt'] = "FIN";
 	}
+// A FlatplanStages==1 job (like Hybrid, just via a different XML field)
+// has only the one flatplan too - no PRE/BASIC/FIN distinction, even
+// though individual submissions still carry a real fin bit (ads are
+// conventionally sent FIN regardless of stage count - see
+// page_pdf-handler.php's $stages1 handling). Below, the chip-rendering
+// blocks already know this (their $flatplans array stays empty unless
+// FlatplanStages is "2" or "3"), but without also forcing $_GET['opt']
+// here, their *opt-restoring* switch (keyed off the account's stored
+// lastOpt) can still resolve to "FIN" behind the user's back - e.g. as
+// soon as any pageinfo row picks up status 1/2 (accepted/rejected; an
+// uploaded ad's row commonly starts this way) satisfies that switch's
+// "does a FIN-worthy row exist" check. loadPagePair then filters its
+// whole page list to fin='1', so every real (fin=0) page vanishes from
+// the grid while only the ad (fin=1) remains - looking exactly like the
+// other pages were deleted, when they were just filtered out of view.
+elseif( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" ) {
+	$_GET['opt'] = "";
+	}
 
 $time = strtotime( $pub[0][11] );
 setlocale(LC_ALL,'hungarian');
@@ -127,15 +145,27 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 					}
 				}
 			$process = (string) $xml->Item[$x]->Workflow;
+			$fpStages = (string) $xml->Item[$x]->FlatplanStages;
 			// Hybrid: single flatplan, no stage chips at all (the view is
-			// already forced to FIN near the top of this file).
+			// already forced to FIN near the top of this file). Otherwise the
+			// chips shown depend on FlatplanStages: 1 stage means no PRE/BASIC/FIN
+			// distinction at all (no chips), 2 stages means BASIC+FIN (no PRE), 3
+			// stages means all three.
 			$flatplans = array();
 			if( $process != "Softproof" and $process != "Hybrid" ) {
-				$flatplans = array(
-					"PRE" => 'pre',
-					"" => 'basic',
-					"FIN" => 'final'
-					);
+				if( $fpStages == "3" ) {
+					$flatplans = array(
+						"PRE" => 'pre',
+						"" => 'basic',
+						"FIN" => 'final'
+						);
+					}
+				else if( $fpStages == "2" ) {
+					$flatplans = array(
+						"" => 'basic',
+						"FIN" => 'final'
+						);
+					}
 				}
 			//$_GET['opt'] = $_GET['alter'];
 
@@ -307,16 +337,28 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 										}
 									}
 								$process = (string) $xml->Item[$x]->Workflow;
+								$fpStages = (string) $xml->Item[$x]->FlatplanStages;
 								// Hybrid: single flatplan, no stage chips at all (the
 								// view is already forced to FIN near the top of this
-								// file).
+								// file). Otherwise the chips shown depend on
+								// FlatplanStages: 1 stage means no PRE/BASIC/FIN
+								// distinction at all (no chips), 2 stages means BASIC+FIN
+								// (no PRE), 3 stages means all three.
 								$flatplans = array();
 								if( $process != "Softproof" and $process != "Hybrid" ) {
-									$flatplans = array(
-										"PRE" => 'pre',
-										"" => 'basic',
-										"FIN" => 'final',
-										);
+									if( $fpStages == "3" ) {
+										$flatplans = array(
+											"PRE" => 'pre',
+											"" => 'basic',
+											"FIN" => 'final',
+											);
+										}
+									else if( $fpStages == "2" ) {
+										$flatplans = array(
+											"" => 'basic',
+											"FIN" => 'final',
+											);
+										}
 									}
 								//$_GET['opt'] = $_GET['alter'];
 								foreach( $flatplans as $key => $val ) {
@@ -664,7 +706,18 @@ if( process == "Full" ) {
 		$("#handoutBox").show(100);
 		}
 	}
-		
+
+// Deliberately NOT inside the `if( process == "Full" )` block above -
+// Hybrid jobs (the whole reason this marker exists) never enter it, so
+// downloadPreflight() would never even be defined for them, and clicking
+// the marker would silently no-op (or throw "not defined" in the console).
+function downloadPreflight( id ) {
+	var link = 'filedownload.php?type=preflight&id='+id;
+
+	if ($idown) { $idown.attr('src',link); }
+	else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
+	}
+
 function fpfiledownload( id ) {
 	window.open( "filedownload.php?type=fp&id="+id );
 	}

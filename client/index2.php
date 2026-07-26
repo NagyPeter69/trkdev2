@@ -628,7 +628,16 @@ function menuApply( menu, sub, parent ) {
 						$(this).remove();
 						});
 					}
-					
+
+				if( menu == "pubs" && sub == "create" && data[0] == "" ) {
+					// The new publication only exists in the Publications
+					// View grid after a fresh page load - nothing else in
+					// this dialog's success path re-fetches that list, so
+					// without this the freshly created job is invisible
+					// until the user manually reloads.
+					location.reload();
+					}
+
 				if( menu == "mwcalendar" ) {
 					loadCalendar( year );
 					}

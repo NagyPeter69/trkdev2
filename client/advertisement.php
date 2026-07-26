@@ -543,9 +543,7 @@ function init_drag() {
 						//alert( data['title'] );
 						$('.ad_menu_titleText').html( "<div>"+data['title']+"</div>" );
 						$('.ad_menu_upload').html( data['content'] );
-						$('#pages').val('2');
-						$('#pages').change();
-						$('.ad_menu_upload').show('fast',function(){ fit_adlist(); });
+						$('.ad_menu_upload').show('fast',function(){ fit_adlist(); $('#pages').focus(); });
 						
 						$('#footer_pos').fadeOut('fast');
 						}
@@ -694,7 +692,17 @@ function put_ad() {
 		"t_pos": $('select[name="text_poz"]').val(),
 		"c_color": $('select[name="ccolor"]').val(),
 		};
-		
+
+	// Immediate feedback the instant the button is clicked, rather than
+	// leaving it inert until the ajax response comes back - push_ad's own
+	// Switch delivery is now queued in the background (see ajax.php), so
+	// this request only waits on a fast DB write, but the button
+	// shouldn't sit unresponsive on ANY round-trip. Also guards against a
+	// double-click firing two uploads while the first is still in flight.
+	var $btn = $('#send_ad');
+	var originalLabel = $btn.text();
+	$btn.addClass('disabled').text('Uploading…');
+
 	$.ajax	({
 		url:"engine/ajax.php",
 		data: 'op=push_ad&ad_id='+id+'&part='+part+'&pages='+pages+'&orient='+orient+'&extra='+extra+'&extra2='+extra2+'&caption='+caption["state"]+'&cpos='+caption["c_pos"]+'&tpos='+caption["t_pos"]+'&ccolor='+caption["c_color"],
@@ -703,6 +711,12 @@ function put_ad() {
 			if( data == 'ok' ) {
 				ad_menu_default();
 				}
+			else {
+				$btn.removeClass('disabled').text( originalLabel );
+				}
+			},
+		error: function() {
+			$btn.removeClass('disabled').text( originalLabel );
 			}
 		});
 	}

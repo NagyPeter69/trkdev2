@@ -26,7 +26,7 @@ else {
 ?>
 
 <div>
-	<div class='panelTitle'><?= $lang["publications"]["new_issue"] ?></div>
+	<div class='panelTitle'><?= sprintf( $lang["publications"]["new_issue_for"], $magazine[0][2], $lang["pn"][(string) $newxml->Item[$x]->PageNumbering] ) ?></div>
 	<div class='panelControl' style='width: <?= $width ?>px; text-align: left;'>
 	
 	<table cellspacing='0' cellpadding='0'>

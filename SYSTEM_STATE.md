@@ -17,6 +17,92 @@ and HTML generation are interleaved in the same files. This is not a criticism t
 wholesale right now — see "Known architectural issues" below for what's worth fixing when,
 and what isn't.
 
+## Domain model: Publications, page numbering, and Workflow types
+
+Explained directly by the project owner 2026-07-23, after a debugging session that took far
+longer than it should have precisely because this wasn't written down anywhere. Read this
+before touching Flatplan/Pages-view/Parts/color-standard code — it's the conceptual model
+the rest of this section's bug list only makes sense against.
+
+Three independent axes combine to describe any given job:
+
+**A. Publication type — `magazines.type`: `Regular` vs `Adhoc`**
+- **Regular** publications are recurring/periodical — they must have **Issues**
+  (`publications` rows), and an Issue can override some of the parent publication's
+  parameters slightly (its own per-issue XML, `client/xml/{MAGCODE}_{ISSUECODE}.xml` — see
+  `partDetect()` below).
+- **Adhoc** publications are one-time jobs. They can relate to an already-defined **Client**
+  (a known publisher/account), or be genuinely "cold" — a walk-in job under a generic
+  `Adhoc` client with no prior relationship.
+- **This field is a business classification, not a page-numbering signal** — don't conflate
+  it with axis B below. A real bug this session (`client/flatplan_preview.php`) checked
+  `magazine.type == "Regular"` to decide whether to clear the selected Part, when it should
+  have been checking `PageNumbering == "European"` instead (see "Known bugs" below) —
+  "Regular" here has nothing to do with "Regular/European numbering", despite the
+  unfortunately similar name.
+
+**B. Page numbering — PMD XML `PageNumbering`: `European` vs `American`**
+- **European**: page numbers are **absolute** across the whole publication. Cover1 == page 1,
+  Cover2 == page 2, Cover3 == `pages.length - 2`, Cover4 == `pages.length - 1`; Inside pages
+  generally sit between the cover pages. Parts are defined with **strict, absolute page-range
+  definitions** (e.g. Inside = pages 3-86, Cover = 1-2 + 87-88) — this is exactly what
+  `partDetect()`'s `<place>` page-range matching (`engine/engine.php`) was originally built
+  for, and it's correct *for this numbering scheme*.
+- **American**: Parts have a **defined length** (a page count), but **page numbers inside a
+  Part are irrelevant/not globally meaningful** — every Part's `pageinfo.page` column
+  restarts at 1 independently (a Cover Part's page 1 and an Inside Part's page 1 are
+  unrelated rows that just happen to share a number). Any code that tries to determine "which
+  Part is this page in" by page number alone, or that queries `pageinfo`/builds a file path
+  by page number without also filtering by `part`, is **wrong by construction** for this
+  numbering scheme — not an edge case, the normal case. This was the root cause of most of
+  this session's bugs (see below) and is the single most important fact in this section.
+- Parts always have their own color-standard definition regardless of which numbering scheme
+  is in use (`partDetect()`'s job) — only *how* you determine which Part a given page belongs
+  to differs between the two schemes.
+
+**C. Workflow — PMD XML `Workflow`: business service depth levels**
+- **Full** — sophisticated image enhancement, Ad handling, in-house PDF generation +
+  preflight, and Page Approval (the full proofing loop this app's Flatplan/Pages views are
+  built around).
+- **Hybrid** — image enhancement, Ad handling, PDF preflight + approval, but approval happens
+  **via the client's own submission** rather than in-house. Has no real flatplan stages of
+  its own — its single flatplan IS the final one (see `page_pdf-handler.php`'s
+  `Workflow == "Hybrid"` coercion, predates this session).
+- **Resize** — sophisticated image enhancement only, plus Ad handling. No Flatplan/Pages/
+  Planner UI access at all (gated in `client/menu.php`).
+- **Auto** — fully-automatic image enhancement and Ad handling, no manual proofing loop.
+
+These three axes combine (2 × 2 × 4 = 16 base cases), and **FlatplanStages** (PMD XML field,
+`1`/`2`/`3`) is an orthogonal "flavour" on top of whichever Workflow a job uses — how many
+proofing rounds (PRE/BASIC/FIN) it goes through before the final approved state. See
+[[flatplan_stages_single_stage_rule]] memory (or ask a fresh session to recall it) for the
+full FlatplanStages==1 rule: such a job has only one flatplan, and Switch's own per-submission
+stage tag (`NOR`/`FIN` — ads are conventionally always submitted `FIN` regardless of the job's
+actual stage count) must never be used to split its pages across two views.
+
+### Known bugs from this axis, for a fresh session to avoid re-discovering
+
+All found/fixed 2026-07-23 debugging a Full-workflow, American-numbering, FlatplanStages=1
+Cover/Inside job. Full detail in memory (`flatplan_stages_single_stage_rule`,
+`flatplan_stage_markers_and_slots`, `flatplan_part_scoping_gaps` — load these into a fresh
+session before touching this area again):
+
+- Several places matched a `pageinfo` row by page number **without** also filtering by
+  `part` (`engine/engine.php`'s `checkPagePair()`, `client/flatplan_preview.php`'s initial
+  page-strip query) — silently "worked" for whichever Part's row won an unordered `LIMIT 1`
+  MySQL query, broke for others. Only matters for American numbering (axis B).
+- `client/flatplan_preview.php` unconditionally cleared the selected Part for any
+  `magazine.type == "Regular"` job — conflating axis A with axis B, as described above.
+- `partDetect()` (`engine/engine.php`) assumes the European-numbering `<place>` page-range
+  format in the per-issue XML; some issues instead export `<pages>` (a page *count*, American-
+  numbering style), which the function can't match against page numbers at all, so it always
+  fell back to the `FOGRA_39` default color standard regardless of the Part's real one. Fixed
+  by adding an optional part-name-based match, wired through most call sites (see the
+  function's own comment for which ones still don't pass a part - the CLI `render_page_worker.php`
+  path and a couple of low-traffic/test scripts don't have easy access to it).
+- Several `fin`/stage-descriptor mismatches (FlatplanStages==1 handling) - see the dedicated
+  memory file, not repeated here.
+
 ## Machines involved
 
 - **trk-dev (10.10.30.61)** — the original developer box this was all migrated *from*.
@@ -199,17 +285,22 @@ so this dev/refactoring work couldn't accidentally affect the real production Sw
 instance. **That block has since been intentionally, partially lifted** by the project
 owner: trkdev2 can now reach Switch (confirmed via both a raw TCP connect and an actual
 HTTP request to `SWITCHLOGINURL`, both succeeding in under 10ms), but only for jobs on
-behalf of Colorcom and TestCo - this was a deliberate decision, not a regression or a gap,
-and it lines up with (rather than duplicates) the application-level allowlist already
-enforced by `switchClientAllowed()`/`switchBulkSyncAllowed()` (see below): both the network
-rule and the app-level `TRKDEV_ENVIRONMENT` gate now independently restrict the same two
-test clients, rather than the network layer blocking everything and the app layer being
-the only thing narrowing it down. Do not widen either layer without checking with the
-project owner first.
+behalf of **TestCo** - this was a deliberate decision, not a regression or a gap, and it
+lines up with (rather than duplicates) the application-level allowlist enforced by
+`switchClientAllowed()`/`switchBulkSyncAllowed()` (see below): both the network rule and
+the app-level `TRKDEV_ENVIRONMENT` gate independently restrict the same one test client,
+rather than the network layer blocking everything and the app layer being the only thing
+narrowing it down. Do not widen either layer without checking with the project owner
+first.
 
 (An earlier version of this document briefly - and incorrectly - described this as an
 unexplained safety-boundary regression, written before being told about the intentional
-partial lift; corrected here once that context was provided.)
+partial lift; corrected here once that context was provided. A later version then
+incorrectly listed Colorcom alongside TestCo as an allowed dev test client - Colorcom is
+a real production client, not a test client, and the project owner corrected this
+2026-07-22: `$allowed` in both `switchClientAllowed()` and `switchBulkSyncAllowed()`
+(`client/engine/switchAPI.php`) now contains only `'testco'`. If you ever find `'colorcom'`
+back in either array, that's a regression, not a restore of prior intent.)
 
 Two real bugs were found and fixed in this integration:
 
@@ -240,8 +331,52 @@ functions, which still block synchronously with no fallback):
   access were ever restored, Switch could never mistake this system's data for production's.
 
 **If you're asked to extend this pattern to the other Switch-send functions** (`SwitchASend`,
-`SwitchAnyagSend`, `SwitchSend`, `SwitchSend_Rename` — all in `switchAPI.php`, all still
-purely synchronous with no queue fallback), the template above is the one to copy.
+`SwitchAnyagSend`, `SwitchSend` — still in `switchAPI.php`, all still purely synchronous with
+no queue fallback), the template above is the one to copy.
+
+**`SwitchSend_Rename` was extended this way 2026-07-23** — not the synchronous-first variant
+(there's no "try fast, fall back to queue" here, since the trigger is always a *bulk* action
+with no reason to ever attempt any of it synchronously): `client/engine/download_ajax.php`'s
+`type=accept` (bulk page-approve) handler now writes straight to `switch_sync_queue`
+(`job_type='switch_send_rename'`, payload = `{datas, file, newname}` matching
+`SwitchSend_Rename()`'s own params) instead of calling it inline per page. The pageinfo
+status/action_log update (what the user actually sees) still happens immediately in the same
+request; only the Switch notification is deferred. `switch_sync_worker.php` gained a matching
+`case 'switch_send_rename'`. Motivation: approving dozens of pages in one bulk action used to
+block the whole request on that many sequential `SwitchSend_Rename()` calls (5s connect + 15s
+timeout each, worst case a minute+) — this was a direct user complaint, not a hypothetical.
+If asked to do the same for `light_accept` (the Adhoc-client hotlink approve flow, same file)
+or any of the three functions above, this is now a second worked example alongside
+`XMLUpload2()`.
+
+**Two real bugs found and fixed getting this working, both worth knowing about beyond this
+one call site:**
+
+1. **Never write a JSON payload to `switch_sync_queue` (or anywhere else) via a raw
+   `sql_add()`/`sql_update()` call — always go through `QueueSwitchRetry()`
+   (`engine/xml_handler.php`)**, or otherwise `mysqli_real_escape_string()` it yourself first.
+   `sql_add()` does zero escaping (see the SQL-injection note earlier in this document); a
+   `json_encode()`'d string routinely contains backslash escapes (`\uXXXX` for any non-ASCII
+   character, `\/` for path separators), and MySQL's own string-literal parser silently drops
+   the backslash on any escape sequence it doesn't itself recognize when the string is
+   concatenated in unescaped. First attempt at the `switch_send_rename` job type above did
+   exactly this and got bitten immediately in real use: a package directory containing "í"
+   (Hungarian is common in this data — "címlap" = cover) got stored as `"cu00edmlap"`, silently
+   corrupting the queued file path.
+2. **`SwitchSend_Rename()` (`client/engine/switchAPI.php`) used to hard-crash on a missing
+   source file** — it already computed `is_file(...)` and logged the result, but never
+   actually gated on it: `filesize()`/`mime_content_type()` ran unconditionally, and PHP 8's
+   `mime_content_type()` throws a `TypeError` on the `false` a missing file produces (another
+   instance of the "internal functions throwing TypeError on wrong types" bug class in the
+   PHP 7→8 section above). This is a bigger deal than one bad payload: `switch_sync_worker.php`
+   processes queued jobs **in one script run**, `ORDER BY id ASC`; a fatal on the first job in
+   the batch kills the whole run before it reaches any of the others — confirmed live, the one
+   corrupted `switch_send_rename` job (bug #1 above) silently starved every other queued job
+   behind it, of any job_type, on every single cron tick, until this was fixed. Now returns a
+   graceful `array(null, "Source file not found: ...")` instead - matches the same
+   null-means-retryable-failure convention `switch_sync_worker.php` already used for a genuine
+   curl failure, so a transient "file not written yet" race retries normally instead of taking
+   the whole worker down.
 
 ## DynaPDF
 
@@ -561,3 +696,34 @@ moment (post-prune, clean-base state):
 
 `action_log`/`user_log`/`system_log` being non-trivial while everything else is near-zero
 is expected — those are the audit tables that were deliberately preserved through the prune.
+
+## Publication ownership model: Regular vs. Adhoc, and the "clientless" case
+
+Clarified directly by the project owner 2026-07-26, while tracing a stuck/undeletable
+clientless Adhoc job and an inconsistent `client` field across the Switch integration. Read
+this before touching anything that resolves or forwards a publication's client/publisher —
+it's a short, load-bearing summary of axis A from the "Domain model" section above, plus the
+one rule that section didn't spell out.
+
+- **A.** Every job (`magazines` row) is either **Regular** or **Adhoc** (`magazines.type`).
+- **B.** **Regular** publications always have a Client (a registered `publishers` row) and
+  must have **Issues** (`publications` rows) — there's no clientless or issue-less Regular job.
+- **C.** **Adhoc** publications can be associated with a **Registered** client (a known
+  `publishers` row, recorded on `publications.owner` since `magazines.publisher_id` is always
+  `"0"` for Adhoc by convention — see `resolveJobPublisherName()` in
+  `client/engine/switchAPI.php`), or they can be genuinely **clientless**. There is no third
+  option — see D.
+- **D.** For a clientless Adhoc job, **the `client` field in every communication to Switch
+  must be empty** — never a placeholder, never a free-typed name. Switch has its own
+  hardwired, designated folder on the file server for clientless jobs, keyed off that empty
+  value; sending anything else risks the job's files landing in the wrong place, or not being
+  picked up by that flow at all.
+
+This is why the free-text "Client" input that used to appear under the "Ad-hoc" radio in the
+New Adhoc Publication dialog was removed 2026-07-26 — it made it possible to type a client
+name for a nominally clientless job, which would have leaked into some but not all of the
+three Switch touchpoints a creation triggers (the bulk PMD sync via `changeXmlDatabase()` →
+`XMLUpload2()`, the `publication_created` event in `pubsApply.php`, and the per-issue snapshot
+upload in `toSwitch()`'s `new_publication` case) inconsistently — some would carry the typed
+name, the snapshot would always say empty regardless. A clientless Adhoc job's only two
+possible client states now, app-wide, are "a Registered client" or `""` — never free text.

@@ -5,27 +5,30 @@ include_once('../engine/connect.php');
 include_once('lang/en.php');
 include_once('../engine/engine.php');
 include_once('../engine/xml_handler.php');
+require_once('plugins/zipstream/ZipStreamAutoload.php');
 
 $single = true;
-// Set instead of $single when a zip needs building - ZipArchive (php-zip,
-// the Debian/APT package) builds to a real file on disk rather than
-// streaming straight into the HTTP response the way the old Composer
-// ZipStream library did, so every branch below just describes what goes
-// into the zip and the actual header/readfile/cleanup happens once, at
-// the bottom, alongside the existing single-file path.
-$zipFile = null;
+// Set instead of $single when a zip needs building. Asset packs routinely
+// run to 10+GB, and the source images are already LZW-TIFF/JPEG (already
+// compressed, so re-deflating them buys nothing) - ZipArchive would need a
+// full temp copy of the archive on disk before the download could even
+// start, which is both a disk-space liability at that size and a long,
+// silent wait for the user. ZipStream (vendored at plugins/zipstream/, no
+// Composer on this box) writes the zip format directly into the HTTP
+// response as each file is read from disk - headers go out and the browser
+// starts downloading before we even know the final archive size, and
+// nothing ever touches disk here. STORE (no compression, matching why
+// there's nothing to gain from deflating already-compressed assets) plus
+// enableZeroHeader:false means sizes are read via a cheap fstat() and
+// written into each file's real header up front instead of via a trailing
+// data descriptor - avoiding the zero-header+Zip64+UTF8 combination
+// ZipStream's own docs flag as sometimes tripping up client unzip tools.
+// Zip64 stays on since these archives regularly exceed the 4GB/32-bit
+// limit. Verified end-to-end (STORE + Zip64 + zero-header:false) against a
+// real >4GB file: streamed successfully, and the resulting archive passed
+// full CRC verification via Python's independent zipfile implementation.
+$entries = null;
 $zipName = null;
-
-function buildZip( $entries ) {
-	$tmpPath = "/var/www/html/client/temp/".uniqid( "zip_", true ).".zip";
-	$zip = new ZipArchive();
-	$zip->open( $tmpPath, ZipArchive::CREATE );
-	foreach( $entries as $entryName => $sourcePath ) {
-		$zip->addFile( $sourcePath, $entryName );
-		}
-	$zip->close();
-	return $tmpPath;
-	}
 
 if( $_GET["type"] == "fp" ) {
 	$file = sql_aget( "flatplan_files", "id='".$_GET["id"]."'", "*" );
@@ -33,6 +36,18 @@ if( $_GET["type"] == "fp" ) {
 	$origname = $file[0]["origname"];
 	$path = $file[0]["path"];
 	$name = $file[0]["filename"];
+	}
+
+if( $_GET["type"] == "preflight" ) {
+	$pageInfo = sql_aget( "pageinfo", "id='".$_GET["id"]."'", "*" );
+
+	// preflight_report is the deterministic on-disk filename (needed so a
+	// "_report" submission arriving before the real page's row exists can
+	// still be found later); preflight_origname is what Switch actually
+	// called it - what the user should see as the downloaded filename.
+	$origname = $pageInfo[0]["preflight_origname"];
+	$name = $pageInfo[0]["preflight_report"];
+	$path = TRKPATH.'/packages/'.$pageInfo[0]["code"].'/'.$pageInfo[0]["issue"].'/_preflight';
 	}
 
 if( $_GET["type"] == "asset" ) {
@@ -49,7 +64,6 @@ if( $_GET["type"] == "asset" ) {
 				$temp = explode(".", $file[0]["name"] );
 				$entries[ $file[0]["origname"].".".end($temp) ] = "assets/".$file[0]["pub_id"]."/".$file[0]["parent"]."/".$file[0]["name"];
 				}
-			$zipFile = buildZip( $entries );
 			$zipName = "Archive.zip";
 			}
 
@@ -66,7 +80,6 @@ if( $_GET["type"] == "asset" ) {
 				$temp = explode(".", $files[$i]["name"] );
 				$entries[ $files[$i]["origname"].".".$temp[1] ] = "assets/".$files[$i]["pub_id"]."/".$files[$i]["parent"]."/".$files[$i]["name"];
 				}
-			$zipFile = buildZip( $entries );
 			}
 		}
 
@@ -84,7 +97,6 @@ if( $_GET["type"] == "asset" ) {
 					$temp = explode(".", $file[0]["name"] );
 					$entries[ $file[0]["origname"].".".end( $temp ) ] = "assets/".$file[0]["pub_id"]."/".$file[0]["parent"]."/".$file[0]["name"];
 					}
-				$zipFile = buildZip( $entries );
 				$zipName = "Archive.zip";
 				}
 
@@ -157,7 +169,6 @@ if( $_GET["type"] == "multi" ) {
 		$name = $magazine[0][3]."_".$issue."_".$pages[$i].".pdf";
 		$entries[$name] = $path.'/'.$files[$i];
 		}
-	$zipFile = buildZip( $entries );
 	$zipName = $loc;
 	}
 
@@ -167,12 +178,17 @@ if( $single ) {
 	header("Content-disposition: attachment; filename=\"".$origname."\"");
 	readfile( $path."/".$name );
 	}
-elseif( $zipFile !== null ) {
-	header("Content-Type: application/zip");
-	header("Content-Transfer-Encoding: Binary");
-	header('Content-Length: '.filesize( $zipFile ) );
-	header("Content-disposition: attachment; filename=\"".$zipName."\"");
-	readfile( $zipFile );
-	unlink( $zipFile );
+elseif( $entries !== null ) {
+	$zip = new \ZipStream\ZipStream(
+		outputName: $zipName,
+		contentType: 'application/zip',
+		defaultCompressionMethod: \ZipStream\CompressionMethod::STORE,
+		defaultEnableZeroHeader: false,
+		enableZip64: true,
+		);
+	foreach( $entries as $entryName => $sourcePath ) {
+		$zip->addFileFromPath( fileName: $entryName, path: $sourcePath );
+		}
+	$zip->finish();
 	}
 ?>

@@ -41,13 +41,13 @@ function GetSwitchFlows() {
 	return $result;
 	}
 
-function partDetect( $pubid, $page, $return = "color" ) {
+function partDetect( $pubid, $page, $return = "color", $part = "" ) {
 	$rval = "";
 	$pub = sql_aget( "publications", "id='".$pubid."'", "*" );
 	$mag = sql_aget( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
-	
+
 	if( $pub[0]["publisher_id"] == 0 ) {
-		
+
 		$xml_path = TRKPATH.'/xml/'.$pub[0]["code"].'.xml';
 		}
 	else {
@@ -55,46 +55,69 @@ function partDetect( $pubid, $page, $return = "color" ) {
 		}
 
 	$xml = simplexml_load_file( $xml_path );
-	
-	//echo "<pre>";
-	
-	if( $page > 0 ) {	
+
+	// Prefer matching by the DB part name directly when the caller
+	// knows it. Some issue XMLs export a <part><pages> element (a plain
+	// page COUNT) instead of the <place> page-RANGE the loop below
+	// expects, which makes that loop unable to match anything for those
+	// jobs (in_array() against an all-empty $pages array never hits, so
+	// $rval falls through to the FOGRA_39 default regardless of the
+	// part's real color standard). Matching by name sidesteps the place/
+	// pages format entirely and is unambiguous either way, so it's tried
+	// first whenever the caller has a part name on hand.
+	if( $part != "" ) {
 		$xpath = $xml->xpath('/issueData/parts');
-		foreach($xpath as $temp) {
+		foreach( $xpath as $temp ) {
 			for( $x = 0; $x < count( $temp->part ); $x++ ) {
-				$pages = array();
-				//var_dump( $temp->part[$x] );
-				
-				$places = explode( ",", $temp->part[$x]->place ); 
-				//var_dump( $places );
-				for( $i = 0; $i < count( $places ); $i++ ) {
-					$p = explode( "-", $places[$i] );
-					if( strpos( $places[$i], "-" ) !== false ) {
-						for( $y = $p[0]; $y <= $p[1]; $y++ ) {
-							$pages[] = (string) $y;
-							}
-						}
-					else {
-						for( $y = 0; $y < count( $p ); $y++ ) {
-							$pages[] = $p[$y];
-							}					
-						}
-					}		
-				//var_dump( $pages );
-				if( in_array( $page, $pages ) ) {
+				if( (string) $temp->part[$x]->name == $part ) {
 					$rval = (string) $temp->part[$x]->$return;
-					break;
+					break 2;
 					}
-				//echo "<br><br>";
 				}
-			}	
-		//echo "</pre>";
-		if( empty( $rval ) ) {
-			$rval = "FOGRA_39";
 			}
 		}
-	else {
-		$rval = "FOGRA_39";
+
+	//echo "<pre>";
+
+	if( empty( $rval ) ) {
+		if( $page > 0 ) {
+			$xpath = $xml->xpath('/issueData/parts');
+			foreach($xpath as $temp) {
+				for( $x = 0; $x < count( $temp->part ); $x++ ) {
+					$pages = array();
+					//var_dump( $temp->part[$x] );
+
+					$places = explode( ",", $temp->part[$x]->place );
+					//var_dump( $places );
+					for( $i = 0; $i < count( $places ); $i++ ) {
+						$p = explode( "-", $places[$i] );
+						if( strpos( $places[$i], "-" ) !== false ) {
+							for( $y = $p[0]; $y <= $p[1]; $y++ ) {
+								$pages[] = (string) $y;
+								}
+							}
+						else {
+							for( $y = 0; $y < count( $p ); $y++ ) {
+								$pages[] = $p[$y];
+								}
+							}
+						}
+					//var_dump( $pages );
+					if( in_array( $page, $pages ) ) {
+						$rval = (string) $temp->part[$x]->$return;
+						break;
+						}
+					//echo "<br><br>";
+					}
+				}
+			//echo "</pre>";
+			if( empty( $rval ) ) {
+				$rval = "FOGRA_39";
+				}
+			}
+		else {
+			$rval = "FOGRA_39";
+			}
 		}
 
 	return $rval;
@@ -523,7 +546,7 @@ function PDF_prework( $id ) {
 	$issue = sql_get( 'publications', 'magazine_id="'.$magazine[0][0].'" AND code="'.$pageinfo[0]["issue"].'" LIMIT 1', '*' );
 	
 	if( !empty( $issue[0][0] ) ) {
-		$color = partDetect( $issue[0][0], $pageinfo[0]["page"] );
+		$color = partDetect( $issue[0][0], $pageinfo[0]["page"], "color", $pageinfo[0]["part"] );
 		$dir = TRKPATH."/packages/".$magazine[0][3]."/".$issue[0][10];
 		//error_log( "BENT" );
 		if( $pageinfo[0]["type"] == "ad" ) {
@@ -549,22 +572,32 @@ function PDF_prework( $id ) {
 		if( is_file( $dir."/".$file ) ) {
 			//Méret lekérése, tárolása
 			$command = r3run( 'GETDATA', array(), $dir."/".$file );
-			//error_log( $command );
-			$text = "";
-			$temp = array();
-			$command = explode( "\n", $command );
-			for( $t = 0; $t < 4; $t++ ) {
-				$temp[] = $command[$t];
+			$parsedBoxes = parseR3BoxData( $command );
+
+			// Previously cached whatever R3 returned unconditionally, even
+			// empty/malformed output on an R3 or network failure (r3run()
+			// collapses every failure mode to the same empty response,
+			// see r3client.php) - permanently poisoning this page's size
+			// until manually cleared. Only persist real data, and skip the
+			// preview-generation below entirely rather than rendering
+			// crop/trim JPEGs from a degenerate box - lower severity than
+			// the division/Imagick crash sites elsewhere (this just
+			// produces wrong-but-not-fatal output today), but no reason to
+			// keep doing that once we can tell the difference.
+			if( !$parsedBoxes["valid"] ) {
+				error_log( "PDF_prework: no usable box data for ".$dir."/".$file.", skipping size cache + preview generation" );
+				return;
 				}
-			
-			$text = implode( "\n", $temp );
+
+			$lines = explode( "\n", $command );
+			$text = implode( "\n", array_slice( $lines, 0, 4 ) );
 			sql_update( "pageinfo", "boxes='".$text."'", "id='".$pageinfo[0]["id"]."'" );
-			
+
 			//Színek lekérése, tárolása
 			$command = r3run( 'MEASURE', array( 'x' => 596, 'y' => 760, 'd' => 1, 'r' => 600, 'tprofile' => $color.'.icc' ), $dir.'/'.$file );
 
 			sql_update( "pageinfo", "colors='".$command."'", "id='".$pageinfo[0]["id"]."'" );
-			
+
 			//Preview-ek generálása
 			$f[0]["Name"] = $dir."/".$file;
 			$f[0]["Path"] = $dir."/".$file;
@@ -575,8 +608,8 @@ function PDF_prework( $id ) {
 			$f[0]["Height"] = $sizes['Height'];
 			$f[0]["Left"] = 0;
 			$f[0]["Bottom"] = 0;
-			
-			$box = getPDFBox_TEMP( "Mediabox Trimbox Cropbox Bleedbox", $f[0]["Name"] );			
+
+			$box = getPDFBox_TEMP( "Mediabox Trimbox Cropbox Bleedbox", $f[0]["Name"] );
 			$differences = array(
 				"Left" => ( $box["Cropbox"][0] - $box["Mediabox"][0] ),
 				"Bottom" => ( $box["Cropbox"][1] - $box["Mediabox"][1] ),
@@ -587,10 +620,10 @@ function PDF_prework( $id ) {
 			//Mediabox
 			$correctionBox[2] = $correctionBoxTemp = "mediabox";	
 			$sizes = array(
-				"Left" => $box["Trimbox"][0] - 28.3464567 - $box["Cropbox"][0],
-				"Bottom" => $box["Trimbox"][1] - 28.3464567 - $box["Cropbox"][1],
-				"Right" => $box["Trimbox"][2] + 28.3464567 - $box["Cropbox"][0],
-				"Top" => $box["Trimbox"][3] + 28.3464567 - $box["Cropbox"][1]
+				"Left" => $box["Mediabox"][0] - $box["Cropbox"][0],
+				"Bottom" => $box["Mediabox"][1] - $box["Cropbox"][1],
+				"Right" => $box["Mediabox"][2] - $box["Cropbox"][0],
+				"Top" => $box["Mediabox"][3] - $box["Cropbox"][1]
 				);
 		
 			$correctionBox[0] = $differences;
@@ -2154,8 +2187,40 @@ function searchArticlePost( $post, $name, $page ) {
 	
 	$p_id = sql_get( 'publications', 'magazine_id="'.$p_id[0][0].'" AND code="'.$issue.'"', '*' );
 	$pack_id = 0;
-	if( $pageVersion != "-baseversion-" ) {	
+	if( $pageVersion != "-baseversion-" ) {
 		echo "első<br>";
+
+		// Switch sends an explicit assetType="Advertisement" field for ad
+		// submissions (confirmed live 2026-07-25) - use it as the primary
+		// signal instead of inferring ad-ness purely from a name match,
+		// which the Hybrid $description override makes unreliable ($name
+		// here is the Part code, or empty for European jobs, not the ad's
+		// real name - matching `packages` below by it only "works" by
+		// coincidence, e.g. this job's one shared package also having an
+		// empty name).
+		if( ( $post["assetType"] ?? "" ) == "Advertisement" ) {
+			$ads = sql_get( 'ads', 'pub_id="'.$p_id[0][0].'" AND name="'.$name.'"', '*' );
+			if( $ads[0][0] == "" && $page != "" ) {
+				// Fall back to the position this ad was most recently
+				// booked to - booked_page/booked_part are (re)written on
+				// every push_ad (ajax.php), since an ad can move slots
+				// several times before a final placement is settled.
+				// $post["part"] is the real Part field - NOT
+				// $post["pageType"] (a same-request but unrelated NOR/PRE
+				// page-state flag Switch also sends, confirmed live -
+				// using that here was an earlier bug of mine that made
+				// this fallback silently never match).
+				$adCondition = 'pub_id="'.$p_id[0][0].'" AND booked_page="'.$page.'"';
+				if( $post["part"] != "" ) {
+					$adCondition .= ' AND booked_part="'.$post["part"].'"';
+					}
+				$ads = sql_get( 'ads', $adCondition, '*' );
+				}
+			if( $ads[0][0] != "" ) {
+				return array( $hold, $ads[0][0], "ad" );
+				}
+			}
+
 		$packages = sql_get( 'packages', 'publication_id="'.$p_id[0][0].'" AND name="'.$name.'"', '*' );
 		echo 'publication_id="'.$p_id[0][0].'" AND name="'.$name.'"';
 		echo $packages[0][0];
@@ -2172,6 +2237,30 @@ function searchArticlePost( $post, $name, $page ) {
 		}	
 				
 	$ads = sql_get( 'ads', 'pub_id="'.$p_id[0][0].'" AND name="'.$name.'"', '*' );
+	if( $ads[0][0] == "" && $page != "" && ( $post["assetType"] ?? "" ) == "Advertisement" ) {
+		// Hybrid jobs overwrite the posted name/description with the
+		// target Part code before this function runs (see
+		// page_pdf-handler.php's Workflow=="Hybrid" branch), so the name
+		// match above can never succeed for a booked ad on those jobs -
+		// fall back to matching by the position the ad was most recently
+		// booked to. booked_page/booked_part are (re)written on every
+		// push_ad (ajax.php) - an ad can be moved to a different slot
+		// several times before a final placement is settled, so this
+		// always reflects the latest booking, not the first one. Gated on
+		// Switch's own assetType flag (confirmed live 2026-07-25) rather
+		// than trying unconditionally, so a same-page/part coincidence
+		// with some unrelated ad's booked slot can't misclassify a
+		// genuine editorial page as an ad. $post["part"] is the real Part
+		// field - NOT $post["pageType"] (a same-request but unrelated
+		// NOR/PRE page-state flag Switch also sends, confirmed live -
+		// using that here was an earlier bug of mine that made this
+		// fallback silently never match).
+		$adCondition = 'pub_id="'.$p_id[0][0].'" AND booked_page="'.$page.'"';
+		if( $post["part"] != "" ) {
+			$adCondition .= ' AND booked_part="'.$post["part"].'"';
+			}
+		$ads = sql_get( 'ads', $adCondition, '*' );
+		}
 	if( $ads[0][0] != "" ) {
 		echo "második";
 		$type = "ad";
@@ -2594,13 +2683,18 @@ function adThumbCreate3( $path, $file, $to ) {
 	$terminal = "/var/www/html/client";
 	$trim = getPDFBox2( "Trimbox, Mediabox", "/var/www/html/client/".$file );
 
+	if( empty( $trim["Trimbox"] ) && empty( $trim["Mediabox"] ) ) {
+		error_log( "adThumbCreate3: no usable box data for ".$file.", skipping render" );
+		return false;
+		}
+
 	if( count( $trim["Trimbox"] ?? array() ) > 0 ) {
 		$trim = $trim["Trimbox"];
 		}
 	else {
 		$trim = $trim["Mediabox"];
 		}
-	
+
 	echo implode( " | ", $trim )."<br>";
 	
 	$width = intval( $trim[2] ) - intval( $trim[0] );
@@ -2634,6 +2728,10 @@ function adThumbCreate3( $path, $file, $to ) {
 	error_log( $command );
 
 	$result = r3run( 'RENDER', $renderParams, $from );
+	if( empty( $result ) ) {
+		error_log( "adThumbCreate3: R3 RENDER returned no data for ".$from.", skipping write" );
+		return false;
+		}
 	file_put_contents( $to, $result );
 
 	error_log( $command );
@@ -2659,13 +2757,19 @@ function adThumbCreate3( $path, $file, $to ) {
 function adThumbCreate2( $path, $file, $to ) {
 	$terminal = "/var/www/html/client";
 	$trim = getPDFBox2( "Trimbox, Mediabox", "/var/www/html/client/engine/switch/".$file );
+
+	if( empty( $trim["Trimbox"] ) && empty( $trim["Mediabox"] ) ) {
+		error_log( "adThumbCreate2: no usable box data for ".$file.", skipping render" );
+		return false;
+		}
+
 	if( count( $trim["Trimbox"] ?? array() ) > 0 ) {
 		$trim = $trim["Trimbox"];
 		}
 	else {
 		$trim = $trim["Mediabox"];
 		}
-	
+
 	echo implode( " | ", $trim )."<br>";
 	
 	$width = intval( $trim[2] ) - intval( $trim[0] );
@@ -2696,6 +2800,10 @@ function adThumbCreate2( $path, $file, $to ) {
 	error_log( $command );
 
 	$result = r3run( 'RENDER', $renderParams, $from );
+	if( empty( $result ) ) {
+		error_log( "adThumbCreate2: R3 RENDER returned no data for ".$from.", skipping write" );
+		return false;
+		}
 	file_put_contents( $to, $result );
 
 	$handle = fopen( "r3Thumb.txt", 'a+');
@@ -2718,14 +2826,25 @@ function adThumbCreate2( $path, $file, $to ) {
 
 function adThumbCreate( $path, $file, $to ) {
 	$terminal = "/var/www/html/client";
+	// Note: getPDFBox() expects a pageinfo DB row as its 2nd argument, not
+	// a raw path string as passed here - same pre-existing call-convention
+	// bug as thumbCreate()'s, left as-is (out of scope for this fix). The
+	// guard below still protects against a crash regardless of why box
+	// data might be missing.
 	$trim = getPDFBox( "Trimbox ", "message/".$file );
+
+	if( empty( $trim["Trimbox"] ) && empty( $trim["Mediabox"] ) ) {
+		error_log( "adThumbCreate: no usable box data for ".$file.", skipping render" );
+		return false;
+		}
+
 	if( count( $trim["Trimbox"] ?? array() ) > 0 ) {
 		$trim = $trim["Trimbox"];
 		}
 	else {
 		$trim = $trim["Mediabox"];
 		}
-	
+
 	echo implode( " | ", $trim )."<br>";
 	
 	$width = intval( $trim[2] ) - intval( $trim[0] );
@@ -2756,6 +2875,10 @@ function adThumbCreate( $path, $file, $to ) {
 
 	echo $command."<br>";
 	$result = r3run( 'RENDER', $renderParams, $from );
+	if( empty( $result ) ) {
+		error_log( "adThumbCreate: R3 RENDER returned no data for ".$from.", skipping write" );
+		return false;
+		}
 	file_put_contents( $to, $result );
 
 	$handle = fopen( "r3Thumb.txt", 'a+');
@@ -2778,17 +2901,28 @@ function adThumbCreate( $path, $file, $to ) {
 
 function thumbCreate2( $file, $pageWidth, $color = "" ) {
 	$trim = getPDFBox2( "Trimbox ", $file );
+
+	// getPDFBox2() returns no "Trimbox" key at all when R3 couldn't
+	// extract usable box data (missing/corrupt PDF, R3/network failure -
+	// r3run() collapses every failure mode to the same empty response, see
+	// r3client.php) - bail here rather than dividing by a zero-height
+	// degenerate box, which used to throw an uncaught DivisionByZeroError
+	// and fatal the whole request (confirmed live 2026-07-24).
+	if( empty( $trim["Trimbox"] ) ) {
+		error_log( "thumbCreate2: no usable Trimbox for ".$file.", skipping render" );
+		return false;
+		}
 	$trim = $trim["Trimbox"];
 
 	$height = 400;
 	$percent = $height/( intval( $trim[3] ) - intval( $trim[1] ) )*100;
 	$width = ceil( ( intval( $trim[2] ) - intval( $trim[0] ) ) / 100 * $percent );
 	if( intval( $pageWidth ) > 1 ) $width *= $pageWidth;
-	
-	
+
+
 	$from = $file;
 	$to = substr($file, 0, -4).".jpg";
-	
+
 	if( empty( $color ) ) {
 		$color = "FOGRA_39";
 		}
@@ -2806,6 +2940,15 @@ function thumbCreate2( $file, $pageWidth, $color = "" ) {
 	error_log( $command );
 
 	$result = r3run( 'RENDER', $renderParams, $from );
+
+	// Same "R3 failure looks identical to empty success" problem as
+	// GETDATA - an empty RENDER result used to get written to disk
+	// unconditionally, leaving a 0-byte "thumbnail" that looked like a
+	// successful render to any later is_file() check.
+	if( empty( $result ) ) {
+		error_log( "thumbCreate2: R3 RENDER returned no data for ".$from.", skipping write" );
+		return false;
+		}
 	file_put_contents( $to, $result );
 
 	$handle = fopen( "r3Thumb.txt", 'a+');
@@ -2822,20 +2965,31 @@ function thumbCreate2( $file, $pageWidth, $color = "" ) {
 function thumbCreate( $path, $file, $to, $pageWidth ) {
 	$terminal = "/var/www/html/client";
 	$file = substr( $file, 3 );
+	// Note: getPDFBox() expects a pageinfo DB row as its 2nd argument, not
+	// a raw file path string as passed here - a pre-existing call-
+	// convention bug (same class as adThumbCreate()'s, left as-is per the
+	// robustness plan's scope), not something this fix attempts to
+	// correct. The guard below still applies regardless of why Trimbox
+	// data might be missing.
 	$trim = getPDFBox( "Trimbox ", $file );
+
+	if( empty( $trim["Trimbox"] ) ) {
+		error_log( "thumbCreate: no usable Trimbox for ".$file.", skipping render" );
+		return false;
+		}
 	$trim = $trim["Trimbox"];
 
 	$height = 125;
 	$percent = $height/( intval( $trim[3] ) - intval( $trim[1] ) )*100;
 	$width = ceil( ( intval( $trim[2] ) - intval( $trim[0] ) ) / 100 * $percent );
 	if( intval( $pageWidth ) > 1 ) $width *= $pageWidth;
-	
+
 	$from = $terminal."/".$file;
-	
+
 	$to = explode( "/", $to );
 	$to = substr($to[( count($to)-1 )], 0, -4).".jpg";
 	$to = $terminal."/".substr( $path, 3 )."/".$to;
-	
+
 	$renderParams = array(
 		'left' => $trim[0], 'right' => $trim[2],
 		'bottom' => $trim[1], 'top' => $trim[3],
@@ -2845,6 +2999,10 @@ function thumbCreate( $path, $file, $to, $pageWidth ) {
 	$command = json_encode( $renderParams )." ".$from." -> ".$to;
 
 	$result = r3run( 'RENDER', $renderParams, $from );
+	if( empty( $result ) ) {
+		error_log( "thumbCreate: R3 RENDER returned no data for ".$from.", skipping write" );
+		return false;
+		}
 	file_put_contents( $to, $result );
 
 	$handle = fopen( "r3Thumb.txt", 'a+');
@@ -3133,7 +3291,28 @@ function getColors( $pdfPath ) {
   }
 
 function checkPageStatus( $page, $id, $pack_id, $alter, $state = '', $issue = null, $magazine = null, $part = "" ) {
-	if( $alter == "" ) {
+	// A job with FlatplanStages==1 has only one flatplan - the fin bit
+	// some of its pages carry isn't a second stage to check this page's
+	// status against (see page_pdf-handler.php's $stages1 handling).
+	// Some callers (vflatplan_*) don't pass $magazine at all - skip the
+	// lookup rather than querying with an empty code.
+	$stages1 = false;
+	if( !empty( $magazine[0][3] ) ) {
+		$wfXml = simplexml_load_file( TRKPATH.'/xml/'.PMD.'.xml' );
+		$wfXpath = $wfXml->xpath('/Publications');
+		foreach( $wfXpath as $wfTemp ) {
+			for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+				if( $wfTemp->Item[$wfI]->Code == $magazine[0][3] )
+					break;
+				}
+			}
+		$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
+		}
+
+	if( $stages1 && ( $alter == "" or $alter == "FIN" ) ) {
+		$alter = 'type!="PRE" AND type!="PSTR"';
+		}
+	elseif( $alter == "" ) {
 		$alter = 'type!="PRE" AND type!="PSTR" AND fin="0"';
 		}
 	elseif( $alter == "FIN" ) {
@@ -3141,8 +3320,8 @@ function checkPageStatus( $page, $id, $pack_id, $alter, $state = '', $issue = nu
 		}
 	else {
 		$alter = 'type="'.$alter.'"';
-		}	
-		
+		}
+
 	$checker = sql_get( 'pageinfo', 'issue="'.$issue[0][10].'" AND '.$alter.' AND state="'.$state.'" AND code="'.$magazine[0][3].'" AND page="'.$page.'" AND part="'.$part.'"', '*' );
 	return array( $checker[0][4], $checker[0][0] );
 	}
@@ -3153,6 +3332,28 @@ function checkPagePair( $id, $pack_id, $page, $tag, $alter = '', $prefix = '', $
 			$prefix = ".";
 			break;
 		}
+
+	// A job with FlatplanStages==1 has only one flatplan - the fin bit
+	// some of its pages carry (e.g. ads are conventionally submitted FIN
+	// while editorial pages arrive NOR - see page_pdf-handler.php's
+	// $stages1 handling) isn't a second stage to resolve this page's
+	// render against, so the lookup/file-path branch below stops
+	// filtering by fin and instead trusts whichever single row it finds.
+	// Some callers (vflatplan_*) don't pass $magazine at all - skip the
+	// lookup rather than querying with an empty code.
+	$stages1 = false;
+	if( !empty( $magazine[0][3] ) ) {
+		$wfXml = simplexml_load_file( TRKPATH.'/xml/'.PMD.'.xml' );
+		$wfXpath = $wfXml->xpath('/Publications');
+		foreach( $wfXpath as $wfTemp ) {
+			for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+				if( $wfTemp->Item[$wfI]->Code == $magazine[0][3] )
+					break;
+				}
+			}
+		$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
+		}
+
 	$pack = sql_get( 'packages', 'id="'.$pack_id.'"', '*' );
 	$max = intval( $issue[0][6] )+1;
 	if( $max == 1 ) {
@@ -3187,26 +3388,40 @@ function checkPagePair( $id, $pack_id, $page, $tag, $alter = '', $prefix = '', $
 	
 	foreach( $pages as $page ) {
 		$file2 = '';
+		// $part was built above as 'AND part="..."' (or '' for Regular/
+		// European pubs) for the pair-neighbor check, but none of these
+		// three per-page lookups actually applied it - on an American-
+		// numbering job where page numbers restart at 1 per part, that
+		// let this resolve to a different part's same-numbered page,
+		// picked essentially by luck of query/row order. Appending it
+		// here is a no-op wherever $part is empty.
 		if( $alter != "" and $alter != "FIN" ) {
 			$dir = $prefix."./packages/".$magazine[0][3]."/".$issue[0][10]."/_".strtoupper( $_GET['alter'] );
-			$pageinfo = sql_get( 'pageinfo', 'type="'.$alter.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$page.'"', '*' );
+			$pageinfo = sql_get( 'pageinfo', 'type="'.$alter.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$page.'" '.$part, '*' );
 			$file2 = str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_preview.pdf";
 			}
-		elseif( $tag != "" and $alter != "FIN" ) {	
-			$pageinfo = sql_get( 'pageinfo', 'state="'.$tag.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$page.'"', '*' );
+		elseif( $tag != "" and $alter != "FIN" ) {
+			$pageinfo = sql_get( 'pageinfo', 'state="'.$tag.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$page.'" '.$part, '*' );
 			$packinfo = sql_aget( "packages", "id='".$pageinfo[0][1]."'", "name, directory" );
 			$dir = $prefix."./packages/".$magazine[0][3]."/".$issue[0][10]."/".$packinfo[0]["directory"];
 			if( $pageinfo[0][11] == 1 ) {
 				$dir.= "/FIN";
 				}
 			$file2 = str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$tag."preview.pdf";
-			
+
 			}
 		else {
-			if( $alter == "FIN" ) $fin = ' AND fin="1"';
-			else $fin = " AND fin='0'";
-			
-			$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND'.( $tag != "" ? ' state="'.$tag.'" AND' : ' state="" AND' ).' code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$page.'"'.$fin, '*' );
+			if( $stages1 ) {
+				$fin = '';
+				}
+			elseif( $alter == "FIN" ) {
+				$fin = ' AND fin="1"';
+				}
+			else {
+				$fin = " AND fin='0'";
+				}
+
+			$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND'.( $tag != "" ? ' state="'.$tag.'" AND' : ' state="" AND' ).' code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$page.'"'.$fin.' '.$part, '*' );
 
 			if( $pageinfo[0][6] == "ad" ) {
 				$dir = $prefix."./packages/".$magazine[0][3]."/".$issue[0][10]."/_ads";
@@ -3215,10 +3430,15 @@ function checkPagePair( $id, $pack_id, $page, $tag, $alter = '', $prefix = '', $
 			else {
 				$pack = sql_get( 'packages', 'id="'.$pageinfo[0][1].'"', '*' );
 				$dir = $prefix."./packages/".$magazine[0][3]."/".$issue[0][10]."/".$pack[0][4];
-				if( $alter == "FIN" ) $dir .= "/FIN";
+				// A 1-stage job's render lives wherever page_pdf-handler.php
+				// actually stored it based on this row's own fin (index 11),
+				// not wherever the requested $alter would otherwise imply.
+				if( $stages1 ? $pageinfo[0][11] == 1 : $alter == "FIN" ) {
+					$dir .= "/FIN";
+					}
 				$file2 = str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$tag."preview.pdf";
 				}
-				
+
 			$dir = str_replace( "//", "/",  $dir);
 			}
 			
@@ -3397,47 +3617,146 @@ function mmToPsp( $mm ) {
 	return ($mm*2.83464567);
 	}
 
-function getPDFBox2( $box, $file ) {
-	$data = array();
-	$boxes = explode( " ", $box );
-	$command = r3run( 'GETDATA', array(), $file );
-	
-	$command = explode( "\n", $command );
-	for( $i = 0; $i < 4; $i++ ) {
-		$temp = explode( " = ", $command[$i] );
-		if( in_array( ucfirst( strtolower( $temp[0] ) ), $boxes ) ) {
-			$temp[1] = explode( " ", $temp[1] );
-			for( $y = 1; $y < 5; $y++ ) {
-				$data[ ucfirst( strtolower( $temp[0] ) ) ][] = $temp[1][$y];
-				}			
+// Shared, validated parser for R3's GETDATA text output (used by
+// getPDFBox()/getPDFBox2()/getPDFBox_TEMP()/getBBox() - previously each
+// duplicated the same fragile explode()/blind-index parsing with zero
+// validation, so an empty or malformed R3 response (missing file, R3/
+// network failure - r3run() returns '' on every failure mode with no way
+// to tell them apart, see r3client.php) silently produced degenerate
+// (zero-width/height) box data that crashed callers doing division
+// (thumbCreate2() etc.) or handed Imagick zero/negative geometry
+// (flatplan_ajax.php etc.). Accepts a box as usable only if all 4
+// coordinates parse as real numbers AND describe a non-degenerate
+// rectangle (width>0, height>0) - never returns a box callers can silently
+// divide-by-zero on.
+//
+// Real R3 output line shape (confirmed live): "MediaBox = [ 0 0 581.102
+// 782.362 ]" - filtering to just the numeric tokens (rather than blindly
+// indexing after an " = " split) tolerates the bracket punctuation and
+// any missing/extra whitespace without extra special-casing.
+//
+// Returns array( 'boxes' => array( 'Mediabox' => [x1,y1,x2,y2], ... ),
+// 'resolvedFrom' => array( 'Trimbox' => 'Mediabox', ... ), 'valid' =>
+// bool ). 'valid' is true iff at least one of the four box types could be
+// resolved (directly or via the fallback cascade below) - false means R3
+// gave us nothing usable at all. 'resolvedFrom' records when a box type
+// was substituted from another (e.g. Trimbox missing, Mediabox used
+// instead) so callers doing box-*relative* math (bleed offset = Trimbox -
+// Cropbox, say) can tell a substitution happened rather than silently
+// computing a plausible-but-wrong number - this matters more once a
+// future workflow needs genuinely per-page-variable sizes, not just a
+// per-job constant.
+function parseR3BoxData( $rawOutput ) {
+	$result = array( "boxes" => array(), "resolvedFrom" => array(), "valid" => false );
+
+	$lines = explode( "\n", (string) $rawOutput );
+	$rawBoxes = array();
+	for( $i = 0; $i < 4 && $i < count( $lines ); $i++ ) {
+		$temp = explode( " = ", $lines[$i] );
+		if( count( $temp ) < 2 ) {
+			continue;
+			}
+		$name = ucfirst( strtolower( trim( $temp[0] ) ) );
+
+		$nums = array();
+		foreach( preg_split( '/\s+/', trim( $temp[1] ) ) as $token ) {
+			if( is_numeric( $token ) ) {
+				$nums[] = floatval( $token );
+				}
+			}
+
+		if( count( $nums ) == 4 && ( $nums[2] - $nums[0] ) > 0 && ( $nums[3] - $nums[1] ) > 0 ) {
+			$rawBoxes[ $name ] = $nums;
 			}
 		}
-	
+
+	$cascade = array( "Trimbox", "Mediabox", "Cropbox", "Bleedbox" );
+	$firstValid = null;
+	foreach( $cascade as $name ) {
+		if( !empty( $rawBoxes[ $name ] ) ) {
+			$firstValid = $name;
+			break;
+			}
+		}
+
+	if( $firstValid === null ) {
+		return $result;
+		}
+
+	foreach( $cascade as $name ) {
+		if( !empty( $rawBoxes[ $name ] ) ) {
+			$result["boxes"][ $name ] = $rawBoxes[ $name ];
+			}
+		else {
+			$result["boxes"][ $name ] = $rawBoxes[ $firstValid ];
+			$result["resolvedFrom"][ $name ] = $firstValid;
+			}
+		}
+	$result["valid"] = true;
+
+	return $result;
+	}
+
+// Some call sites (multi-box layout math feeding an Imagick::newImage()
+// downstream) are too deeply interdependent to cleanly bail out of
+// mid-computation without risking a subtle restructuring bug in code with
+// many intermediate variables - for those, substituting a small valid
+// placeholder rectangle for all four box types (rather than leaving
+// missing/zero data that Imagick would throw on) lets the existing
+// arithmetic run unmodified and produce *something* on screen, clearly
+// logged, instead of a fatal. Only appropriate for live/interactive
+// preview responses, not anything that gets persisted as if it were a
+// real render (see thumbCreate2() etc., which bail outright instead).
+function boxOrPlaceholder( $box, $context = '' ) {
+	if( !empty( $box["Mediabox"] ) && !empty( $box["Trimbox"] ) && !empty( $box["Cropbox"] ) && !empty( $box["Bleedbox"] ) ) {
+		return $box;
+		}
+
+	error_log( "boxOrPlaceholder: no usable box data".( $context != '' ? " for ".$context : "" ).", using placeholder geometry" );
+	$placeholder = array( 0, 0, 100, 100 );
+	return array( "Mediabox" => $placeholder, "Trimbox" => $placeholder, "Cropbox" => $placeholder, "Bleedbox" => $placeholder );
+	}
+
+function getPDFBox2( $box, $file ) {
+	$boxes = preg_split( '/[\s,]+/', trim( $box ), -1, PREG_SPLIT_NO_EMPTY );
+	$command = r3run( 'GETDATA', array(), $file );
+	$parsed = parseR3BoxData( $command );
+
+	if( !$parsed["valid"] ) {
+		error_log( "getPDFBox2: R3 returned no usable box data for ".$file );
+		return array();
+		}
+
+	$data = array();
+	foreach( $boxes as $name ) {
+		$name = ucfirst( strtolower( trim( $name ) ) );
+		if( isset( $parsed["boxes"][ $name ] ) ) {
+			$data[ $name ] = $parsed["boxes"][ $name ];
+			}
+		}
+
 	return $data;
 	}
 
 function getPDFBox( $box, $pageinfo ) {
-	$data = array();
-	$boxes = explode( " ", $box );
-	
-	//error_log( "Pageinfo ID: ".$pageinfo[0][0] );
-	if( !empty( $pageinfo[0][14] ) ) {
-		//error_log( "NEM ÜRES" );
-		$command = explode( "\n", $pageinfo[0][14] );
+	$boxes = preg_split( '/[\s,]+/', trim( $box ), -1, PREG_SPLIT_NO_EMPTY );
+	$fromCache = !empty( $pageinfo[0][14] );
+
+	if( $fromCache ) {
+		$rawOutput = $pageinfo[0][14];
 		}
 	else {
-		//error_log( "ÜRES" );
 		$pack = sql_get( 'packages', 'id="'.$pageinfo[0][1].'" LIMIT 1', '*' );
 		$issue = sql_get( 'publications', 'id="'.$pack[0][1].'" LIMIT 1', '*' );
-		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'" LIMIT 1', '*' );		
-		
+		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'" LIMIT 1', '*' );
+
 		$dir = TRKPATH."/packages/".$magazine[0][3]."/".$issue[0][10];
-		
+
 		if( $pageinfo[0][6] == "ad" ) {
 			$dir .= "/_ads";
 			$file = str_pad( $pageinfo[0][5], 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$pageinfo[0][8]."ad_preview.pdf";
 			}
-			
+
 		else {
 			$pack = sql_get( 'packages', 'id="'.$pageinfo[0][1].'"', '*' );
 			if( $pageinfo[0][6] == "PRE" ) {
@@ -3446,61 +3765,53 @@ function getPDFBox( $box, $pageinfo ) {
 			else {
 				$dir .= "/".$pack[0][4];
 				}
-			
-			if( $pageinfo[0][11] == "1" ) $dir .= "/FIN";
-			
-			
-			$file = str_pad( $pageinfo[0][5], 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$pageinfo[0][8]."preview.pdf";
-			
-			}		
-		
-		$file = $dir."/".$file;
-		
-		$command = r3run( 'GETDATA', array(), $file );
 
-		$command = explode( "\n", $command );
-		for( $t = 0; $t < 4; $t++ ) {
-			$temp[] = $command[$t];
+			if( $pageinfo[0][11] == "1" ) $dir .= "/FIN";
+
+
+			$file = str_pad( $pageinfo[0][5], 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$pageinfo[0][8]."preview.pdf";
+
 			}
-					
-		$text = implode( "\n", $temp );	
+
+		$file = $dir."/".$file;
+
+		$rawOutput = r3run( 'GETDATA', array(), $file );
+		}
+
+	$parsed = parseR3BoxData( $rawOutput );
+
+	// Only persist the cache when R3 actually gave us something usable -
+	// caching garbage/empty output permanently poisoned this page's size
+	// until manually cleared (the resubmission-reset fix added separately
+	// guards the OTHER direction - a fresh page invalidating a stale
+	// cache; this guards the initial-population direction).
+	if( $parsed["valid"] && !$fromCache ) {
+		$lines = explode( "\n", $rawOutput );
+		$text = implode( "\n", array_slice( $lines, 0, 4 ) );
 		sql_update( "pageinfo", "boxes='".$text."'", "id='".$pageinfo[0][0]."'" );
 		}
-		
-	for( $i = 0; $i < 4; $i++ ) {
-		$temp = explode( " = ", $command[$i] );
-		if( in_array( ucfirst( strtolower( $temp[0] ) ), $boxes ) ) {
-			$temp[1] = explode( " ", $temp[1] );
-			for( $y = 1; $y < 5; $y++ ) {
-				$data[ ucfirst( strtolower( $temp[0] ) ) ][] = $temp[1][$y];
-				}			
+
+	if( !$parsed["valid"] ) {
+		error_log( "getPDFBox: R3 returned no usable box data for pageinfo id ".( $pageinfo[0][0] ?? '?' ) );
+		return array();
+		}
+
+	$data = array();
+	foreach( $boxes as $name ) {
+		$name = ucfirst( strtolower( trim( $name ) ) );
+		if( isset( $parsed["boxes"][ $name ] ) ) {
+			$data[ $name ] = $parsed["boxes"][ $name ];
 			}
 		}
-	
-	if( empty( $data["Trimbox"] ) ) {
-		$data["Trimbox"] = $data["Mediabox"];
-		}
+
 	return $data;
 	}
 
+// Was a byte-for-byte copy-paste of getPDFBox2() under a different name -
+// now a straight alias so the validation/fallback hardening only has to
+// live in one place.
 function getPDFBox_TEMP( $box, $file ) {
-	$data = array();
-	$boxes = explode( " ", $box );
-	
-	$command = r3run( 'GETDATA', array(), $file );
-
-	$command = explode( "\n", $command );
-	for( $i = 0; $i < 4; $i++ ) {
-		$temp = explode( " = ", $command[$i] );
-		if( in_array( ucfirst( strtolower( $temp[0] ) ), $boxes ) ) {
-			$temp[1] = explode( " ", $temp[1] );
-			for( $y = 1; $y < 5; $y++ ) {
-				$data[ ucfirst( strtolower( $temp[0] ) ) ][] = $temp[1][$y];
-				}			
-			}
-		}
-	
-	return $data;
+	return getPDFBox2( $box, $file );
 	}
 
 function getBBoxMeasure( $file, $path, $box = 'mediabox' ) {
@@ -3538,40 +3849,37 @@ function getBBoxMeasure( $file, $path, $box = 'mediabox' ) {
 	return $sizes;
 	}
 
+// Returns Width=0/Height=0 (rather than the old null-on-total-failure
+// behavior) when R3 gave nothing usable for the requested box - callers
+// already read Width/Height for their own arithmetic, so checking those
+// for <=0 is the natural "did this actually work" signal, without needing
+// a separate flag bolted onto this function's long-established return
+// shape.
 function getBBox( $file, $path, $box = 'mediabox' ) {
-	//error_log( "DEBUG ");
-	//error_log( $file );
-	//error_log( strpos( $file, "/var/www/html/client" ) );
 	if( strpos( $file, "/var/www/html/client" ) === false ) {
 		$file = TRKPATH."/".str_replace( "../", "", $file );
 		}
-	
-	$box = ucfirst( strtolower( $box ) );
-	$boxes = explode( " ", $box );
-	
-	// echo $file."<br>";
-	
-	$command = r3run( 'GETDATA', array(), $file );
 
-	// echo $command."<br>";
-	$command = explode( "\n", $command );
-	for( $i = 0; $i < 4; $i++ ) {
-		$temp = explode( " = ", $command[$i] );
-		if( in_array( ucfirst( strtolower( $temp[0] ) ), $boxes ) ) {
-			$temp[1] = explode( " ", $temp[1] );
-			
-			$data[ ucfirst( strtolower( $temp[0] ) ) ]["Left"] = $temp[1][1];
-			$data[ ucfirst( strtolower( $temp[0] ) ) ]["Bottom"] = $temp[1][2];
-			$data[ ucfirst( strtolower( $temp[0] ) ) ]["Right"] = $temp[1][3];
-			$data[ ucfirst( strtolower( $temp[0] ) ) ]["Top"] = $temp[1][4];
-			$data[ ucfirst( strtolower( $temp[0] ) ) ]["Width"] = $temp[1][3] - $temp[1][1];
-			$data[ ucfirst( strtolower( $temp[0] ) ) ]["Height"] = $temp[1][4] - $temp[1][2];
-			}
+	$boxName = ucfirst( strtolower( $box ) );
+
+	$command = r3run( 'GETDATA', array(), $file );
+	$parsed = parseR3BoxData( $command );
+
+	if( !$parsed["valid"] || !isset( $parsed["boxes"][ $boxName ] ) ) {
+		error_log( "getBBox: R3 returned no usable ".$boxName." data for ".$file );
+		return array( "Left" => 0, "Bottom" => 0, "Right" => 0, "Top" => 0, "Width" => 0, "Height" => 0 );
 		}
-	
-	$result = $data[ ucfirst( strtolower( $box ) ) ];
-	
-	return $result;
+
+	list( $left, $bottom, $right, $top ) = $parsed["boxes"][ $boxName ];
+
+	return array(
+		"Left" => $left,
+		"Bottom" => $bottom,
+		"Right" => $right,
+		"Top" => $top,
+		"Width" => $right - $left,
+		"Height" => $top - $bottom,
+		);
 	}
 
 function nevelo( $string, $lang ) {

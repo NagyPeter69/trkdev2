@@ -191,7 +191,13 @@ if( $_GET['op'] == 'load_publications' ) {
 				$current .= "</div>";
 				$hambsvg = file_get_contents( TRKPATH."/images/settingsGray.svg" );
 				$current .= "<div class='pubSettingsDot' onclick=\"issueOperation({".$management."}, '".$magazines[$i][3]."', '".$cur."' )\" style='".(  ( $status == "approved" && $magazines[$i][10] == "Adhoc" ) ? "visibility: hidden;" : "" )."'><div class='".$magazines[$i][3]."_".$cur."' style='pointer-events: none;'>".$hambsvg."</div></div>";
-				$current .= "<div id='".$pub[0][0]."_status' class='pubStatus' style='float:left; margin-left: 5px; width: 100px; height: 1px;'>".$lang["publications"][$status]." ".( $pub[0][18] != 0 ? $ajax_flower : "" )."</div>";
+				// Width padded beyond the raw status text (e.g. the
+				// "archiving" status's own label is itself a compound
+				// "Archiving... [spinner]" string, not plain text - see
+				// lang/en.php) to leave room for the trailing spinner
+				// instead of it being squeezed flush against/past the
+				// column's edge.
+				$current .= "<div id='".$pub[0][0]."_status' class='pubStatus' style='float:left; margin-left: 5px; width: 140px; height: 1px;'>".$lang["publications"][$status]." ".( $pub[0][18] != 0 ? $ajax_flower : "" )."</div>";
 
 				$timeLeft = strtotime( $publications[0][11] )-time();
 				$day = $hour = "";
@@ -274,7 +280,16 @@ if( $_GET['op'] == 'load_publications' ) {
 						}
 						
 					$txt .= "<div ".$mset." style='position:absolute; ";
-					if( $i == 0 && count( $magazines ) > 1 ) $txt .= "top:0px !important; padding-bottom:4px !important;";
+					// This used to also set padding-bottom:4px !important for the
+					// first row - directly contradicted by the unconditional
+					// padding-bottom:0px right below, which the comment there
+					// says is the actual fix (30px row + 4px padding rendered
+					// 34px total, so the swatch stuck out past the row's own
+					// bottom edge). !important always wins regardless of source
+					// order, so that 4px was never actually overridden for row
+					// 0 - it's just been silently reintroducing the exact bug
+					// the 0px was added to fix, only for the first row.
+					if( $i == 0 && count( $magazines ) > 1 ) $txt .= "top:0px !important;";
 					// .jline (the row) is 30px tall in CSS - height:31px plus this
 					// padding-bottom used to render 32px total, so the swatch stuck
 					// 1-2px past the row's actual bottom border (the separator line
@@ -350,7 +365,13 @@ if( $_GET['op'] == 'load_publications' ) {
 								$submanagemenet = getPubButtons( $status, $publications2[$y], $process, $rights );
 								$hambsvg = file_get_contents( TRKPATH."/images/settingsGray.svg" );
 								$txt .= "<div class='pubSettingsDot' onclick=\"issueOperation({".$submanagemenet."}, '".$magazines[$i][3]."', '".$publications2[$y][10]."' )\"><div class='".$magazines[$i][3]."_".$publications2[$y][10]."' style='pointer-events: none;'>".$hambsvg."</div></div>";
-								$txt .= "<div  id='".$publications2[$y][0]."_status' class='pubStatus' style='float:left; margin-left: 5px; line-height:30px; text-align: left;  width: 100px;'>";
+								// Width padded beyond the raw status text (e.g. the
+								// "archiving" status's own label is itself a
+								// compound "Archiving... [spinner]" string, not
+								// plain text - see lang/en.php) to leave room for
+								// the trailing spinner instead of it being
+								// squeezed flush against/past the column's edge.
+								$txt .= "<div  id='".$publications2[$y][0]."_status' class='pubStatus' style='float:left; margin-left: 5px; line-height:30px; text-align: left;  width: 140px;'>";
 									if( $status == 'active' or $status == 'current' ) {
 										$txt .= $lang['publications']['active'];
 										}

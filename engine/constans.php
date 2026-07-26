@@ -9,6 +9,12 @@ define( "FPUPLOAD_PATH", "/var/www/html/client/flatplan_uploads" );
 define( "PENZUGY", "ugyvitel@colorcom.hu" );
 define( "TRKPATH", "/var/www/html/client" );
 define( "XMLPATH", "/var/www/html/client/xml" );
+// Local on-disk short name (client/xml/pmd.xml) vs. the long name Switch
+// itself uses for the same dataset (Publications_Master_Data.xml) - see
+// XMLUpload2()/pmdDevSafeName() in engine/xml_handler.php for how the two
+// are bridged.
+define( "PMD", "pmd" );
+define( "PMD_LONG", "Publications_Master_Data" );
 define( "DUMMYPDF", "/var/www/html/client/engine/dummy.pdf" );
 define( "RENDERIP", "10.10.30.122");
 define( "DYNAIP", "10.10.30.60" );

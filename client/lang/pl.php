@@ -153,6 +153,7 @@
 								),	
 			"xml" =>  array (
 						"Publisher" => 'Client',
+					"SelectClient" => 'Select Client',
 						"Current" => 'Current Issue',
 						"AdAutoProof" => 'Proof Print Uploaded Ads',
 						"Workflow" => 'Workflow Type',
@@ -268,6 +269,7 @@
 							"ad" => 'Advertisement Sizes',
 							"del_mag" => 'Remove Publication',
 							"new_issue" => 'Create New Issue',
+							"new_issue_for" => 'Create New Issue for %s &ndash; %s',
 							"mod_issue" => 'Modify Issue',
 							"settings" => 'Settings',
 							"iCode" => 'Issue code',

@@ -527,16 +527,24 @@ select {
 	}
 
 #assets_table td:nth-child(4) {
+	padding-right: 25px;
+	width: 100px;
+	min-width: 100px;
+	max-width: 100px;
+	}
+
+#assets_table td:nth-child(5) {
+	padding-left: 15px;
 	width: 65px;
 	min-width: 65px;
 	max-width: 65px;
 	}
 
-#assets_table td:nth-child(5) {
+#assets_table td:nth-child(6) {
 	padding-right: 10px;
 	width: 200px;
 	min-width: 200px;
-	max-width: 200px;	
+	max-width: 200px;
 	}
 
 .boxSelected {
@@ -954,12 +962,30 @@ div .tlBox:not(:last-child) {
 	}
 
 .pubSettingsDot {
-	float:left;
-	margin-top: 4px;
+	/* margin-top used to nudge this into position under the old float-
+	   based row layout; .pub_info is a flex row with align-items:center
+	   now (see the comment there), which already centers this - the old
+	   margin just pushed it back off-center again on top of that. */
 	width: 10px;
 	height: 22px;
 	text-align: left;
 	cursor: pointer;
+	}
+
+/* settingsGray.svg has a viewBox but no width/height attributes, and
+   nothing sized its wrapper div or the svg itself to match .pubSettingsDot's
+   10x22px box - without that, the svg falls back to its intrinsic/default
+   render size, gets clipped by .pub_info > div's overflow:hidden, and ends
+   up looking anchored to the top of the row instead of centered, no matter
+   how correctly .pubSettingsDot itself is centered by its flex parent. */
+.pubSettingsDot > div {
+	width: 100%;
+	height: 100%;
+	}
+.pubSettingsDot svg {
+	display: block;
+	width: 100%;
+	height: 100%;
 	}
 
 .jline {
@@ -971,10 +997,6 @@ div .tlBox:not(:last-child) {
 	}
 .jline:hover {
 	background: #FFF8CC;
-	}
-
-.jline:hover .pubSettingsDot svg {
-	
 	}
 
 .jline:hover .weekend {
@@ -1354,15 +1376,11 @@ div .tlBox:not(:last-child) {
 .pub_listing td {
 	padding: 0;
 	height: 30px !important;
-	border-top: 1px solid rgb( 230, 230, 230 );
 	font-size: 14px;
    	-webkit-transition: all 0.3s ease-out;
    	-moz-transition:    all 0.3s ease-out;
    	-ms-transition:     all 0.3s ease-out;
    	-o-transition:      all 0.3s ease-out;
-	}
-.pub_listing tr:last-child td {
-	border-bottom: 1px solid rgb( 230, 230, 230 );
 	}
 
 .pub_listing tr td:not(:first-child) {

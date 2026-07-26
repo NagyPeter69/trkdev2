@@ -317,6 +317,41 @@
 		return $pmdName;
 		}
 
+	// The "1/1" Advertisement Size is always the trimmed size of the
+	// publication's Inside part (PARTTYPES code "BEL") - rather than making
+	// users re-enter a value the Parts & Color data already carries, keep
+	// ad_sizes in sync with it directly whenever that part's size becomes
+	// known: Regular's Parts & Color save, Regular's new-issue creation,
+	// and Adhoc's publication creation. Only applies to Full/Hybrid
+	// (HAVE_PARTS) - Resize/Auto parts don't carry a real trimmed size
+	// (see color.php's hidden trim_x/trim_y falling back to a fixed A4
+	// default), so it isn't safe to treat as sizing info there. Callers
+	// pass $workflow explicitly rather than having this look it up via
+	// collectFromXml(), since the Adhoc-creation caller runs before the
+	// new magazine's PMD <Item> exists to look up.
+	function syncInsidePartAdSize( $magazineId, $magazineCode, $workflow, $width, $height ) {
+		if( !in_array( $workflow, HAVE_PARTS ) ) return;
+		if( empty( $width ) || empty( $height ) ) return;
+
+		$orient = ( $width > $height ) ? 'landscape' : 'portrait';
+
+		$existing = sql_aget( 'ad_sizes', "magazine_id='".$magazineId."' AND size='1/1'", '*' );
+		if( !empty( $existing[0]['id'] ) ) {
+			if( $existing[0]['width'] == $width && $existing[0]['height'] == $height && $existing[0]['orient'] == $orient ) return;
+			sql_update( 'ad_sizes', "orient='".$orient."', cover='trim', width='".$width."', height='".$height."'", "id='".$existing[0]['id']."'" );
+			}
+		else {
+			$names = array( 'magazine_id', 'size', 'orient', 'cover', 'width', 'height' );
+			$values = array( $magazineId, '1/1', $orient, 'trim', $width, $height );
+			sql_add( 'ad_sizes', $names, $values );
+			}
+
+		$pmdName = regenerateAdSizesInPmd( $magazineCode );
+		if( $pmdName ) {
+			SwitchSend_TESZT( array( "event" => "xml_data", "jobCode" => $magazineCode ), array( "name" => $pmdName, "path" => "xml" ) );
+			}
+		}
+
 	function changeJOBXmlDatabase( $operation, $values, $xml2 = 'client/xml/job.xml' ) {
 		$xml = simplexml_load_file( $xml2 );
 		$deny = array( 'addRUser', 'publisher', 'magazine', 'old', 'old_code', 'xml_go', $values['deny'], 'deny', 'type', 'code', 'CustomCode_2', 'counter_parts', 'Client2', 'adhocUser' );
@@ -676,7 +711,7 @@
 		error_log( "--".$operation."--" );
 		error_log( $xml2 );
 		$xml = simplexml_load_file( $xml2 );
-		$deny = array( 'addRUser', 'ApprovedComments', 'pn', 'Uploadable', 'Deadline', 'publisher', 'magazine', 'old', 'old_code', 'xml_go', $values['deny'], 'deny', 'type', 'code', 'CustomCode_2', 'counter_parts', 'Client2', 'adhocUser' );
+		$deny = array( 'addRUser', 'ApprovedComments', 'pn', 'Uploadable', 'Deadline', 'publisher', 'magazine', 'old', 'old_code', 'xml_go', $values['deny'] ?? '', 'deny', 'type', 'code', 'CustomCode_2', 'counter_parts', 'Client2', 'adhocUser' );
 		
 		switch( $operation ) {
 			case 'modify':
@@ -800,14 +835,24 @@
 					$code->addChild( 'Resolution', $values['Resolution'] );
 					$code->addChild( 'Enhance', $values['Enhance'] );
 					$code->addChild( 'PDFstandard', $values['PDFstandard'] );
-					$code->addChild( 'ArchiveStorage', $values['ArchiveStorage'] );
+					// ArchiveStorage/RemoteStorage/Parent/FinalOutput are optional -
+					// no Adhoc or Regular creation form actually submits them - so
+					// referencing $values[...] directly threw an "Undefined array
+					// key" Warning on every single publication creation. Harmless
+					// on its own, but display_errors is On in this dev environment
+					// (see SYSTEM_STATE.md), so the warning text got printed straight
+					// into the ajax response body ahead of the final json_encode(),
+					// corrupting the JSON - jQuery's dataType:'json' then silently
+					// failed to parse it and never ran the success callback, leaving
+					// the Create dialog open even though the row was already saved.
+					$code->addChild( 'ArchiveStorage', $values['ArchiveStorage'] ?? '' );
 					$code->addChild( 'OutputFormat', $values['OutputFormat'] );
 					$code->addChild( 'CustomCode', $values['CustomCode'] );
 					$code->addChild( 'ImageRename', $values['ImageRename'] );
 					$code->addChild( 'LocalStorage', $values['LocalStorage'] );
-					$code->addChild( 'RemoteStorage', $values['RemoteStorage'] );
-					$code->addChild( 'Parent', $values['Parent'] );
-					$code->addChild( 'FinalOutput', $values['FinalOutput'] );
+					$code->addChild( 'RemoteStorage', $values['RemoteStorage'] ?? '' );
+					$code->addChild( 'Parent', $values['Parent'] ?? '' );
+					$code->addChild( 'FinalOutput', $values['FinalOutput'] ?? '' );
 					$code->addChild( 'Mails', $values['Mails'] );
 					$code->addChild( 'MailComm', "No" );
 					$ads = $code->addChild( 'AdSizes' );
@@ -829,14 +874,14 @@
 					$code->addChild( 'Resolution', $values['Resolution'] );
 					$code->addChild( 'Enhance', $values['Enhance'] );	
 					$code->addChild( 'PDFstandard', $values['PDFstandard'] );
-					$code->addChild( 'ArchiveStorage', $values['ArchiveStorage'] );
+					$code->addChild( 'ArchiveStorage', $values['ArchiveStorage'] ?? '' );
 					$code->addChild( 'OutputFormat', $values['OutputFormat'] );
 					$code->addChild( 'CustomCode', $values['CustomCode'] );
 					$code->addChild( 'ImageRename', $values['ImageRename'] );
 					$code->addChild( 'LocalStorage', $values['LocalStorage'] );
-					$code->addChild( 'RemoteStorage', $values['RemoteStorage'] );
-					$code->addChild( 'Parent', $values['Parent'] );
-					$code->addChild( 'FinalOutput', $values['FinalOutput'] );
+					$code->addChild( 'RemoteStorage', $values['RemoteStorage'] ?? '' );
+					$code->addChild( 'Parent', $values['Parent'] ?? '' );
+					$code->addChild( 'FinalOutput', $values['FinalOutput'] ?? '' );
 					$code->addChild( 'ArchiveMode', $values['ArchiveMode'] );
 					$code->addChild( 'Mails', "" );
 					$code->addChild( 'MailComm', "Yes" );

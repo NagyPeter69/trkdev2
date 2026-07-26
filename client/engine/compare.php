@@ -228,6 +228,7 @@ if( $_GET['op'] == 'loadbg' ) {
 
 	$correctionBox[2] = $correctionBoxTemp = $user[0][15];
 	$box = getPDFBox2( "Mediabox Trimbox Cropbox Bleedbox", $file[0]["Name"] );
+	$box = boxOrPlaceholder( $box, $file[0]["Name"] ?? '' );
 	$differences = array(
 		"Left" => ( $box["Cropbox"][0] - $box["Mediabox"][0] ),
 		"Bottom" => ( $box["Cropbox"][1] - $box["Mediabox"][1] ),

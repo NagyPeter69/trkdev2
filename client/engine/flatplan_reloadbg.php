@@ -107,7 +107,24 @@ if( $_GET['op'] == 'reloadbg' ) {
 	$debug = $user[0][15];
 	$issue = sql_get( 'publications', 'id="'.$_GET['id'].'" LIMIT 1', '*' );
 	$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'" LIMIT 1', '*' );
-	
+
+	// A job with FlatplanStages==1 has only one flatplan - the fin bit
+	// some of its pages carry isn't a second stage to resolve this
+	// page's render against (see page_pdf-handler.php's $stages1
+	// handling and the matching fix in flatplan_preview.php).
+	$stages1 = false;
+	if( !empty( $magazine[0][3] ) ) {
+		$wfXml = simplexml_load_file( TRKPATH.'/xml/'.PMD.'.xml' );
+		$wfXpath = $wfXml->xpath('/Publications');
+		foreach( $wfXpath as $wfTemp ) {
+			for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+				if( $wfTemp->Item[$wfI]->Code == $magazine[0][3] )
+					break;
+				}
+			}
+		$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
+		}
+
 	error_log( "PAGE: ".$_GET["p"] );
 	$pages = checkPagePair( $_GET['id'], $_GET["pack_id"], $_GET["p"], $_GET['tag'], $_GET['alter'], "prev", $issue, $magazine, $_GET["part"], $_GET["pageNumbering"] );
 	$debug = array_search( $_GET["p"], $pages );
@@ -127,6 +144,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 	$state = array();
 	$ver = array();
 	$pid = array();
+	$preflightErr = array();
 
 	for( $i = 0; $i < count( $pages ); $i++ ) {
 		$dir = "../packages/".$magazine[0][3]."/".$issue[0][10];
@@ -148,12 +166,22 @@ if( $_GET['op'] == 'reloadbg' ) {
 			$fin = ( $_GET['alter'] == "FIN" ? "1" : "0" );
 			if( $_GET['tag'] != "" ) {
 				$tag = $_GET['tag'];
-				$pageinfo = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="'.$_GET['tag'].'" AND page="'.$pages[$i].'" AND fin="'.$fin.'" AND part="'.$_GET["part"].'"', '*' );
+				if( $stages1 ) {
+					$pageinfo = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="'.$_GET['tag'].'" AND page="'.$pages[$i].'" AND part="'.$_GET["part"].'"', '*' );
+					}
+				else {
+					$pageinfo = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="'.$_GET['tag'].'" AND page="'.$pages[$i].'" AND fin="'.$fin.'" AND part="'.$_GET["part"].'"', '*' );
+					}
 				}
 			else {
-				$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$pages[$i].'" AND state="" AND fin="'.$fin.'" AND part="'.$_GET["part"].'"', '*' );
+				if( $stages1 ) {
+					$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$pages[$i].'" AND state="" AND part="'.$_GET["part"].'"', '*' );
+					}
+				else {
+					$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND page="'.$pages[$i].'" AND state="" AND fin="'.$fin.'" AND part="'.$_GET["part"].'"', '*' );
+					}
 				}
-	
+
 			if( $pageinfo[0][6] == "ad" ) {
 				$dir .= "/_ads";
 				$file2 = str_pad( $pages[$i], 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$tag."ad_preview.pdf";
@@ -161,13 +189,17 @@ if( $_GET['op'] == 'reloadbg' ) {
 			else {
 				$pack = sql_get( 'packages', 'id="'.$pageinfo[0][1].'"', '*' );
 				$dir .= "/".$pack[0][4];
-				if( $_GET['alter'] == "FIN" ) $dir .= "/FIN";
+				// A 1-stage job's render lives wherever page_pdf-handler.php
+				// actually stored it based on this row's own fin (index 11),
+				// not wherever the requested $_GET['alter'] would imply.
+				if( $stages1 ? $pageinfo[0][11] == 1 : $_GET['alter'] == "FIN" ) $dir .= "/FIN";
 				$file2 = str_pad( $pages[$i], 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$tag."preview.pdf";
 				}
 			}
 		
-		$pid[] = $pageinfo[0][0];	
-			
+		$pid[] = $pageinfo[0][0];
+		$preflightErr[] = intval( $pageinfo[0][18] );
+
 		$ver[] = "v".$pageinfo[0][3];
 		if( is_file( $dir."/".$file2 ) ) {
 			$viewed = explode( ",", $pageinfo[0][10] );
@@ -208,6 +240,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 	if( count( $pages ) > 1 ) {
 		$correctionBox[2] = $correctionBoxTemp = $user[0][15];
 		$box = getPDFBox( "Mediabox Trimbox Cropbox Bleedbox", $pageinfo );
+		$box = boxOrPlaceholder( $box, 'pageinfo id '.( $pageinfo[0][0] ?? '?' ) );
 		$differences = array(
 			"Left" => ( $box["Cropbox"][0] - $box["Mediabox"][0] ),
 			"Bottom" => ( $box["Cropbox"][1] - $box["Mediabox"][1] ),
@@ -217,10 +250,10 @@ if( $_GET['op'] == 'reloadbg' ) {
 		switch( $correctionBoxTemp ) {
 			case 'mediabox':
 				$sizes = array(
-					"Left" => $box["Trimbox"][0] - 28.3464567 - $box["Cropbox"][0],
-					"Bottom" => $box["Trimbox"][1] - 28.3464567 - $box["Cropbox"][1],
+					"Left" => $box["Mediabox"][0] - $box["Cropbox"][0],
+					"Bottom" => $box["Mediabox"][1] - $box["Cropbox"][1],
 					"Right" => $box["Trimbox"][2] - $box["Cropbox"][0],
-					"Top" => $box["Trimbox"][3] + 28.3464567 - $box["Cropbox"][1]
+					"Top" => $box["Mediabox"][3] - $box["Cropbox"][1]
 					);
 	
 				$differences = array(
@@ -309,6 +342,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 	
 		$correctionBox[2] = $correctionBoxTemp = $user[0][15];
 		$box = getPDFBox( "Mediabox Trimbox Cropbox Bleedbox", $pageinfo );
+		$box = boxOrPlaceholder( $box, 'pageinfo id '.( $pageinfo[0][0] ?? '?' ) );
 		$differences = array(
 			"Left" => ( $box["Cropbox"][0] - $box["Mediabox"][0] ),
 			"Bottom" => ( $box["Cropbox"][1] - $box["Mediabox"][1] ),
@@ -319,9 +353,9 @@ if( $_GET['op'] == 'reloadbg' ) {
 			case 'mediabox':
 				$sizes = array(
 					"Left" => $box["Trimbox"][0] - $box["Cropbox"][0],
-					"Bottom" => $box["Trimbox"][1] - 28.3464567 - $box["Cropbox"][1],
-					"Right" => $box["Trimbox"][2] + 28.3464567 - $box["Cropbox"][0],
-					"Top" => $box["Trimbox"][3] + 28.3464567 - $box["Cropbox"][1]
+					"Bottom" => $box["Mediabox"][1] - $box["Cropbox"][1],
+					"Right" => $box["Mediabox"][2] - $box["Cropbox"][0],
+					"Top" => $box["Mediabox"][3] - $box["Cropbox"][1]
 					);
 	
 				$differences = array(
@@ -396,6 +430,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 	else {
 		$correctionBox[2] = $correctionBoxTemp = $user[0][15];
 		$box = getPDFBox( "Mediabox Trimbox Cropbox Bleedbox", $pageinfo );
+		$box = boxOrPlaceholder( $box, 'pageinfo id '.( $pageinfo[0][0] ?? '?' ) );
 		
 		$differences = array(
 			"Left" => ( $box["Cropbox"][0] - $box["Mediabox"][0] ),
@@ -406,10 +441,10 @@ if( $_GET['op'] == 'reloadbg' ) {
 		switch( $correctionBoxTemp ) {
 			case 'mediabox';
 				$sizes = array(
-					"Left" => $box["Trimbox"][0] - 28.3464567 - $box["Cropbox"][0],
-					"Bottom" => $box["Trimbox"][1] - 28.3464567 - $box["Cropbox"][1],
-					"Right" => $box["Trimbox"][2] + 28.3464567 - $box["Cropbox"][0],
-					"Top" => $box["Trimbox"][3] + 28.3464567 - $box["Cropbox"][1]
+					"Left" => $box["Mediabox"][0] - $box["Cropbox"][0],
+					"Bottom" => $box["Mediabox"][1] - $box["Cropbox"][1],
+					"Right" => $box["Mediabox"][2] - $box["Cropbox"][0],
+					"Top" => $box["Mediabox"][3] - $box["Cropbox"][1]
 					);
 			
 				$correctionBox[0] = $differences;
@@ -507,8 +542,8 @@ if( $_GET['op'] == 'reloadbg' ) {
 				$text[0] = "<div id='pstatus' style='width: 125px; height: 35px;'>
 								<div style='position: absolute; left: 0px; cursor: pointer; float: left; color: rgb( 1, 188, 0 ) !important;'>".$lang["flatplan"]["approved"]."</div>
 	
-								<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
-								<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
+								<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
+								<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
 							</div>";		
 				}
 				
@@ -522,11 +557,11 @@ if( $_GET['op'] == 'reloadbg' ) {
 		default:
 			$text[0] = "<div id='pstatus' style='width: 130px; height: 35px;'>";
 				if( $rights["acceptPage"] ) {
-					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
-					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
 				
-					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
-					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
 					}
 			$text[0] .= "</div>";
 			break;
@@ -541,8 +576,8 @@ if( $_GET['op'] == 'reloadbg' ) {
 					$text[1] = "<div id='pstatus' style='width: 125px; height: 35px;'>
 									<div style='position: absolute; left: 0px; cursor: pointer; float: left; color: rgb( 1, 188, 0 ) !important;'>".$lang["flatplan"]["approved"]."</div>
 	
-									<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
-									<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
+									<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
+									<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
 								</div>";		
 					}
 				
@@ -556,11 +591,11 @@ if( $_GET['op'] == 'reloadbg' ) {
 			default:
 				$text[1] = "<div style='width: 130px;'>";
 					if( $rights["acceptPage"] ) {
-						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
-						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
 				
-						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
-						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
 						}
 				$text[1] .= "</div>";
 				break;
@@ -573,15 +608,18 @@ if( $_GET['op'] == 'reloadbg' ) {
 		//error_log( 'type="'.$_GET['alter'].'"AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" ORDER BY CAST(`page` AS SIGNED) ASC' );
 		$packs = sql_get( 'pageinfo', 'type="'.$_GET['alter'].'"AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND part="'.$_GET["part"].'" ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
 		}
+	elseif( $stages1 ) {
+		$packs = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND state="'.$_GET['tag'].'" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND part="'.$_GET["part"].'" ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
+		}
 	else {
 		$fin = ( $_GET['alter'] == 'FIN' ? "1" : "0" );
 		//error_log( 'type!="PRE" AND type!="PSTR" AND state="'.$_GET['tag'].'" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND fin="'.$fin.'" ORDER BY CAST(`page` AS SIGNED) ASC' );
 		$packs = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND state="'.$_GET['tag'].'" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND fin="'.$fin.'" AND part="'.$_GET["part"].'" ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
 		}
-	
+
 	$pages2 = array();
 	$ad_pages = array();
-	for( $i = 0; $i < count( $packs ); $i++ ) {		
+	for( $i = 0; $i < count( $packs ); $i++ ) {
 		$checker = "../packages/".$magazine[0][3]."/".$issue[0][10];
 		if( $_GET['alter'] != '' && $_GET['alter'] != 'FIN' ) {
 			$checker .= "/_".$_GET['alter']."/".str_pad( $packs[$i][5] , 3, '0', STR_PAD_LEFT)."_".$packs[$i][1]."_preview.pdf";
@@ -591,7 +629,10 @@ if( $_GET['op'] == 'reloadbg' ) {
 			}
 		else {
 			$pack = sql_get( "packages", "id='".$packs[$i][1]."'", "directory" );
-			if( $_GET['alter'] == 'FIN' ) {
+			// A 1-stage job's render lives wherever page_pdf-handler.php
+			// actually stored it based on this row's own fin (index 11),
+			// not wherever the requested $_GET['alter'] would imply.
+			if( $stages1 ? $packs[$i][11] == 1 : $_GET['alter'] == 'FIN' ) {
 				$checker .= "/".$pack[0][0]."/FIN/".str_pad( $packs[$i][5] , 3, '0', STR_PAD_LEFT)."_".$packs[$i][1]."_preview.pdf";
 				}
 			else {
@@ -716,7 +757,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 	$colorStdNames = array();
 	if( $user[0][26] == 1 ) {
 		for( $i = 0; $i < count( $pages ); $i++ ) {
-			$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color" );
+			$colorStdNames[] = partDetect( $_GET['id'], $pages[$i], "color", $_GET["part"] );
 			}
 		}
 
@@ -739,25 +780,33 @@ if( $_GET['op'] == 'reloadbg' ) {
 					PDF_prework( $pid[0] );
 					}
 				$first = new Imagick( str_replace( ".pdf", "-cropbox.jpg", $file[0]["Name"] ) );
-				$width = $first->getImageWidth();
+				// cropImage() removes the spine-side overhang so this page's
+				// raster is left at its real trimmed width - deliberately
+				// NOT followed by a resizeImage() back to the pre-crop
+				// width (as this used to do): that resize silently undid
+				// the crop's size reduction (stretching the trimmed content
+				// back out to fill the original width), while the
+				// composite offset below was computed from the CORRECTLY
+				// trimmed $file[]/$trim[] values - so the two pages'
+				// on-canvas positions and their actual (untrimmed) raster
+				// widths disagreed, most visibly on the right/second page.
 				$first->cropImage( $first->getImageWidth() - $trim[0]["Left"], $first->getImageHeight() , 0, 0 );
-				$first->resizeImage( $width, $first->getImageHeight(), imagick::FILTER_CATROM, 1, false);
-				
+
 				if( !is_file( str_replace( ".pdf", "-cropbox.jpg", $file[1]["Name"] ) ) ) {
 					PDF_prework( $pid[1] );
-					}				
+					}
 				$second = new Imagick( str_replace( ".pdf", "-cropbox.jpg", $file[1]["Name"] ) );
-				$width = $second->getImageWidth();
 				$second->cropImage( $second->getImageWidth() - $trim[1]["Left"], $second->getImageHeight() , $trim[1]["Left"], 0 );
-				$second->resizeImage( $width, $second->getImageHeight(), imagick::FILTER_CATROM, 1, false);				
-				
+
 				$image = new Imagick();
 				$image->newImage( ( $first->getImageWidth() + $second->getImageWidth() ), $first->getImageHeight(), new ImagickPixel('rgb( 178, 178, 178 )') );
 					$icc_rgb = file_get_contents( "r3/sRGB_Color_Space_Profile.icc" );
 					$image->profileImage('icc', $icc_rgb);
 					$image->setImageFormat('jpg');
-					$left = $file[0]["Right"]+$file[1]["Left"];
-					$image->compositeImage($second, $second->getImageCompose(), $left, 0);
+					// $first's own actual (now correctly trimmed) width -
+					// not a separately-derived point value - guarantees no
+					// gap/overlap regardless of $file[]/$trim[]'s formulas.
+					$image->compositeImage($second, $second->getImageCompose(), $first->getImageWidth(), 0);
 					$image->compositeImage($first, $first->getImageCompose(), 0, 0);
 				$image->writeImage( "r3/bg".$postfix.".jpg" );
 				$imgData = base64_encode(file_get_contents( "r3/bg".$postfix.".jpg" ) );
@@ -791,9 +840,13 @@ if( $_GET['op'] == 'reloadbg' ) {
 					$image->profileImage('icc', $icc_rgb);
 					$image->setImageFormat('jpg');
 					$image->compositeImage($first, $first->getImageCompose(), 0, 0);
-					$left = $file[0]["Right"]-$file[1]["Left"];
-					error_log( "BEILLESZTÉS: ".$left );
-					$image->compositeImage($second, $second->getImageCompose(), $left, 0);
+					// $first's own actual width, same reasoning as the
+					// mediabox case above - these -trimbox.jpg rasters are
+					// already trimmed at generation time, so no cropImage()
+					// is needed here, but the placement should still key off
+					// the real raster width rather than a separately-derived
+					// point value.
+					$image->compositeImage($second, $second->getImageCompose(), $first->getImageWidth(), 0);
 				$image->writeImage( "r3/bg".$postfix.".jpg" );
 				$imgData = base64_encode(file_get_contents( "r3/bg".$postfix.".jpg" ) );
 				//@unlink( "r3/bg".$postfix.".jpg" );
@@ -804,37 +857,62 @@ if( $_GET['op'] == 'reloadbg' ) {
 	//$end = microtime(true);
 	//error_log( "time: ".rutime($end, $start, "stime")." ms" );
 	
-	// Appended at the end (index 16), not inserted among the existing
-	// indices - the JS success handler reads this array by fixed numeric
-	// position, so anything added has to go after the existing ones.
-	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop, $colorStdNames );
+	// Appended at the end (index 16 was colorStdNames; 17/18 added later),
+	// not inserted among the existing indices - the JS success handler
+	// reads this array by fixed numeric position, so anything added has
+	// to go after the existing ones. $preflightErr/$pid are per-page
+	// (index 0 = left/single page, index 1 = right page of a spread, if
+	// any) so the preflight indicator(s) can be refreshed on every AJAX
+	// page navigation instead of only reflecting whichever page happened
+	// to be loaded first.
+	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop, $colorStdNames, $preflightErr, $pid );
 	}
 	
 if( $_GET['op'] == 'getFirstPage' ) {
 	$issue = sql_get( 'publications', 'id="'.$_GET['id'].'" LIMIT 1', '*' );
 	$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'" LIMIT 1', '*' );
-	
-	switch( $_GET["alter"] ) {
-		case "PRE":
-			$condition = 'type="PRE" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="0" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
-			break;
-		
-		case "FIN": 
-			if( $magazine[0][3] == "BAV" ) {
-				$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="0" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
+
+	// A job with FlatplanStages==1 has only one flatplan - see the
+	// $stages1 comment in the reloadbg op block above.
+	$stages1 = false;
+	if( !empty( $magazine[0][3] ) ) {
+		$wfXml = simplexml_load_file( TRKPATH.'/xml/'.PMD.'.xml' );
+		$wfXpath = $wfXml->xpath('/Publications');
+		foreach( $wfXpath as $wfTemp ) {
+			for( $wfI = 0; $wfI < count( $wfTemp->Item ); $wfI++ ) {
+				if( $wfTemp->Item[$wfI]->Code == $magazine[0][3] )
+					break;
 				}
-			else {
-				$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="1" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
-				}
-			break;
-		
-		default: 
-			$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="0" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
-			break;
+			}
+		$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
 		}
-		
+
+	if( $stages1 ) {
+		$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
+		}
+	else {
+		switch( $_GET["alter"] ) {
+			case "PRE":
+				$condition = 'type="PRE" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="0" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
+				break;
+
+			case "FIN":
+				if( $magazine[0][3] == "BAV" ) {
+					$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="0" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
+					}
+				else {
+					$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="1" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
+					}
+				break;
+
+			default:
+				$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND fin="0" AND part="'.$_GET["part"].'" ORDER BY `page` ASC LIMIT 1';
+				break;
+			}
+		}
+
 	$firstPage = sql_get( 'pageinfo', $condition, '*' );
-	
+
 	$result = $firstPage;
 	}
 	

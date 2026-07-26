@@ -6,10 +6,12 @@ include_once('/var/www/html/engine/xml_handler.php');
 
 // DEV-environment gate: while IS_DEV_ENVIRONMENT is true (trkdev2 only -
 // see constans.php), no outgoing Switch call is allowed unless it's on
-// behalf of Colorcom or TestCo, our two test clients. This exists so the
+// behalf of TestCo, our one designated test client. This exists so the
 // hard iptables block on Switch connectivity can be lifted for real-world
 // testing without risking a call reaching Switch for a real production
-// client/job. Resolves the client from the DB via jobCode/Code rather
+// client/job - Colorcom is a real production client, not a test client,
+// and must be denied here the same as any other. Resolves the client from
+// the DB via jobCode/Code rather
 // than trusting a caller-supplied "client" string, since at least one
 // call site (advertisement.php) hardcodes that string as a placeholder
 // rather than deriving it, which makes it unreliable as a source of truth
@@ -43,7 +45,7 @@ function resolveJobPublisherName( $code ) {
 function switchClientAllowed( $datas ) {
 	if( !IS_DEV_ENVIRONMENT ) return true;
 
-	$allowed = array( 'colorcom', 'testco' );
+	$allowed = array( 'testco' );
 
 	// Different callers build this array with different key casing -
 	// toSwitch()'s 'new_publication' case (the per-issue snapshot upload)
@@ -68,7 +70,8 @@ function switchClientAllowed( $datas ) {
 // isn't scoped to a single job/client: the whole-PMD-dataset upload
 // (SendPmdXmlToSwitch() in engine/xml_handler.php) uploads every magazine
 // in one shot, so it's only safe to send while every magazine in the
-// local DB belongs to Colorcom or TestCo.
+// local DB belongs to TestCo - if even one real client (Colorcom
+// included) is present, the whole sync is blocked.
 function switchBulkSyncAllowed() {
 	if( !IS_DEV_ENVIRONMENT ) return true;
 
@@ -80,7 +83,7 @@ function switchBulkSyncAllowed() {
 	// Adhoc data ride along in the whole-dataset upload. Resolving per
 	// magazine via resolveJobPublisherName() (which knows to fall back to
 	// publications.owner for Adhoc) closes that.
-	$allowed = array( 'colorcom', 'testco' );
+	$allowed = array( 'testco' );
 	$magazines = sql_aget( 'magazines', '1=1', 'code' );
 	for( $i = 0; $i < count( $magazines ); $i++ ) {
 		$name = resolveJobPublisherName( $magazines[$i]['code'] );
@@ -125,8 +128,8 @@ function SwitchASend( $datas, $file = "" ) {
 	global $token;
 
 	if( !switchClientAllowed( $datas ) ) {
-		error_log( "SwitchASend blocked: DEV environment restricts Switch calls to Colorcom/TestCo (Code='".($datas['Code'] ?? $datas['jobCode'] ?? '')."')" );
-		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		error_log( "SwitchASend blocked: DEV environment restricts Switch calls to TestCo (Code='".($datas['Code'] ?? $datas['jobCode'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to TestCo test client." );
 		}
 
 	$doc_name = ( !empty( $file["name"] ) ) ? $file["name"] : time().'.pdf';
@@ -205,8 +208,8 @@ function SwitchAnyagSend( $datas, $file = "" ) {
 	global $token;
 
 	if( !switchClientAllowed( $datas ) ) {
-		error_log( "SwitchAnyagSend blocked: DEV environment restricts Switch calls to Colorcom/TestCo (Code='".($datas['Code'] ?? $datas['jobCode'] ?? '')."')" );
-		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		error_log( "SwitchAnyagSend blocked: DEV environment restricts Switch calls to TestCo (Code='".($datas['Code'] ?? $datas['jobCode'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to TestCo test client." );
 		}
 
 	$doc_name = ( !empty( $file["name"] ) ) ? $file["name"] : time().'.pdf';
@@ -275,8 +278,8 @@ function SwitchSend( $datas, $file = "" ) {
 	global $token;
 
 	if( !switchClientAllowed( $datas ) ) {
-		error_log( "SwitchSend blocked: DEV environment restricts Switch calls to Colorcom/TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
-		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		error_log( "SwitchSend blocked: DEV environment restricts Switch calls to TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to TestCo test client." );
 		}
 
 	$doc_name = ( !empty( $file["name"] ) ) ? $file["name"] : time().'.pdf';
@@ -385,8 +388,8 @@ function SwitchSend_TESZT( $datas, $file = "" ) {
 	global $token;
 
 	if( !switchClientAllowed( $datas ) ) {
-		error_log( "SwitchSend_TESZT blocked: DEV environment restricts Switch calls to Colorcom/TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
-		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		error_log( "SwitchSend_TESZT blocked: DEV environment restricts Switch calls to TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to TestCo test client." );
 		}
 
 	// Several callers (e.g. pubsApply.php's publication_created event) call
@@ -518,8 +521,8 @@ function SwitchSend_Rename( $datas, $file, $newname ) {
 	global $token;
 
 	if( !switchClientAllowed( $datas ) ) {
-		error_log( "SwitchSend_Rename blocked: DEV environment restricts Switch calls to Colorcom/TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
-		return array( "blocked", "Blocked: DEV environment restricts Switch communication to Colorcom/TestCo test clients." );
+		error_log( "SwitchSend_Rename blocked: DEV environment restricts Switch calls to TestCo (jobCode='".($datas['jobCode'] ?? $datas['Code'] ?? '')."')" );
+		return array( "blocked", "Blocked: DEV environment restricts Switch communication to TestCo test client." );
 		}
 
 	// Same defensive normalization as SwitchSend_TESZT - a raw $file["name"]
@@ -534,13 +537,31 @@ function SwitchSend_Rename( $datas, $file, $newname ) {
 	error_log( $doc_name );
 	error_log( $file["path"] );
 	error_log( "létezik?".is_file( TRKPATH."/".$file["path"]."/".$doc_name )." (itt: ".TRKPATH."/".$file["path"]."/".$doc_name.")" );
-	
+
 	$login = SwitchLogin();
-	
+
 	$newpath = TRKPATH."/".$file["path"]."/".$newname;
 	$file = ( !empty( $file["path"] ) ) ? TRKPATH."/".$file["path"]."/".$doc_name : DUMMYPDF;
-	
-	$size = filesize( $file );	
+
+	// The existence check just above was already computed and logged but
+	// never actually gated on - filesize()/mime_content_type() on a
+	// nonexistent path return false, and PHP 8's mime_content_type()
+	// throws a hard TypeError on a false argument instead of the old
+	// warn-and-continue behavior (see SYSTEM_STATE.md's PHP 7->8
+	// compatibility section for this bug class). That's not just a
+	// theoretical risk here - confirmed live: a corrupted queued payload
+	// crashed client/cron/switch_sync_worker.php outright, which
+	// silently starved every OTHER queued job behind it every single
+	// minute (the worker processes jobs in id order and never got past
+	// the broken one) until this was fixed. Failing gracefully here
+	// instead protects every future caller of this function, not just
+	// this one payload.
+	if( !is_file( $file ) ) {
+		error_log( "SwitchSend_Rename: source file missing, not sending: ".$file );
+		return array( null, "Source file not found: ".$file );
+		}
+
+	$size = filesize( $file );
 	$mime = mime_content_type( realpath( $file ) );
 	
 	error_log( "kapott adat:");

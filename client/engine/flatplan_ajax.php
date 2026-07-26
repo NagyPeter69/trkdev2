@@ -488,8 +488,10 @@
 				}	
 			}
 		elseif( $fPage[0][0] != "" ) {
-			if( $fPage[0][6] == "ad" )
-				unset( $secBg );
+			// Ad slots keep their orange header (secBg, set above) even
+			// before the ad's own preview file has landed - the slot being
+			// booked/reserved for an ad is the thing being flagged, not
+			// whether its content has arrived yet.
 			unset( $fPage );
 			$page_thumb = "";
 			$link = '';
@@ -785,6 +787,9 @@
 			if( $fPage[0][12] != "" ) {		
 				$triangle = "<div class='".$fPage[0][12]."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
+			if( $fPage[0][18] == 1 ) {
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+				}
 			}
 		elseif( $class == 'left' ) {
 			$txt .= "<div style='pointer-events: none; float:left; margin-left: 4px;'>".str_pad( $page, 3, '0', STR_PAD_LEFT)."</div><div style='pointer-events: none; float:right; margin-right: 4px;'>".$version."</div>";
@@ -796,6 +801,9 @@
 			
 			if( $fPage[0][12] != "" ) {		
 				$triangle = "<div class='".$fPage[0][12]."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+				}
+			if( $fPage[0][18] == 1 ) {
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			}
 
@@ -834,6 +842,7 @@
 		$txt .= $commentPlace;
 		$txt .= $proof;
 		$txt .= $triangle;
+		$txt .= $preflight;
 		$txt .= "<input ";
 		if( $link == '' )
 			$txt .= 'disabled';
@@ -843,7 +852,7 @@
 		}
 
 	function drawAmericanPage( $id, $page, $class, $i, $pageType = 'normal' ) {
-		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash;
+		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $fpStages;
 		
 		list( $w, $h ) = $sizes;
 
@@ -884,7 +893,22 @@
 				$secBg = "background: #".$bPalette[$place]." !important;";
 				}
 				
-			if( $pageType == "normal" ) {
+			if( $fpStages == "1" ) {
+				// A 1-stage job's rendered file lives wherever
+				// page_pdf-handler.php actually stored it based on this
+				// row's own fin state (index 11), not wherever the view's
+				// currently-selected stage/opt would otherwise imply - see
+				// the FlatplanStages==1 handling where $fPages2 is built
+				// above, which intentionally mixes fin=0 and fin=1 rows
+				// into the same view for these jobs.
+				if( $fPage[0][11] == "1" ) {
+					$file = $tempPage[0][1]."/FIN/".str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$fPage[0][1]."_preview.jpg";
+					}
+				else {
+					$file = $tempPage[0][1]."/".str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$fPage[0][1]."_preview.jpg";
+					}
+				}
+			elseif( $pageType == "normal" ) {
 				$file = $tempPage[0][1]."/".str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$fPage[0][1]."_preview.jpg";
 				}
 			elseif( $pageType == "FIN" ) {
@@ -949,8 +973,10 @@
 				}	
 			}
 		elseif( $fPage[0][0] != "" ) {
-			if( $fPage[0][6] == "ad" )
-				unset( $secBg );
+			// Ad slots keep their orange header (secBg, set above) even
+			// before the ad's own preview file has landed - the slot being
+			// booked/reserved for an ad is the thing being flagged, not
+			// whether its content has arrived yet.
 			unset( $fPage );
 			$page_thumb = "";
 			$link = '';
@@ -1002,7 +1028,16 @@
 					}
 				}
 			}
-		
+
+		if( !is_file( "../packages/".$magazine[0][3]."/".$issue[0][10]."/".$file ) ) {
+			// No render exists for this slot - let the empty_slot.png
+			// placeholder pattern tile across the whole thumbnail box
+			// instead of showing a single un-repeated copy in the corner
+			// (visible now that the box is sized well beyond the tile's
+			// native dimensions).
+			$page_thumb .= " background-repeat: repeat;";
+			}
+
 		/*
 		$holderWidth += $w;
 		if( $page == 1 ) $holderWidth += $w;
@@ -1221,24 +1256,30 @@
 			$txt .= "<div style='pointer-events: none; float:left; margin-left: 4px;'>".$version."</div><div style='pointer-events: none; float:right; margin-right: 4px;'>".str_pad( $page, 3, '0', STR_PAD_LEFT)."</div>";
 			$commentPlace = "<div style='float: right; margin-top: 3px; margin-right: 3px;'>".$commentMark."</div>";
 	
-			if( $fPage[0][13] > 0 ) {	
+			if( $fPage[0][13] > 0 ) {
 				$proof = "<div class='proof' style='float: right; margin-top: 3px; margin-right: 0px; margin-left: 3px;'></div>";
 				}
 			//$proof = $check[0]["id"];
-			if( $fPage[0][12] != "" ) {		
+			if( $fPage[0][12] != "" ) {
 				$triangle = "<div class='".$fPage[0][12]."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+				}
+			if( $fPage[0][18] == 1 ) {
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			}
 		elseif( $class == 'left' ) {
 			$txt .= "<div style='pointer-events: none; float:left; margin-left: 4px;'>".str_pad( $page, 3, '0', STR_PAD_LEFT)."</div><div style='pointer-events: none; float:right; margin-right: 4px;'>".$version."</div>";
-			$commentPlace = "<div style='float: left; margin-top: 3px; margin-left: 3px;'>".$commentMark."</div>";		
+			$commentPlace = "<div style='float: left; margin-top: 3px; margin-left: 3px;'>".$commentMark."</div>";
 
 			if( $fPage[0][13] > 0 ) {
 				$proof = "<div class='proof' style='float: left; margin-top: 3px; margin-right: 3px; margin-left: 0px;'></div>";
 				}
-			
-			if( $fPage[0][12] != "" ) {		
+
+			if( $fPage[0][12] != "" ) {
 				$triangle = "<div class='".$fPage[0][12]."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+				}
+			if( $fPage[0][18] == 1 ) {
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			}
 
@@ -1249,14 +1290,15 @@
 			}
 		$txt .= " style='background-color: #DDD !important; background: url(images/empty_slot.png); position: absolute; z-index: 1000; top: 17px; ".$scale." ".$page_thumb."' ";
 		$txt .= "></div>";
-		
+
 		$title = "";
-		
+
 		$txt .= "<div ".( $title != "" ? "title='".$title."'" : "" )." alter='0' page='".$page."' style='position: absolute; z-index: 1000; bottom: 0px; width: ".$w."px;' class='page_footer state_".$fPage[0][4]."'>";
 		$txt .= "<div id='".$fPage[0][1]."_alterName' style='float:left; margin-left: 3px;'></div>";
 		$txt .= $commentPlace;
 		$txt .= $proof;
 		$txt .= $triangle;
+		$txt .= $preflight;
 		$txt .= "<input ";
 		if( $link == '' )
 			$txt .= 'disabled';
@@ -1323,18 +1365,29 @@
 		else {
 			$fin = 0;
 			}
-				
+
+		// A FlatplanStages==1 job has only the one flatplan - the fin bit a
+		// submission carries (ads are conventionally sent FIN regardless of
+		// stage count - see page_pdf-handler.php's $stages1 handling) isn't
+		// a second stage to split this view by, so it must not be used to
+		// filter $fPages2/$alterP here either: every page AND every ad for
+		// such a job needs to show together in the one grid, not just
+		// whichever fin value happens to match the resolved $fin above.
+		$fpXmlInfo = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], array( "FlatplanStages", "Workflow" ) );
+		$stages1 = ( (string) $fpXmlInfo["FlatplanStages"] == "1" and (string) $fpXmlInfo["Workflow"] != "Hybrid" );
+		$finClause = $stages1 ? '' : ' AND fin="'.$fin.'"';
+
 		$bPalette = colorGenerate( 'blue' );
 		$bPalette = colorGenerate( 'red', $bPalette );
 		$bPalette = colorGenerate( 'green', $bPalette );
 		$alterP = array();
-		$alterSql = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'" ORDER BY `page` ASC', 'page, type' );
+		$alterSql = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!=""'.$finClause.' ORDER BY `page` ASC', 'page, type' );
 		foreach( $alterSql as $alterRow ) {
 			$alterP[ $alterRow[0] ] = $alterRow[1];
 			}
-					
-		$fPages2 = array();	
-		$fPagesSql = sql_get( 'pageinfo', $typeSelect.' AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="" AND fin="'.$fin.'"', '*' );
+
+		$fPages2 = array();
+		$fPagesSql = sql_get( 'pageinfo', $typeSelect.' AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state=""'.$finClause, '*' );
 		foreach( $fPagesSql as $fP ) {
 			$fPages2[ intval($fP[5]) ] = $fP;
 			}
@@ -1343,20 +1396,40 @@
 		
 		if( $_GET["pageNumbering"] == "American" ) {
 			$_SESSION["fp_part"] = $_GET["part"];
+
+			// A job with FlatplanStages==1 has only one flatplan - the fin
+			// bit some of its pages carry (e.g. ads are conventionally
+			// submitted FIN while editorial pages arrive NOR - see
+			// page_pdf-handler.php's $stages1 handling) isn't a second
+			// stage to filter this view by, so every page in the part is
+			// shown together regardless of fin.
+			$fpStages = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], "FlatplanStages", $returnnode = '' );
+			$fpStages = $fpStages["FlatplanStages"];
+
 			$moreQuery = "";
-			if( $_GET["opt"] == "FIN" ) {
-				$moreQuery .= " AND fin='1'";
-				}
-			else {
-				$moreQuery .= " AND fin='0'";
+			if( $fpStages != "1" ) {
+				if( $_GET["opt"] == "FIN" ) {
+					$moreQuery .= " AND fin='1'";
+					}
+				else {
+					$moreQuery .= " AND fin='0'";
+					}
 				}
 			$pages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' AND part='".$_GET["part"]."' ".$moreQuery." ORDER BY page ASC", "*" );
 			$fPages2 = array();	
 			foreach( $pages as $fP ) {
 				$fPages2[ intval($fP[5]) ] = $fP;
 				}
-			$first = $pages[0][5];
-			$last = $pages[count($pages)-1][5];
+			// The part's slot range spans every page that exists for it at
+			// ANY stage, not just pages matching the currently selected stage
+			// tab ($pages above) - otherwise a slot whose page hasn't reached
+			// this stage yet (e.g. an editorial cover still at BASIC while
+			// neighbouring ad slots in the same part are already FIN) drops
+			// out of the grid entirely instead of rendering as an empty slot,
+			// and every slot after it shifts down/renumbers.
+			$allPartPages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' AND part='".$_GET["part"]."' ORDER BY page ASC", "id,page" );
+			$first = $allPartPages[0][1];
+			$last = $allPartPages[count($allPartPages)-1][1];
 			$length = $last;
 			$ptype = $_GET["opt"];
 			if( empty( $ptype ) ) {
@@ -1370,7 +1443,7 @@
 			$divWidth = $row*229;
 				
 			//$text = $_GET["opt"];
-			if( count($pages) > 0 ) {
+			if( count($allPartPages) > 0 ) {
 				if( $_GET["part"] == "MELL" or $_GET["part"] == "BEL" ) {
 					for( $i = 0; $i <= $last; $i++ ) {
 						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px; height: ".($sizes[1]+28)."px; width: ".(2*$sizes[0])."px;'>";
@@ -1384,12 +1457,7 @@
 						}
 					}
 				else {
-					if( count( $pages ) >= 24 ) {}
-					if( count( $pages ) < 24 ) {
-						$sizes[0] = $sizes[0]*2;
-						$sizes[1] = $sizes[1]*2;
-						}
-					if( count( $pages ) < 24 ) {
+					if( count( $allPartPages ) < 24 ) {
 						$sizes[0] = $sizes[0]*3.5;
 						$sizes[1] = $sizes[1]*3.5;
 						}
@@ -1759,6 +1827,15 @@
 				$fpworkflow = collectFromXml( "../xml/".PMD.".xml", $status[0][3], "Workflow", $returnnode = '' );
 				$fpworkflow = $fpworkflow["Workflow"];
 				$allowed = false;
+				// A 1-stage job's fpver reflects whatever stage tab the
+				// view currently happens to be resolved to (e.g. "FIN"),
+				// which is meaningless for these jobs - approvals must be
+				// allowed regardless of fpver, not just when it's "".
+				// Without this, this endpoint's 600ms poll
+				// (refreshPageStatus() in flatplan_preview.php) wipes out
+				// the correctly-rendered accept/decline buttons within a
+				// second of page load whenever fpver isn't exactly "".
+				if( $fpstages == 1 && $fpworkflow != "Hybrid" ) $allowed = true;
 				if( $_GET['fpver'] == "" && $fpstages == 1 ) $allowed = true;
 				// Hybrid: the single flatplan is FINAL regardless of the
 				// stored stage count (which is hidden/meaningless for
@@ -1808,11 +1885,11 @@
 											$text[$i] .= "</div>";
 											
 											
-											$ttext[$i] .= "<div id='".$pageID."_dec' style='cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>
-													<div id='".$pageID."_dec_hover' style='display: none; position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline_hover.png'></div>
+											$ttext[$i] .= "<div id='".$pageID."_dec' style='cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>
+													<div id='".$pageID."_dec_hover' style='display: none; position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline_hover.png'></div>
 					
-													<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>
-													<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept_hover.png'></div>";
+													<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>
+													<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept_hover.png'></div>";
 												}
 											}
 									 }
@@ -1901,6 +1978,7 @@
 
 		$correctionBox[2] = $correctionBoxTemp = $user[0][15];
 		$box = getPDFBox2( "Mediabox Trimbox Cropbox Bleedbox", TRKPATH."/".$path );
+		$box = boxOrPlaceholder( $box, $path );
 		$differences = array(
 			"Left" => ( $box["Cropbox"][0] - $box["Mediabox"][0] ),
 			"Bottom" => ( $box["Cropbox"][1] - $box["Mediabox"][1] ),
@@ -2234,25 +2312,55 @@
 				$allpage = intval( $checker[0][5] );
 				}
 				
-			$fpstages = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], "FlatplanStages", $returnnode = '' );
+			$fpstages = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], array( "FlatplanStages", "Workflow" ), $returnnode = '' );
+			$fpworkflow = (string) $fpstages["Workflow"];
 			$fpstages = $fpstages["FlatplanStages"];
-			
-			$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC ", "*" );
-			//error_log( "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC " );
-			//error_log( "PAGES IN SQL: ".count($pages)."" );
-			if( count( $pages ) == 0 ) {
-				$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='0' order by page ASC ", "*" );
+			// A FlatplanStages==1 job has only the one flatplan, so its real
+			// content pages routinely stay fin=0 forever (there's no later
+			// stage to promote them to), while ads on the very same job are
+			// conventionally submitted fin=1 regardless of stage count (see
+			// page_pdf-handler.php's $stages1 handling) - a completely normal
+			// mix, not a sign anything is unfinished. The fin=1-else-fin=0
+			// fallback below assumes a job's pages all share one fin value,
+			// so as soon as the job has ANY fin=1 row (just one ad is
+			// enough), it locks onto the fin=1 bucket alone and never sees
+			// the fin=0 pages at all - "not all slots" forever, even once
+			// every slot genuinely has content. For a 1-stage job, drop the
+			// fin filter entirely and match on the mix directly instead.
+			$stages1 = ( (string) $fpstages == "1" and $fpworkflow != "Hybrid" );
+
+			if( $stages1 ) {
+				$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." order by page ASC ", "*" );
+				}
+			else {
+				$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC ", "*" );
+				//error_log( "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC " );
+				//error_log( "PAGES IN SQL: ".count($pages)."" );
+				if( count( $pages ) == 0 ) {
+					$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='0' order by page ASC ", "*" );
+					}
 				}
 			
-			for( $i = 1; $i <= $allpage; $i++ ) {
-				if( empty( $pages[ ( $i - 1 ) ]["id"] ) ) {
+			// Walk $pages in row order, tracking the page NUMBER we expect
+			// next, instead of trusting array position to line up with it.
+			// $pages has no row at all for a genuinely missing page, and no
+			// separate row for a spread's second half - both shrink the
+			// array without moving $i, so position and real page number
+			// silently drift apart after either one. Checking array-slot
+			// emptiness alone can't tell "page really missing" from "array
+			// just got shorter than $allpage for a legitimate reason", and
+			// two such drifts (e.g. a gap plus a spread) can cancel out and
+			// falsely read as complete.
+			$expected = 1;
+			$idx = 0;
+			while( $expected <= $allpage ) {
+				if( empty( $pages[ $idx ]["id"] ) || intval( $pages[ $idx ]["page"] ) != $expected ) {
 					$haveall = false;
 					break;
 					}
 
-				if( $pages[ ( $i - 1 ) ]["width"] != "1" ) {
-					$allpage -= $pages[ ( $i - 1 ) ]["width"] - 1;
-					}
+				$expected += max( 1, intval( $pages[ $idx ]["width"] ) );
+				$idx++;
 				}
 
 			if( !$haveall ) {

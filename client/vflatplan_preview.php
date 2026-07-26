@@ -1249,7 +1249,7 @@ $('#content_box').on('mousedown', function() {
 	down = true;
 	});
 
-var norefresh = [ "compareTable", "compare_selector", "comp_operation", "compRange", "inner", "hover", "custom-menu", "ownerOnly", "commentBox", "replyComment", "subCancel", "subSave", "panel_top", "panel", "panelElement", "commentText", "commentEnabler", "square", "circle", "dot", "rightPanel", "rightPanel_top", "cyan", "magenta", "yellow", "kblack", "rightPanelElement", "rightPanel_bottom" ];
+var norefresh = [ "compareTable", "compare_selector", "comp_operation", "compRange", "inner", "hover", "custom-menu", "ownerOnly", "commentBox", "replyComment", "subCancel", "subSave", "panel_top", "panel", "panelElement", "commentText", "commentEnabler", "square", "circle", "dot", "rightPanel", "rightPanel_top", "cyan", "magenta", "yellow", "kblack", "rightPanelElement", "rightPanel_bottom", "fpstatusbutton", "approveButton" ];
 window.addEventListener("mouseup", function(event) {
 	if( event.button == 0 ) {
 		if( jQuery.inArray( event.target.id, norefresh ) == -1 ) {
@@ -1495,22 +1495,23 @@ function setState( state ) {
 	graphState = state;
 	}
 
-function createDiv( options, text, id, parent ) {
+function createDiv( options, text, id, parent, callback ) {
 	var style = "";
 	for( var key in options ) {
 		style += key+":"+options[key]+";";
 		}
-	
+
 	jQuery('<div/>', {
     	id: id,
     	style: style
 	}).appendTo( parent );
 	if( id == "divTextBox" ) {
-		$( "#"+id ).html( text ).show( 100 );
+		$( "#"+id ).html( text ).show( 100, callback );
 		$( "#"+id ).draggable({ cursor: "move" });
 		}
 	else {
 		$( "#"+id ).html( text );
+		if( callback ) callback();
 		}
 	}
 
@@ -1646,10 +1647,11 @@ function addText( div_id ) {
 		left: ((window.outerWidth/2)-200)+'px',
 		top: '130px',
 		width: '283px'
-		}, innerHTML, 'divTextBox', 'body' );
-	
+		}, innerHTML, 'divTextBox', 'body', function() {
+			$("#divText").focus();
+			} );
+
 	$("#divTextBox").addClass('floatCommentMenu');
-	$("#divText").focus();
 	$("#divText").keyup(function() {
 		if( $("#divText").val() != "" ) {
 			$("#saveCom").removeAttr('disabled');
@@ -2407,11 +2409,25 @@ function myContextMenu( operation, target ) {
 				data: 'op=approveComment&id='+$('#'+target).attr('sqlid'),
 				dataType: 'json',
 				success:function( data ) {
-					if( data == "success" ) {				
+					if( data == "success" ) {
 						var temp = target.split("_");
 						$('#'+target).addClass("commentApproved");
 						$('#'+temp[0]+'_'+temp[1]+'_'+temp[2]).addClass("commentApproved");
 						}
+
+					// Same panel-close cleanup #subCancel's click handler
+					// does - approving is just another way of closing this
+					// panel, and skipping this (including never removing
+					// #commentComment at all here) left `disable` stuck at
+					// 1 forever, silently breaking the Space-key comment
+					// toggle and the 1/2/3/4/5 shortcut keys.
+					stopRefresh = true;
+					refreshTarget = "";
+					graphState = tempState;
+					commentTXT = '';
+					disable = 0;
+					disableZoom = false;
+					$('#commentComment').remove();
 					}
 				});
 			break;

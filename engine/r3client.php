@@ -124,7 +124,20 @@ function r3run_local($mode, $params, $inputPath, $input2Path = null) {
 
 	$outputTmp = tempnam(sys_get_temp_dir(), 'r3out_');
 	$full = 'cd '.escapeshellarg(R3_LOCAL_DIR).' && '.$cmd.' > '.escapeshellarg($outputTmp).' 2>>'.escapeshellarg($outputTmp.'.err');
-	shell_exec($full);
+
+	// exec() (vs the previous bare shell_exec()) surfaces the process exit
+	// code, purely so a genuine r3 failure (crash, malformed/corrupt PDF,
+	// license issue) gets logged clearly instead of silently looking
+	// identical to "ran fine, produced no output" - every caller up the
+	// stack (getPDFBox() and friends) already has to treat an empty
+	// return as "nothing usable" regardless, so the external return
+	// contract (raw string, '' on any failure) is deliberately left
+	// unchanged here - this is strictly a logging improvement.
+	exec($full, $execOutput, $exitCode);
+	if ($exitCode !== 0) {
+		$errContent = @file_get_contents($outputTmp.'.err');
+		error_log('r3run_local: r3 exited with status '.$exitCode.' for mode '.$mode.(!empty($errContent) ? ' - stderr: '.trim($errContent) : ''));
+	}
 
 	$data = file_exists($outputTmp) ? file_get_contents($outputTmp) : '';
 	@unlink($outputTmp);

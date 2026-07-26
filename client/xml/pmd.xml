@@ -35,7 +35,7 @@
     <Publisher>TestCo</Publisher>
     <Language>HU</Language>
     <Workflow>Resize</Workflow>
-    <FlatplanStages>1</FlatplanStages>
+    <FlatplanStages>2</FlatplanStages>
     <PageNumbering>American</PageNumbering>
     <Resolution>300</Resolution>
     <Enhance>Skintone</Enhance>

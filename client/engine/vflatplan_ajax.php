@@ -1066,8 +1066,8 @@ include_once('../../engine/engine.php');
 				$text[0] = "<div id='pstatus' style='width: 125px; height: 35px;'>
 								<div style='position: absolute; left: 0px; cursor: pointer; float: left; color: rgb( 1, 188, 0 ) !important;'>".$lang["flatplan"]["approved"]."</div>
 
-								<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
-								<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
+								<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
+								<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
 							</div>";		
 				}
 				
@@ -1081,11 +1081,11 @@ include_once('../../engine/engine.php');
 		default:
 			$text[0] = "<div id='pstatus' style='width: 130px; height: 35px;'>";
 				if( $rights["acceptPage"] ) {
-					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
-					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+					$text[0] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
 				
-					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
-					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+					$text[0] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
 					}
 			$text[0] .= "</div>";
 			break;
@@ -1100,8 +1100,8 @@ include_once('../../engine/engine.php');
 					$text[1] = "<div id='pstatus' style='width: 125px; height: 35px;'>
 									<div style='position: absolute; left: 0px; cursor: pointer; float: left; color: rgb( 1, 188, 0 ) !important;'>".$lang["flatplan"]["approved"]."</div>
 
-									<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
-									<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
+									<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
+									<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
 								</div>";		
 					}
 				
@@ -1115,11 +1115,11 @@ include_once('../../engine/engine.php');
 			default:
 				$text[1] = "<div style='width: 130px;'>";
 					if( $rights["acceptPage"] ) {
-						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
-						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
+						$text[1] .= "<div style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>";
 				
-						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
-						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+						$text[1] .= "<div style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
 						}
 				$text[1] .= "</div>";
 				break;
@@ -1334,8 +1334,8 @@ include_once('../../engine/engine.php');
 								$t = "<div id='pstatus' style='width: ".( $allowed == "true" ? "125px" : "65px" )."; height: 35px;'>
 									  <div style='position: absolute; left: 0px; cursor: pointer; float: left; color: rgb( 1, 188, 0 ) !important;'>".$lang["flatplan"]["approved"]."</div>";
 				                if( $allowed == "true" ) {
-                  					$t .= "<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
-										   <div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
+                  					$t .= "<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove.png'></div>
+										   <div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"cancel\" )' src='images/cancelapprove_hover.png'></div>
 				                            </div>";
 									}
 								$text[] = $t;
@@ -1353,11 +1353,11 @@ include_once('../../engine/engine.php');
 								if( $rights["acceptPage"] ) {
 									$allowed = ( ( $pub[0]["status"] == "created" or $pub[0]["status"] == "active" or $pub[0]["status"] == "current" ) ? "true" : "false" );
 									if( $allowed == "true" ) {
-                    					$text[$i] .= "<div id='".$pageID."_dec' style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>
-												<div id='".$pageID."_dec_hover' style='display: none; position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline_hover.png'></div>
+                    					$text[$i] .= "<div id='".$pageID."_dec' style='position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div>
+												<div id='".$pageID."_dec_hover' style='display: none; position: absolute; left: 0px; cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline_hover.png'></div>
 				
-												<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>
-												<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept_hover.png'></div>";
+												<div id='".$pageID."_acc' style='position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>
+												<div id='".$pageID."_acc_hover' style='display: none; position: absolute; right: 0px; cursor: pointer; float: right; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept_hover.png'></div>";
 											}
 									 }
 							$text[$i] .= "</div>";

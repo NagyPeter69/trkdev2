@@ -24,6 +24,50 @@ else {
 	include_once('../lang/en.php');	
 	}
 
+// European-style locale (hu/de/pl) uses a comma for the decimal point;
+// English uses a period. Matches how the rest of this file already branches
+// display strings on $lng.
+function formatAssetSize( $bytes, $decimalSep ) {
+	if( $bytes <= 0 ) {
+		return "0 KB";
+		}
+	$units = array( "B", "KB", "MB", "GB", "TB" );
+	$i = max( 0, min( floor( log( $bytes, 1024 ) ), count( $units )-1 ) );
+	$value = $bytes / pow( 1024, $i );
+	return number_format( $value, 2, $decimalSep, "" )." ".$units[$i];
+	}
+
+// Jobs here run 80-100 packs deep and loadAssets() re-polls every second, so
+// re-summing filesize() over every pack's children on every single poll
+// doesn't scale - a pack's images arrive one Switch callback at a time
+// (image_upload-handler.php), so it can genuinely still be growing, but
+// once its child count stops changing the total is done for good. Cache
+// per pack, keyed on that child count: unchanged count is a free cache hit
+// (no filesystem calls at all), a changed count means it's still filling up
+// and gets re-summed. Self-invalidating - nothing elsewhere has to know
+// this cache exists or remember to clear it.
+function getPackSize( $pubId, $packId, $childs ) {
+	$childCount = count( $childs );
+	$cacheFile = TRKPATH."/temp/asset_size_cache/".$packId.".json";
+
+	$cached = is_file( $cacheFile ) ? json_decode( file_get_contents( $cacheFile ), true ) : null;
+	if( is_array( $cached ) && ( $cached["count"] ?? null ) === $childCount ) {
+		return $cached["size"];
+		}
+
+	$size = 0;
+	for( $c = 0; $c < $childCount; $c++ ) {
+		$size += @filesize( TRKPATH."/assets/".$pubId."/".$packId."/".$childs[$c]["name"] );
+		}
+
+	if( !is_dir( TRKPATH."/temp/asset_size_cache" ) ) {
+		mkdir( TRKPATH."/temp/asset_size_cache", 0777, true );
+		}
+	file_put_contents( $cacheFile, json_encode( array( "count" => $childCount, "size" => $size ) ), LOCK_EX );
+
+	return $size;
+	}
+
 if( $_GET["op"] == "removeAsset") {
 	$asset = sql_aget( "assets", "id='".$_GET["id"]."'", "*" );
 	
@@ -266,12 +310,17 @@ if( $_GET["op"] == "loadAssets" ) {
 			}
 		
 		$childs = sql_aget( "assets", "parent='".$assets[$i]["id"]."'", "*" );
-		
+		$decimalSep = ( $lng == "en" ) ? "." : ",";
+
 		if( empty( $childs[0]["id"] ) ) {
+			$size = @filesize( TRKPATH."/assets/".$assets[$i]["pub_id"]."/".$assets[$i]["parent"]."/".$assets[$i]["name"] );
+			$sizeLabel = formatAssetSize( $size, $decimalSep );
+
 			$txt .= "<tr data='".$assets[$i]["id"]."'>";
 				$txt .= "<td>".$name."</td>";
 				$txt .= "<td>".$type."</td>";
 				$txt .= "<td>".$date."</td>";
+				$txt .= "<td align='right'>".$sizeLabel."</td>";
 				$txt .= "<td align='center' data='".$assets[$i]["id"]."' class='noselect circle-color-box'><span class='circle-color ".$assets[$i]["color"]."'></span></td>";
 				$txt .= "<td class='noselect' align='right'><span class='assetUtils'>";
 					$txt .= "<i onclick='downloadAsset( \"".$assets[$i]["id"]."\" )' class='fas fa-cloud-download-alt'></i>";
@@ -283,10 +332,14 @@ if( $_GET["op"] == "loadAssets" ) {
 			$txt .= "</tr>";
 			}
 		else {
+			$size = getPackSize( $assets[$i]["pub_id"], $assets[$i]["id"], $childs );
+			$sizeLabel = formatAssetSize( $size, $decimalSep );
+
 			$txt .= "<tr data='".$assets[$i]["id"]."'>";
 				$txt .= "<td><span onclick='packInside(\"".$assets[$i]["id"]."\")' style='cursor: pointer;'>".$name."</span></td>";
 				$txt .= "<td>".$type."</td>";
 				$txt .= "<td>".$date."</td>";
+				$txt .= "<td align='right'>".$sizeLabel."</td>";
 				$txt .= "<td align='center' data='".$assets[$i]["id"]."' class='noselect circle-color-box'><span class='circle-color ".$assets[$i]["color"]."'></span></td>";
 				$txt .= "<td class='noselect' align='right'><span class='assetUtils'>";
 					$txt .= "<i onclick='downloadAsset( \"".$assets[$i]["id"]."\" )' class='fas fa-cloud-download-alt'></i>";

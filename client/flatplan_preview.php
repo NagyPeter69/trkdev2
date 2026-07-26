@@ -71,6 +71,17 @@ if( $hybridFP ) {
 	$_GET['alter'] = "FIN";
 	}
 
+// A job with FlatplanStages==1 has only one flatplan - the fin bit some
+// of its pages carry (e.g. ads are conventionally submitted FIN while
+// editorial pages arrive NOR - see page_pdf-handler.php's $stages1
+// handling) isn't a second stage to filter this view by, so the page
+// list/strip and the default-page lookup below both need to stop
+// splitting by fin for these jobs. This applies to both American and
+// Regular numbering, since FlatplanStages is a workflow-stage concept,
+// not a Parts-layout one - for any job with 2 or 3 stages (of either
+// numbering) this flag is simply false and nothing below changes.
+$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and !$hybridFP );
+
 if( !isset( $_GET['alter'] ) ) {	
 	switch( $user[0][19] ) {
 		case "FIN":
@@ -109,15 +120,30 @@ foreach($xpath as $temp) {
 		
 $pn = (string) $xml->Item[$i]->PageNumbering;
 
+// Parts only exist for American-numbering publications (see HAVE_PARTS
+// in engine/constans.php) - this must key off PageNumbering, not the
+// magazine's Regular/Adhoc business-type classification. The Adhoc
+// check below already did this correctly; this one didn't, so any
+// Regular-type magazine using American numbering (i.e. any Full/Hybrid
+// job with Parts, which is the common case) had $_GET["part"] wiped
+// unconditionally here. That's the one and only source of truth
+// flatplan_preview.php uses for $part on a cold landing (unlike
+// flatplan_reloadbg.php, which always gets an explicit part= from the
+// client) - so this silently ran every part-scoped query in this file
+// unscoped, "by luck" matching whichever part's page happened to sort
+// first in a plain LIMIT-1 query (no ORDER BY) and breaking for
+// whichever part didn't.
 if( $magazine[0][10] == "Regular" ) {
-	$_GET["part"] = "";
+	if( $pn == "European" ) {
+		$_GET["part"] = "";
+		}
 	}
 
 if( $magazine[0][10] == "Adhoc" ) {
 	if( $pn == "European" ) {
 		$_GET["part"] = "";
 		}
-	}	
+	}
 
 $part = "";
 if( $_GET["part"] != "" ) {
@@ -128,12 +154,25 @@ if( $_SESSION['intra_user'] == "1") {
 	//var_dump( $magazine );
 	}
 	
+// Scoped by $part to match flatplan_reloadbg.php's equivalent $packs
+// query (the one that actually drives prev/next navigation after the
+// first AJAX reload) - this initial load was missing that scoping
+// entirely, so it silently mixed every part's pages into one list.
+// The resulting cold-landing prev/next neighbors were then whatever
+// page from ANY part happened to sort next to the current one, which
+// only reliably breaks navigation for small parts (e.g. a 4-page Cover)
+// sharing low page numbers with other parts - a large part like Inside
+// mostly avoids colliding with itself. Harmless no-op for Regular/
+// European pubs, where $part is always "".
 if( $_GET['alter'] != '' and $_GET['alter'] != 'FIN' ) {
-	$packs = sql_get( 'pageinfo', 'type="'.$_GET['alter'].'"AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
+	$packs = sql_get( 'pageinfo', 'type="'.$_GET['alter'].'"AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" '.$part.' ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
+	}
+elseif( $stages1 ) {
+	$packs = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" '.$part.' ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
 	}
 else {
 	$fin = ( $_GET['alter'] == 'FIN' ? "1" : "0" );
-	$packs = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND fin="'.$fin.'" ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
+	$packs = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND fin="'.$fin.'" '.$part.' ORDER BY CAST(`page` AS SIGNED) ASC', '*' );
 	}
 
 	
@@ -146,23 +185,34 @@ for( $i = 0; $i < count( $packs ); $i++ ) {
 	}
 
 if( $_GET['clk'] == '' or $_GET['p'] == '' ) {
-	switch( $user[0][19] ) {
-		case "PRE":
-			$condition = 'type="PRE" AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" AND fin="0" '.$part.' ORDER BY `page` ASC';
-			break;
-		
-		case "FIN": 
-			if( $magazine[0][3] == "BAV" ) {
+	// Use the already-resolved $_GET['alter'] (validated above against
+	// what actually exists for this publication) rather than the raw
+	// $user[0][19] lastOpt - lastOpt can point at a stage that has no
+	// pages here (e.g. right after switching in from Flatplan view),
+	// which used to leave clk/p empty and the main render blank.
+	if( $stages1 ) {
+		// One flatplan, no fin split - see the $stages1 comment above.
+		$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" '.$part.' ORDER BY `page` ASC';
+		}
+	else {
+		switch( $_GET['alter'] ) {
+			case "PRE":
+				$condition = 'type="PRE" AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" AND fin="0" '.$part.' ORDER BY `page` ASC';
+				break;
+
+			case "FIN":
+				if( $magazine[0][3] == "BAV" ) {
+					$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" AND fin="0" '.$part.' ORDER BY `page` ASC';
+					}
+				else {
+					$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" AND fin="1" '.$part.' ORDER BY `page` ASC';
+					}
+				break;
+
+			default:
 				$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" AND fin="0" '.$part.' ORDER BY `page` ASC';
-				}
-			else {
-				$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" AND fin="1" '.$part.' ORDER BY `page` ASC';
-				}
-			break;
-		
-		default: 
-			$condition = '( type="ad" OR type="magazine" ) AND code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" AND fin="0" '.$part.' ORDER BY `page` ASC';
-			break;
+				break;
+			}
 		}
 	//echo $condition;
 
@@ -170,6 +220,13 @@ if( $_GET['clk'] == '' or $_GET['p'] == '' ) {
 		//var_dump( $condition );
 		}
 	$firstPage = sql_get( 'pageinfo', $condition, 'id,page' );
+
+	// Still nothing for the current stage/part - fall back to the
+	// Part's first page regardless of stage, so the main render is
+	// never left blank.
+	if( $firstPage[0][1] == '' ) {
+		$firstPage = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$_GET['code'].'" '.$part.' ORDER BY `page` ASC', 'id,page' );
+		}
 	/*echo "<pre>";
 	var_dump( $firstPage );
 	echo "</pre>";
@@ -273,15 +330,27 @@ jQuery(document).ready(function(){
 			
 			$pdfstand = (string) $xml->Item[$x]->PDFstandard;
 			$process = (string) $xml->Item[$x]->Workflow;
+			$fpStages = (string) $xml->Item[$x]->FlatplanStages;
 			// Hybrid: single flatplan, no stage markers at all (the view is
-			// already forced to FIN near the top of this file).
+			// already forced to FIN near the top of this file). Otherwise the
+			// markers shown depend on FlatplanStages: 1 stage means no
+			// PRE/BASIC/FIN distinction at all (no markers), 2 stages means
+			// BASIC+FIN (no PRE), 3 stages means all three.
 			$flatplans = array();
 			if( $process != "Softproof" and $process != "Hybrid" ) {
-				$flatplans = array(
-					"PRE" => 'pre',
-					"" => 'basic',
-					"FIN" => 'final'
-					);
+				if( $fpStages == "3" ) {
+					$flatplans = array(
+						"PRE" => 'pre',
+						"" => 'basic',
+						"FIN" => 'final'
+						);
+					}
+				else if( $fpStages == "2" ) {
+					$flatplans = array(
+						"" => 'basic',
+						"FIN" => 'final'
+						);
+					}
 				}
 			//$_GET['opt'] = $_GET['alter'];
 
@@ -443,16 +512,28 @@ jQuery(document).ready(function(){
 					
 				$pdfstand = (string) $xml->Item[$x]->PDFstandard;
 				$process = (string) $xml->Item[$x]->Workflow;
+				$fpStages = (string) $xml->Item[$x]->FlatplanStages;
 				// Hybrid: single flatplan, no stage markers at all (the view
-				// is already forced to FIN near the top of this file).
+				// is already forced to FIN near the top of this file). Otherwise
+				// the markers shown depend on FlatplanStages: 1 stage means no
+				// PRE/BASIC/FIN distinction at all (no markers), 2 stages means
+				// BASIC+FIN (no PRE), 3 stages means all three.
 				$flatplans = array();
 				if( $process != "Softproof" and $process != "Hybrid" ) {
-					$flatplans = array(
-						"PRE" => 'pre',
-						"" => 'basic',
-						"FIN" => 'final'
-						);
-					}			
+					if( $fpStages == "3" ) {
+						$flatplans = array(
+							"PRE" => 'pre',
+							"" => 'basic',
+							"FIN" => 'final'
+							);
+						}
+					else if( $fpStages == "2" ) {
+						$flatplans = array(
+							"" => 'basic',
+							"FIN" => 'final'
+							);
+						}
+					}
 				$_GET['opt'] = $_GET['alter'];
 					
 				foreach( $flatplans as $key => $val ) {
@@ -546,14 +627,17 @@ for( $i = 0; $i < count( $pages ); $i++ ) {
 			$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="'.$_GET['tag'].'" AND page="'.$pages[$i].'" '.$part.'', '*' );
 			}
 		else {
-			if( $_GET['alter'] == "FIN" ) {
+			if( $stages1 ) {
+				$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="" AND page="'.$pages[$i].'" '.$part.'', '*' );
+				}
+			elseif( $_GET['alter'] == "FIN" ) {
 				$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="" AND fin="1" AND page="'.$pages[$i].'" '.$part.'', '*' );
 				}
 			else {
 				$pageinfo = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state="" AND fin="0" AND page="'.$pages[$i].'" '.$part.'', '*' );
 				}
 			}
-		
+
 		if( $pageinfo[0][6] == "ad" ) {
 			$dir .= "/_ads";
 			$file2 = str_pad( $pages[$i], 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$tag."ad_preview.pdf";
@@ -561,7 +645,10 @@ for( $i = 0; $i < count( $pages ); $i++ ) {
 		else {
 			$pack = sql_get( 'packages', 'id="'.$pageinfo[0][1].'"', '*' );
 			$dir .= "/".$pack[0][4];
-			if( $_GET['alter'] == "FIN" ) $dir .= "/FIN";
+			// A 1-stage job's render lives wherever page_pdf-handler.php
+			// actually stored it based on this row's own fin (index 11),
+			// not wherever the requested $_GET['alter'] would imply.
+			if( $stages1 ? $pageinfo[0][11] == 1 : $_GET['alter'] == "FIN" ) $dir .= "/FIN";
 			$file2 = str_pad( $pages[$i], 3, '0', STR_PAD_LEFT)."_".$pageinfo[0][1]."_".$tag."preview.pdf";
 			}
 		}
@@ -720,7 +807,21 @@ else {
 // echo "</pre>";
 	}
 
-$boxSize = array( 
+// Both branches above ultimately derive $fullSizes/$sizes['Height'] from
+// R3-measured PDF geometry (getPDFBox()/getBBox(), now hardened to refuse
+// degenerate boxes) - but a page whose PDF R3 couldn't read at all can
+// still bottom out here at zero/negative if every fallback along the way
+// came up empty. A single check at this chokepoint (rather than one per
+// branch, several getBBox() calls deep) catches either path: fall back to
+// a fixed placeholder size instead of showing a 0px (or negative) preview
+// box.
+if( empty( $fullSizes ) || $fullSizes <= 0 || empty( $sizes['Height'] ) || $sizes['Height'] <= 0 ) {
+	error_log( "flatplan_preview.php: no usable page geometry for pageinfo id ".( $pageinfo[0][0] ?? '?' ).", using placeholder size" );
+	$fullSizes = 500;
+	$sizes['Height'] = 700;
+	}
+
+$boxSize = array(
 			"width" => intval( pixel_( $fullSizes, $zoom ) ),
 			"height" => intval( pixel_( $sizes['Height'], $zoom ) )
 			);
@@ -739,6 +840,9 @@ sort( $pages2 );
 if( $_GET['alter'] != '' && $_GET['alter'] != 'FIN' ) {
 	//echo "1";
 	$_GET['pack_id'] = sql_get( 'pageinfo', 'type="'.$_GET['alter'].'"AND page="'.$_GET['p'].'" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND '.( $_GET["tag"] != "" ? "state='".$_GET["tag"]."'" : "state=''" ).' '.$part.' LIMIT 1', '*' );
+	}
+elseif( $stages1 ) {
+	$_GET['pack_id'] = sql_get( 'pageinfo', 'type!="PRE" AND type!="PSTR" AND page="'.$_GET['p'].'" AND issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND '.( $_GET["tag"] != "" ? "state='".$_GET["tag"]."'" : "state=''" ).' '.$part.' LIMIT 1', '*' );
 	}
 else {
 	if( $_GET['alter'] == 'FIN' ) {
@@ -914,6 +1018,28 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 
 <div id='fpFooter'>
 	<?php if( !isMobile() ) { ?>
+		<?php
+			// Preflight state for both pages, computed once here (separate
+			// from the near-identical lookups further down that also drive
+			// the approve/reject status widgets) specifically so
+			// #preflightMarker2 can sit as a direct sibling of #loading -
+			// the SAME position:relative containing block #loading itself
+			// is positioned against (right:Npx) - rather than nested inside
+			// .footer_content's own separate position:relative context
+			// (which is itself offset via left:15px), which would misalign
+			// a right-anchored element placed there.
+			$pfAlter = $_GET['alter'];
+			$pfStatus0 = checkPageStatus( $pages[0], $_GET['id'], $_GET["pack_id"], $pfAlter, $_GET['tag'], $issue, $magazine, $_GET["part"] );
+			$pfPageID = array( $pfStatus0[1], "" );
+			$pfRow0 = sql_aget( "pageinfo", "id='".$pfPageID[0]."'", "preflight_error" );
+			$pfError = array( ( $pfRow0[0]["preflight_error"] == 1 ) ? 1 : 0, 0 );
+			if( count( $pages ) > 1 ) {
+				$pfStatus1 = checkPageStatus( $pages[1], $_GET['id'], $_GET["pack_id"], $pfAlter, $_GET['tag'], $issue, $magazine );
+				$pfPageID[1] = $pfStatus1[1];
+				$pfRow1 = sql_aget( "pageinfo", "id='".$pfPageID[1]."'", "preflight_error" );
+				$pfError[1] = ( $pfRow1[0]["preflight_error"] == 1 ) ? 1 : 0;
+				}
+		?>
 		<div id='loading' style='position: absolute; margin-top: 8px; right: 11px; top: 0px;'>
 			<div id="floatingBarsG">
 			<div class="blockG" id="rotateG_01">
@@ -934,6 +1060,14 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 			</div>
 			</div>
 		</div>
+		<!-- Right-side (page 2 / Spread View) preflight indicator - to the
+		left of #loading (right:11px, #floatingBarsG is 14px wide -> its own
+		left edge sits at right:25px; +7px gap, same convention as
+		#preflightMarker -> right:32px). Sibling of #loading, not nested in
+		.footer_content, so this right:Npx is relative to the same
+		containing block #loading uses. Empty/classless (invisible) in
+		single-page mode. -->
+		<div id='preflightMarker2' onclick='downloadPreflight("<?= $pfPageID[1] ?>")' data-pageid='<?= $pfPageID[1] ?>' class='<?= ( $pfError[1] == 1 ) ? "preflightError" : "" ?>' style='position: absolute; right: 32px; top: 17.5px; transform: translateY(-50%); width: 16.5px; height: 16.5px;' title='Preflight failed'></div>
 	<?php } ?>
 	
    	<div id='sbs_v1' class='sbs_ver' style='position: absolute; left: 0px; display: none;'></div>
@@ -952,6 +1086,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 
 					$status = checkPageStatus( $pages[0], $_GET['id'], $_GET["pack_id"], $alter, $_GET['tag'], $issue, $magazine, $_GET["part"] );
 					$pageID[0] = $status[1];
+					$preflightRow = sql_aget( "pageinfo", "id='".$pageID[0]."'", "preflight_error" );
 					if( isMobile() ) {
 						
 						}
@@ -966,7 +1101,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 							default:
 								$text[0] = "<div style='width: 70px;'>";
 									if( $rights["acceptPage"] ) {
-										$text[0] .= "<div style='cursor: pointer; float: left; margin-top: 2px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div><div style='cursor: pointer; float: left;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+										$text[0] .= "<div style='cursor: pointer; float: left; margin-top: 2px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div><div style='cursor: pointer; float: left;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
 										}
 								$text[0] .= "</div>";
 								break;
@@ -977,8 +1112,22 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 				?>
 				</div>
 				<?php if( $user[0][26] == 1 ) { ?>
-					<div id='colorStdLabel1' title='Color standard'><?= htmlspecialchars( partDetect( $_GET['id'], $pages[0], "color" ) ) ?></div>
+					<div id='colorStdLabel1' title='Color standard'><?= htmlspecialchars( partDetect( $_GET['id'], $pages[0], "color", $_GET["part"] ) ) ?></div>
 				<?php } ?>
+				<!-- Always rendered (not gated on preflight_error) so the AJAX
+				page-navigation path (reloadBG(), see preview_rightPanel.php)
+				can toggle/re-target it per page without recreating the DOM
+				node - previously this div didn't exist at all when the
+				FIRST page loaded had no error, and never got re-evaluated
+				on nav, so it either never appeared or stayed stuck lit for
+				every page once created. Positioned to the right of
+				#zoomRange (left:42px, width:67px -> right edge 109px), with
+				the same 7px gap #zoomdiv leaves before #zoomRange (-15+50=35
+				to 42) - so 109+7=116, +10px per follow-up request = 126px.
+				Vertically centered in #fpFooter's 35px bar via top:17.5px
+				(half of 35) + translateY(-50%). Sized 150% of the base 11px
+				marker. -->
+				<div id='preflightMarker' onclick='downloadPreflight("<?= $pageID[0] ?>")' data-pageid='<?= $pageID[0] ?>' class='<?= ( $preflightRow[0]["preflight_error"] == 1 ) ? "preflightError" : "" ?>' style='position: absolute; left: 126px; top: 17.5px; transform: translateY(-50%); width: 16.5px; height: 16.5px;' title='Preflight failed'></div>
 			<?php } ?>
 
 		<?php if( isMobile() ) { ?>
@@ -1046,7 +1195,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 						$numb[] = $txt;
 						}
 					?>			
-				<input type="text" id='pageNr' value='<?= implode( "-", $numb ) ?>' style='padding: 0; border: 0;' onkeypress="return isEnter(event, 'jumpToPage' )" onfocus="this.select();">
+				<input type="text" id='pageNr' value='<?= implode( "-", $numb ) ?>' style='padding: 0; border: 0; width: 64px; min-width: 64px; max-width: 64px; box-sizing: border-box; text-align: center; -webkit-appearance: none; appearance: none;' onkeypress="return isEnter(event, 'jumpToPage' )" onfocus="this.select();">
 				<div class='pv2 pageVer'></div>
 			</div>
 
@@ -1081,7 +1230,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 						default:
 							$text[1] = "<div style='width: 70px;'>";
 								if( $rights["acceptPage"] ) {
-									$text[1] .= "<div style='cursor: pointer; float: left; margin-top: 4px;'><img onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div><div style='cursor: pointer; float: left;'><img onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
+									$text[1] .= "<div style='cursor: pointer; float: left; margin-top: 4px;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"decline\" )' src='images/decline.png'></div><div style='cursor: pointer; float: left;'><img class='approveButton' onclick='approvePage( \"".$status[1]."\", \"accept\" )' src='images/accept.png'></div>";
 									}
 							$text[1] .= "</div>";
 							break;
@@ -1098,7 +1247,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 				never make it appear since there was no DOM element left for
 				later updates to find. Left empty here in single-page mode;
 				an AJAX pair-mode switch fills it in. -->
-				<div id='colorStdLabel2' title='Color standard'><?= count( $pages ) > 1 ? htmlspecialchars( partDetect( $_GET['id'], $pages[1], "color" ) ) : '' ?></div>
+				<div id='colorStdLabel2' title='Color standard'><?= count( $pages ) > 1 ? htmlspecialchars( partDetect( $_GET['id'], $pages[1], "color", $_GET["part"] ) ) : '' ?></div>
 			<?php } ?>
 		<?php } ?>
 	</div>
@@ -1438,7 +1587,7 @@ function loadPages() {
 			//processChecker = false;
 			if( txt != data[0] ) {
 				$('.innerPreview').html( data[0] );
-				
+
 				if( data[2] == "1" ) {
 					$("#fpnopages").show(0);
 					$(".footer_content, #loading").hide(0);
@@ -2066,7 +2215,7 @@ $('#content_box').on('mousedown', function() {
 	down = true;
 	});
 
-var norefresh = [ "compareTable", "compare_selector", "comp_operation", "compRange", "inner", "hover", "custom-menu", "ownerOnly", "commentBox", "replyComment", "subCancel", "subSave", "panel_top", "panel", "panelElement", "commentText", "commentEnabler", "square", "circle", "dot", "rightPanel", "rightPanel_top", "cyan", "magenta", "yellow", "kblack", "rightPanelElement", "rightPanel_bottom" ];
+var norefresh = [ "compareTable", "compare_selector", "comp_operation", "compRange", "inner", "hover", "custom-menu", "ownerOnly", "commentBox", "replyComment", "subCancel", "subSave", "panel_top", "panel", "panelElement", "commentText", "commentEnabler", "square", "circle", "dot", "rightPanel", "rightPanel_top", "cyan", "magenta", "yellow", "kblack", "rightPanelElement", "rightPanel_bottom", "fpstatusbutton", "approveButton" ];
 window.addEventListener("mouseup", function(event) {
 	if( event.button == 0 ) {
 		if( jQuery.inArray( event.target.id, norefresh ) == -1 ) {
@@ -2136,6 +2285,14 @@ var minHeight = 0;
 var drawing = false;
 var graphState = "";
 var previewPic = "";
+
+var $idown;
+function downloadPreflight( id ) {
+	var link = "filedownload.php?type=preflight&id="+id;
+
+	if ($idown) { $idown.attr('src', link); }
+	else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
+	}
 
 function changePic( data ) {
 	removeAdvancedTool();
@@ -2355,21 +2512,22 @@ function setState( state ) {
 	graphState = state;
 	}
 
-function createDiv( options, text, id, parent ) {
+function createDiv( options, text, id, parent, callback ) {
 	var style = "";
 	for( var key in options ) {
 		style += key+":"+options[key]+";";
 		}
-	
+
 	jQuery('<div/>', {
     	id: id,
     	style: style
 	}).appendTo( parent );
 	if( id == "divTextBox" ) {
-		$( "#"+id ).html( text ).show( 100 );
+		$( "#"+id ).html( text ).show( 100, callback );
 		}
 	else {
 		$( "#"+id ).html( text );
+		if( callback ) callback();
 		}
 	}
 
@@ -2518,14 +2676,15 @@ function addText( div_id ) {
 		left: ((truewidth/2)-130)+'px',
 		top: '130px',
 		width: '283px'
-		}, innerHTML, 'divTextBox', 'body' );
-	
+		}, innerHTML, 'divTextBox', 'body', function() {
+			$("#divText").focus();
+			} );
+
 	if( mobile ) {
 		$("#divTextBox").css("top", "60px");
 		}
 
 	$("#divTextBox").addClass('floatCommentMenu');
-	$("#divText").focus();
 	$("#divText").keyup(function() {
 		if( $("#divText").val() != "" ) {
 			$("#saveCom").removeAttr('disabled');
@@ -2930,8 +3089,6 @@ function refreshComments( suboption ) {
 		}	
 	}
 	
-var fpPages = parseInt( $("#fpPages").outerWidth() );
-
 // Centers the page-number/nav-arrow complex on the actual spread spine
 // (where the two rendered pages touch on screen) rather than on some
 // computed midpoint of the toolbar's free space, and centers each
@@ -3174,7 +3331,10 @@ $( document ).ready(function() {
 	$(".pagePreview").fadeOut(0);
 	fit_box_preview();
 	zoomCalc();
-	
+
+	placeBox();
+	rendering();
+
 	alapzoom = zoom;
 	
 	if( mobile ) {
@@ -3481,11 +3641,24 @@ function myContextMenu( operation, target ) {
 				success:function( data ) {
 					if( data == "success" ) {
 						var temp = target.split("_");
-						
+
 						$('#'+target).addClass("commentApproved");
 						$('#'+temp[0]+'_'+temp[1]+'_'+temp[2]).addClass("commentApproved");
 						}
-						
+
+					// Same panel-close cleanup #subCancel's click handler
+					// does - approving is just another way of closing this
+					// panel, and skipping this left `disable` stuck at 1
+					// forever (set when the panel opened, only ever reset
+					// here or by Cancel), silently breaking the Space-key
+					// comment toggle and the 1/2/3/4/5 shortcut keys for
+					// the rest of the session after the first approval.
+					stopRefresh = true;
+					refreshTarget = "";
+					graphState = tempState;
+					commentTXT = '';
+					disable = 0;
+					disableZoom = false;
 					$('#commentComment').remove();
 					}
 				});

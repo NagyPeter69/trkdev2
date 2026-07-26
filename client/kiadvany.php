@@ -80,62 +80,65 @@ function magSettingsMenu( info ) {
 	}
 
 function issueManagement( op, id, divid ) {
+	// The dropdown used to only close inside each ajax call's success
+	// handler - fine as long as the request always comes back clean, but
+	// a server-side error on the way (a PHP fatal, a slow/blocked Switch
+	// call, anything that keeps success from ever firing) left the menu
+	// stuck open with no way to dismiss it. A context menu should close
+	// the moment its action is chosen regardless of how that action's own
+	// request turns out, so it's closed synchronously up front instead -
+	// each branch below still fires its own ajax call same as before,
+	// just no longer waits on it to dismiss the menu.
 	if( op == "deleteIssue" ) {
 		var issue = divid.replace('Float','');
 		//issue = issue.replace('_',' ');
 		//var text = "Are you sure you want to remove the "+issue+" Issue?";
 		var text = "<?= $lang['publications']['remove_issue'] ?>";
 		text = text.replace( "[MEGJELENES]", issue );
-		
+
 		if( confirm( text ) ) {
+			$("#"+divid).hide(200,function(){
+				$("#"+divid).remove();
+				});
 			var iHTML = $("#"+id+"_status").html();
 			$("#"+id+"_status").html( iHTML+'<div style="float: right; margin-left: 15px; margin-top: 5px; height:1px;"><div id="floatingBarsG"><div class="blockG" id="rotateG_01"></div><div class="blockG" id="rotateG_02"></div><div class="blockG" id="rotateG_03"></div><div class="blockG" id="rotateG_04"></div><div class="blockG" id="rotateG_05"></div><div class="blockG" id="rotateG_06"></div><div class="blockG" id="rotateG_07"></div><div class="blockG" id="rotateG_08"></div></div></div>' );
 			$.ajax	({
 				url:"engine/issueManagementAjax.php",
 				type: "GET",
 				data: 'op='+op+'&id='+id,
-				dataType: 'json',
-				success:function( data ) {
-					$("#"+divid).hide(200,function(){
-						$("#"+divid).remove();
-						});
-					}
+				dataType: 'json'
 				});
 			}
 		}
-	
+
 	else if( op == "approveIssue" ) {
 		var issue = divid.replace('Float','');
 		//var text = "Are you sure you want to approve the "+issue+" Issue?";
 		var text = "<?= $lang['publications']['approve_issue'] ?>";
 		text = text.replace( "[MEGJELENES]", issue );
-			
+
 		if( confirm( text ) ) {
+			$("#"+divid).hide(200,function(){
+				$("#"+divid).remove();
+				});
 			$.ajax	({
 				url:"engine/issueManagementAjax.php",
 				type: "GET",
 				data: 'op='+op+'&id='+id,
-				dataType: 'json',
-				success:function( data ) {	
-					$("#"+divid).hide(200,function(){
-						$("#"+divid).remove();
-						});
-					}
-				});			
+				dataType: 'json'
+				});
 			}
 		}
-	
+
 	else {
+		$("#"+divid).hide(200,function(){
+			$("#"+divid).remove();
+			});
 		$.ajax	({
 			url:"engine/issueManagementAjax.php",
 			type: "GET",
 			data: 'op='+op+'&id='+id,
-			dataType: 'json',
-			success:function( data ) {	
-				$("#"+divid).hide(200,function(){
-					$("#"+divid).remove();
-					});
-				}
+			dataType: 'json'
 			});
 		}
 	}

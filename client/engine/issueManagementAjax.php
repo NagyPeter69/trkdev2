@@ -102,13 +102,18 @@
 		$mag = sql_get( 'magazines', 'code="'.$_GET['code'].'"', '*' );
 		$pubs = sql_get( 'publications', 'magazine_id="'.$mag[0][0].'"', '*' );
 		$magazine = sql_get( 'magazines', 'id="'.$mag[0][0].'"', '*' );
-		$publisher = sql_get( 'publishers', 'id="'.$mag[0][1].'"', '*' );
 
 		sql_update( "magazines", "`removing`='1'", "id='".$magazine[0][0]."'" );
 
+		// magazines.publisher_id is always "0" for Adhoc jobs regardless of
+		// client (see switchAPI.php's resolveJobPublisherName()), so looking
+		// the publisher up directly off it - as this used to - resolved to
+		// nothing and sent Switch an empty "client" for every Adhoc removal,
+		// known-client or not. resolveJobPublisherName() knows to fall back
+		// to publications.owner for Adhoc.
 		$array = array(
 			"event" => "delete_publication",
-			"client" => $publisher[0][1],
+			"client" => resolveJobPublisherName( $magazine[0][3] ),
 			"pubName" => $magazine[0][2],
 			"jobCode" => $magazine[0][3],
 			);
@@ -145,12 +150,14 @@
 		$issue = sql_get( 'publications', 'id="'.$_GET['id'].'"', '*' );
 		$publisher = sql_get( 'publishers', 'id="'.$issue[0][1].'"', '*' );
 		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'"', '*' );
-		
+
 		sql_update( "publications", "`removing`='1'", "id='".$issue[0][0]."'" );
 
+		// Same Adhoc publisher_id="0" fallback issue as delMagazine above -
+		// resolveJobPublisherName() falls back to publications.owner.
 		$array = array(
 			"event" => "delete_issue",
-			"client" => $publisher[0][1],
+			"client" => resolveJobPublisherName( $magazine[0][3] ),
 			"jobCode" => $magazine[0][3],
 			"issue" => $issue[0][10],
 			"description" => $magazine[0][3].'_'.$issue[0][10],

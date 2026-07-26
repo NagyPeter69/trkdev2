@@ -194,8 +194,18 @@
 		
 		if( $rights['modIssue'] ) {
 			if( $issue[1] != 'archived' ) {
+				$floatId = $_GET["mag"]."_".$_GET['issue']."Float";
+				// settingsPanel() reads this dropdown's own offset() to
+				// position the new panel it opens, so it can't be removed
+				// (or display:none'd - that collapses layout, breaking
+				// offset()) before that read happens. visibility:hidden
+				// dismisses it visually right away while keeping its
+				// layout intact for that read; the follow-up remove() a
+				// tick later (well after settingsPanel's synchronous
+				// offset() call) clears it from the DOM once it's no
+				// longer needed for anything.
 				$txt .= "<div style='margin-top: 6px; margin-bottom: 2px; border-top: 1px solid #636363;'></div>";
-				$txt .= "<div onclick='settingsPanel(\"pubs_modIssue\", \"".$_GET["mag"]."_".$_GET['issue']."Float\", ".$issue[0]." )' class='issueMenuLine' style='margin-top: 6px;'><span style='cursor:pointer;'>".$lang["publications"]["modify"]."</span></div>";
+				$txt .= "<div onclick='$(\"#".$floatId."\").css(\"visibility\",\"hidden\"); settingsPanel(\"pubs_modIssue\", \"".$floatId."\", ".$issue[0]." ); setTimeout(function(){ $(\"#".$floatId."\").remove(); }, 300);' class='issueMenuLine' style='margin-top: 6px;'><span style='cursor:pointer;'>".$lang["publications"]["modify"]."</span></div>";
 				}
 			}
 		

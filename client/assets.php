@@ -103,6 +103,7 @@ if( !empty( $_SESSION["visitor_pub"] ) ) {
 								<td id="name"><span class="ordering2"><?= $lang["assets"]["asset_name"] ?>&nbsp;</span><i class="ordering fas fa-caret-down"></i></td>
 								<td id="type"><span class="ordering2"><?= $lang["assets"]["asset_type"] ?>&nbsp</span><i class="ordering fas fa-caret-down"></i></td>
 								<td id="time" class="orderSelected"><span class="ordering2"><?= $lang["assets"]["asset_arrived"] ?>&nbsp;</span><i class="ordering fas fa-caret-down"></i></td>
+								<td id="size" align="right"><?= $lang["assets"]["asset_size"] ?></td>
 								<td id="color" ><span class="ordering2"><?= $lang["assets"]["asset_label"] ?>&nbsp;</span><i class="ordering fas fa-caret-down"></i></td>
 								<td>&nbsp;</td>
 							</tr>
@@ -394,11 +395,11 @@ $("#strip_code").change(function(){
 
 function downloadPic( id ) {
 	console.log( multiPic );
-	var link = "filedownload.php?type=asset&id="+id+"&multi="+JSON.stringify( multiPic )
-	
+	var link = "filedownload.php?type=asset&id="+id+"&multi="+JSON.stringify( multiPic );
+
 	if ($idown) { $idown.attr('src',link); }
 	else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
-	} 
+	}
 
 function resendAsset( id ) {
 	settingsPanel( 'asset_resend', "floatMenu", id );
@@ -420,7 +421,7 @@ function removeAsset( id ) {
 function downloadAsset( id ) {
 	var link = "filedownload.php?type=asset&id="+id+"&multi="+JSON.stringify( multiID );
 	console.log( multiID );
-	
+
 	if ($idown) { $idown.attr('src',link); }
 	else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
 	$(".assetSelected").removeClass("assetSelected");

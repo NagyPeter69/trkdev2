@@ -362,12 +362,13 @@ function loadType() {
 		type: "GET",
 		dataType: 'json',
 		success:function( data ) {
-			$("#typeTD").html( data );
+			$("#typeTD").html( data[0] );
+			var pageNumbering = data[1];
 
 			$("#type").change( function() {
 				accepted_ext();
 				var temp = $("div[fileid]");
-				$("div[fileid]").each(function(){	
+				$("div[fileid]").each(function(){
 					var name = $(this).find(".fname").html();
 					var ext = name.split( "." );
 					ext = ext[ext.length - 1].toUpperCase();
@@ -376,9 +377,9 @@ function loadType() {
 						$("span:contains('"+name+"')").parent().parent().find(".fas").click();
 						}
 					});
-				
+
 				console.log( $("#type").val() );
-				
+
 				if( $("#type").val() == "picture_pack" ) {
 					console.log( $("#part_row") );
 					$("#packname_row").show(0);
@@ -388,17 +389,21 @@ function loadType() {
 					$("#packname_row").hide(0);
 					$("#parts_row").show(0);
 					}
-					
-				if( $("#type").val() == "picture" || $("#type").val() == "pdf" || $("#type").val() == "pdf_to_flatplan" ) {
+
+				// Parts only exist at all for American (US-style) page
+				// numbering - a European/absolute-numbered publication
+				// (Hybrid or not) has no Part to assign, so this dropdown
+				// has no business showing regardless of asset type.
+				if( pageNumbering != "American" || $("#type").val() == "picture" || $("#type").val() == "pdf" ) {
 					$("#parts_row").hide(0);
 					}
 				else {
 					$("#parts_row").show(0);
 					}
-					
+
 				saveUploadSettings();
 				});
-			$("#type").change();	
+			$("#type").change();
 			}
 		});		
 	}
