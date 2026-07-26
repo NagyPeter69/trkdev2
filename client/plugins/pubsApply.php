@@ -246,19 +246,29 @@ Tracker<br>";
 					$_POST["Client"] = $_POST["Client2"];
 					$u = sql_aget( "accounts", "id='".$_POST["adhocUser"]."'", "*" );
 					$_POST["Mails"] = $u[0]["email"];
-					
+
 					$c = sql_aget( "publishers", "name='".$_POST["Client2"]."'", "*" );
 					$name[] = "owner";
 					$value[] = $c[0]["id"];
 
 					$name[] = "user";
 					$value[] = $u[0]["id"];
-					$id = sql_add( "publications", $name, $value );	
+					$id = sql_add( "publications", $name, $value );
 					sql_update( "accounts", "showMagazines='".$u[0]["showMagazines"].",".$mid."'", "id='".$u[0]["id"]."'" );
-					$aid = $u[0]["id"];
 					$_POST["LocalStorage"] = "PubFolder";
 					sql_update( "magazines", "pubName='".$c[0]["name"]."'", "id='".$mid."'" );
-					}	
+
+					// A known/registered contact still gets the same elevated
+					// (ArtDirectorElevated / group 14: ad upload+preflight,
+					// Flatplan+Pages approve/reject, asset upload/download)
+					// access as an unknown one - as a separate job-scoped Temp
+					// account linked back to their real one, not by changing
+					// their real account's own group, which would silently
+					// elevate them on every other job they can already see.
+					$names2 = array( "name", "pass", "type", "publisher", "email", "full_name", "group", "actual", "showMagazines", "usertype", "temppubid", "lang", "linked_account_id" );
+					$values2 = array( "", "", "adhoc", $c[0]["id"], $u[0]["email"], $u[0]["full_name"], "14", $_POST["Code"]."_".$_POST["Code"], $mid, "Temp", $id, strtolower( $_POST["Language"] ), $u[0]["id"] );
+					$aid = sql_add( "accounts", $names2, $values2 );
+					}
 				
 				if( $_POST["ClientType"] == "unknown" ) {
 					$name[] = "clientType";
@@ -294,16 +304,34 @@ Tracker<br>";
 				$link = "https://".URL."/index.php?hash=".$hash;
 				$subject = $_POST["Name"]." létrehozva a Colorcom Trackeren";
 				$to = $_POST["Mails"]."|".$_POST["Mails"];
-				$body = "Kedves Ügyfelünk!<br>
-				<br>
-				A Colorcom Tracker rendszerben létrehoztuk a ".$_POST["Name"]." munkát ".$_POST["Code"]." azonosítóval. Az alábbi linkre kattintva tudja feltölteni feldolgozásra váró anyagát, közvetlenül a Tracker rendszerbe.<br>
-				<br>
-				<a href='".$link."'>".$link."</a><br>
-				<br>
-				".$guide."
-				<br>
-				Üdvözlettel:<br>
-				Colorcom Media";
+				if( $_POST["ClientType"] == "known" && !empty( $u[0]["full_name"] ) ) {
+					// This is a separate, job-scoped access link for the elevated
+					// role - not the recipient's existing Tracker login - so say
+					// so explicitly and greet them by name instead of the generic
+					// "Dear Customer" used for a genuinely new/unknown contact.
+					$body = "Kedves ".$u[0]["full_name"].",<br>
+					<br>
+					A Colorcom Tracker rendszerben létrehoztuk a ".$_POST["Name"]." munkát ".$_POST["Code"]." azonosítóval. Ehhez a munkához az alábbi, elkülönített hozzáférési linket kaptad (ez nem a meglévő Tracker fiókod, a jogosultságaid ezen a linken csak erre a munkára vonatkoznak). A linkre kattintva tudod feltölteni a feldolgozásra váró anyagot, közvetlenül a Tracker rendszerbe.<br>
+					<br>
+					<a href='".$link."'>".$link."</a><br>
+					<br>
+					".$guide."
+					<br>
+					Üdvözlettel:<br>
+					Colorcom Media";
+					}
+				else {
+					$body = "Kedves Ügyfelünk!<br>
+					<br>
+					A Colorcom Tracker rendszerben létrehoztuk a ".$_POST["Name"]." munkát ".$_POST["Code"]." azonosítóval. Az alábbi linkre kattintva tudja feltölteni feldolgozásra váró anyagát, közvetlenül a Tracker rendszerbe.<br>
+					<br>
+					<a href='".$link."'>".$link."</a><br>
+					<br>
+					".$guide."
+					<br>
+					Üdvözlettel:<br>
+					Colorcom Media";
+					}
 				produkcioSendmail( $subject, $body, $to );
 				
 				changeXmlDatabase( 'add', $_POST );

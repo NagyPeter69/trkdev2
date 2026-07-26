@@ -108,7 +108,7 @@ $groups = $temp;
 		<div style="overflow: auto; max-height: 75vh; overflow-x: hidden; width: 320px;">
 			<table class='panelTable' width='100%' cellspacing='0' cellpadding='0'>
 				<tr>
-					<td valign="top" style='padding-top: 3px;'><img onclick='generateGroup( this )' style='cursor: pointer;' src="images/trk_plus.png"></td>
+					<td valign="top" style='padding-top: 3px;'><img onclick='generateGroup( this )' title='Add a role' style='cursor: pointer;' src="images/trk_plus.png"></td>
 					<td id="userLists" valign="top" colspan="2" align="left">
 						<?php
 						$x = -1;
@@ -143,6 +143,7 @@ $groups = $temp;
 													echo "<td>User:</td>";
 													echo "<td>";
 														echo "<input type='hidden' name='tempregusersgroup[]' value='".$prev_group."'><input type='text' value='".$tempusers[$t]["email"]."' class='userLine' name='tempregusers[]' groupid='".$prev_group."' style='width: 125px;'>";
+												if( $tempusers[$t]["linked_account_id"] != 0 ) { echo "<div style='font-size: 10px; color: #888;'>linked to: ".$tempusers[$t]["full_name"]; }
 													echo "</td>";
 													echo "<td>M <input type='checkbox' name='tempregmailto[]' value='".$tempusers[$t]["id"]."' ".( in_array( $tempusers[$t]["email"], $emails ) ? "checked" : "" )."></td>";
 													echo "<td style='padding-left: 5px;'><img onclick='removeUser( this )' style='cursor: pointer; vertical-align:middle; padding-left: 3px;' src='images/trk_minus.png'>";
@@ -156,10 +157,12 @@ $groups = $temp;
 											echo "<tr>";
 												echo "<td>";
 													if( $showgreenplus ) {
-														echo "<img class='add' onclick='generateUser( this )' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
+														echo "<img class='add' onclick='generateUser( this )' title='Assign an existing team member to this role' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
 														}
 														
-													echo "<img class='add' onclick='generateUser2( this )' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+													if( $mag[0]["type"] == "Adhoc" ) {
+														echo "<img class='add' onclick='generateUser2( this )' title='Invite someone new by email &mdash; they get a one-time access link for this role and job only, not a full account' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+														}
 												echo "</td>";
 												echo "<td>&nbsp;</td>";
 												echo "<td>&nbsp;</td>";
@@ -206,6 +209,7 @@ $groups = $temp;
 									echo "<td>User:</td>";
 									echo "<td>";
 										echo "<input type='hidden' name='tempregusersgroup[]' value='".$prev_group."'><input type='text' value='".$tempusers[$t]["email"]."' class='userLine' name='tempregusers[]' groupid='".$prev_group."' style='width: 125px;'>";
+					if( $tempusers[$t]["linked_account_id"] != 0 ) { echo "<div style='font-size: 10px; color: #888;'>linked to: ".$tempusers[$t]["full_name"]; }
 									echo "</td>";
 									echo "<td>M <input type='checkbox' name='tempregmailto[]' value='".$tempusers[$t]["id"]."' ".( in_array( $tempusers[$t]["email"], $emails ) ? "checked" : "" )."></td>";
 									echo "<td style='padding-left: 5px;'><img onclick='removeUser( this )' style='cursor: pointer; vertical-align:middle; padding-left: 3px;' src='images/trk_minus.png'>";
@@ -214,6 +218,13 @@ $groups = $temp;
 							}
 						//Ideiglenes felhasználók betöltése END
 						//Ideiglenes egyéni groupok és felhasználók betöltései START
+						// Temp/temppubid accounts only ever exist for Adhoc jobs (see
+						// userApply.php) - for a Regular job $pub is still the plain
+						// publisher_id scalar from line 34 (never replaced with the
+						// publications-row array the Adhoc branch above builds), so
+						// $pub[0]["id"] here was a guaranteed fatal TypeError under
+						// PHP 8 for every Regular job's Users panel.
+						if( $mag[0]["type"] == "Adhoc" ) {
 						$users = sql_aget( "accounts", "`usertype`='Temp' AND `temppubid`='".$pub[0]["id"]."' GROUP BY `group` ", "*" );
 						
 						$userGroups = array();
@@ -228,12 +239,13 @@ $groups = $temp;
 							$groups2 = sql_get( 'user_groups', 'publisher="'.$user[0][4].'" OR publisher="0" ORDER BY `name` ASC', 'id, name' );
 							}
 							
-						for( $i = 0; $i < count( $groups ); $i++ ) {
+						$temp2 = array();
+						for( $i = 0; $i < count( $groups2 ); $i++ ) {
 							if( in_array(  $groups2[$i][0], $userGroups ) ) {
 								$temp2[ $groups2[$i][0] ] = $groups2[$i][1];
 								}
 							}
-							
+
 						$groups2 = $temp2;
 						$groups = array_merge( $groups, $groups2 );
 						
@@ -250,6 +262,7 @@ $groups = $temp;
 													echo "<td>User:</td>";
 													echo "<td>";
 														echo "<input type='hidden' name='tempregusersgroup[]' value='".$prev_group."'><input type='text' value='".$tempusers[$t]["email"]."' class='userLine' name='tempregusers[]' groupid='".$prev_group."' style='width: 125px;'>";
+												if( $tempusers[$t]["linked_account_id"] != 0 ) { echo "<div style='font-size: 10px; color: #888;'>linked to: ".$tempusers[$t]["full_name"]; }
 													echo "</td>";
 													echo "<td>M <input type='checkbox' name='tempregmailto[]' value='".$tempusers[$t]["id"]."' ".( in_array( $tempusers[$t]["email"], $emails ) ? "checked" : "" )."></td>";
 													echo "<td style='padding-left: 5px;'><img onclick='removeUser( this )' style='cursor: pointer; vertical-align:middle; padding-left: 3px;' src='images/trk_minus.png'>";
@@ -263,10 +276,12 @@ $groups = $temp;
 											echo "<tr>";
 												echo "<td>";
 													if( $showgreenplus ) {
-														echo "<img class='add' onclick='generateUser( this )' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
+														echo "<img class='add' onclick='generateUser( this )' title='Assign an existing team member to this role' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
 														}
 														
-													echo "<img class='add' onclick='generateUser2( this )' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+													if( $mag[0]["type"] == "Adhoc" ) {
+														echo "<img class='add' onclick='generateUser2( this )' title='Invite someone new by email &mdash; they get a one-time access link for this role and job only, not a full account' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+														}
 												echo "</td>";
 												echo "<td>&nbsp;</td>";
 												echo "<td>&nbsp;</td>";
@@ -289,7 +304,8 @@ $groups = $temp;
 									}
 								$ignore_user[] = $users[$i]["id"];
 								}
-							}						
+							}
+						}
 						//Ideiglenes egyéni groupok és felhasználók betöltései END
 						//Ideiglenes felhasználók betöltése START
 						if( $mag[0]["type"] == "Adhoc" ) {
@@ -299,6 +315,7 @@ $groups = $temp;
 									echo "<td>User:</td>";
 									echo "<td>";
 										echo "<input type='hidden' name='tempregusersgroup[]' value='".$prev_group."'><input type='text' value='".$tempusers[$t]["email"]."' class='userLine' name='tempregusers[]' groupid='".$prev_group."' style='width: 125px;'>";
+					if( $tempusers[$t]["linked_account_id"] != 0 ) { echo "<div style='font-size: 10px; color: #888;'>linked to: ".$tempusers[$t]["full_name"]; }
 									echo "</td>";
 									echo "<td>M <input type='checkbox' name='tempregmailto[]' value='".$tempusers[$t]["id"]."' ".( in_array( $tempusers[$t]["email"], $emails ) ? "checked" : "" )."></td>";
 									echo "<td style='padding-left: 5px;'><img onclick='removeUser( this )' style='cursor: pointer; vertical-align:middle; padding-left: 3px;' src='images/trk_minus.png'>";
@@ -313,10 +330,12 @@ $groups = $temp;
 							echo "<tr>";
 								echo "<td>";
 									if( $showgreenplus ) {
-										echo "<img class='add' onclick='generateUser( this )' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
+										echo "<img class='add' onclick='generateUser( this )' title='Assign an existing team member to this role' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
 										}
 										
-									echo "<img class='add' onclick='generateUser2( this )' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+									if( $mag[0]["type"] == "Adhoc" ) {
+										echo "<img class='add' onclick='generateUser2( this )' title='Invite someone new by email &mdash; they get a one-time access link for this role and job only, not a full account' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+										}
 								echo "</td>";
 								echo "<td>&nbsp;</td>";
 								echo "<td>&nbsp;</td>";
@@ -354,6 +373,7 @@ if( $user[0][8] == 2 ) {
 
 <script>
 var showgreenplus = <?= ( $showgreenplus ? "true" : "false" ) ?>;
+var isAdhoc = <?= ( $mag[0]["type"] == "Adhoc" ? "true" : "false" ) ?>;
 var known = <?= $known ?>;
 var users = [];
 var groups = [];
@@ -423,10 +443,12 @@ function generateGroup( obj ) {
 			txt += "<tr>";
 				txt += "<td>";
 					if( showgreenplus ) {
-						txt += "<img class='add' onclick='generateUser( this )' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
+						txt += "<img class='add' onclick='generateUser( this )' title='Assign an existing team member to this role' style='cursor: pointer;' src='images/trk_plus.png'>&nbsp;&nbsp;";
 						}
-					
-					txt += "<img class='add' onclick='generateUser2( this )' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+
+					if( isAdhoc ) {
+						txt += "<img class='add' onclick='generateUser2( this )' title='Invite someone new by email — they get a one-time access link for this role and job only, not a full account' style='cursor: pointer;' src='images/trk_plus_yellow.png'>";
+						}
 				txt += "</td>";
 				txt += "<td>&nbsp;</td>";
 				txt += "<td>&nbsp;</td>";

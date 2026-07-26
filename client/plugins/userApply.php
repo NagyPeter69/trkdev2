@@ -25,124 +25,165 @@
 		$error = array();
 
 		$mag = sql_aget( "magazines", "id='".$_POST["mag"]."'", "*" );
+		$pubRow = array();
 		if( $mag[0]["type"] == "Adhoc" ) {
-			$pub = sql_aget( "publications", "code='".$mag[0]["code"]."'", "*" );
-			$mag[0]["publisher_id"] = $pub[0]["owner"];
+			$pubRow = sql_aget( "publications", "code='".$mag[0]["code"]."'", "*" );
+			$mag[0]["publisher_id"] = $pubRow[0]["owner"];
 			}
-		
+
 		$pub = $mag[0]["publisher_id"];
-		$users = sql_aget( "accounts", "publisher='".$pub."'", "*" );
-		
-		//Meglévőek teljes eltávolítása
-		for( $i = 0; $i < count( $users ); $i++ ) {
-			$mags = explode( ",", $users[$i]["showMagazines"] );
-			$index = array_search( $mag[0]["id"], $mags );
 
-			if( $index !== false ) {
-				array_splice( $mags, $index, 1 );
+		// accounts/magazines/publications are all MyISAM, which has no
+		// transaction support - BEGIN/COMMIT/ROLLBACK would silently do
+		// nothing on them, so a real DB transaction can't protect this
+		// request against a crash partway through. The best available
+		// substitute: do every read, lookup and bit of computation that
+		// could still go wrong FIRST (nothing here writes to the DB yet),
+		// then run the "clear this magazine off everyone's showMagazines,
+		// then restore it for whoever's selected" pair immediately back to
+		// back with nothing else in between. A magazine used to be able to
+		// vanish from every account's visibility with no way back if
+		// anything failed in that gap - this keeps the gap as close to
+		// zero as the storage engine allows.
+
+		$usersUnderPub = sql_aget( "accounts", "publisher='".$pub."'", "*" );
+		$staffUsers = sql_aget( "accounts", "publisher='6'", "*" );
+		$selectedUsers = $_POST["users"] ?? array();
+
+		$emails = array();
+		for( $i = 0; $i < count( $_POST["mailto"] ?? array() ); $i++ ) {
+			$temp = sql_aget( "accounts", "id='".$_POST["mailto"][$i]."'", "*" );
+			$right_temp = sql_aget( 'user_groups', 'id="'.$temp[0]["group"].'"', '*' );
+
+			if( !empty( $temp[0]["email"] ) && $right_temp[0]["magazine_upload"] == "1" ) {
+				$emails[] = trim( $temp[0]["email"] );
 				}
-			sql_update( "accounts", "showMagazines='".(implode( ",", $mags ))."'", "id='".$users[$i]["id"]."'" );
-			
 			}
-		
-		//Ideiglenes userek eltávolítása
+
+		for( $i = 0; $i < count( $_POST["tempregmailto"] ?? array() ); $i++ ) {
+			$temp = sql_aget( "accounts", "id='".$_POST["tempregmailto"][$i]."'", "*" );
+			$right_temp = sql_aget( 'user_groups', 'id="'.$temp[0]["group"].'"', '*' );
+
+			if( !empty( $temp[0]["email"] ) && $right_temp[0]["magazine_upload"] == "1" ) {
+				$emails[] = trim( $temp[0]["email"] );
+				}
+			}
+
+		// Captured before this submission's own tempusers[] additions run
+		// below, so the removal list only ever considers temp users that
+		// existed prior to this request - otherwise a user just invited in
+		// this same submission would look like a removed one, since it can
+		// never appear in tempregusers[] (that field only ever reflects the
+		// panel's pre-existing rows).
+		$existingTempUsers = array();
+		$utemp = array();
 		if( $mag[0]["type"] == "Adhoc" ) {
-			$pub = sql_aget( "publications", "code='".$mag[0]["code"]."'", "*" );
-			$users = sql_aget( "accounts", "usertype='Temp' AND temppubid='".$pub[0]["id"]."'", "*" );
-			for( $i = 0; $i < count( $users ); $i++ ) {
-				sql_update( "accounts", "showMagazines=''", "id='".$users[$i]["id"]."'" );
+			$existingTempUsers = sql_aget( "accounts", "usertype='Temp' AND temppubid='".$pubRow[0]["id"]."'", "*" );
+			for( $i = 0; $i < count( $existingTempUsers ); $i++ ) {
+				if( !in_array( $existingTempUsers[$i]["email"], $_POST["tempregusers"] ?? array() ) ) {
+					$utemp[] = $existingTempUsers[$i];
+					}
 				}
 			}
-		
-		
-		$users = sql_aget( "accounts", "publisher='6'", "*" );
-		for( $i = 0; $i < count( $users ); $i++ ) {
-			$mags = explode( ",", $users[$i]["showMagazines"] );
+
+		//Meglévőek teljes eltávolítása
+		for( $i = 0; $i < count( $usersUnderPub ); $i++ ) {
+			$mags = explode( ",", $usersUnderPub[$i]["showMagazines"] );
 			$index = array_search( $mag[0]["id"], $mags );
 
 			if( $index !== false ) {
 				array_splice( $mags, $index, 1 );
 				}
-			sql_update( "accounts", "showMagazines='".(implode( ",", $mags ))."'", "id='".$users[$i]["id"]."'" );
+			sql_update( "accounts", "showMagazines='".(implode( ",", $mags ))."'", "id='".$usersUnderPub[$i]["id"]."'" );
 			}
-				
-		//Látásra Flaggelés
-		for( $i = 0; $i < count( $_POST["users"] ); $i++ ) {
-			$temp = sql_aget(  "accounts", "id='".$_POST["users"][$i]."'", "*" );
-			
-			$mags = explode( ",", $temp[0]["showMagazines"] );
-			while( $index = array_search( $mag[0]["id"], $mags ) ) {	
+
+		for( $i = 0; $i < count( $staffUsers ); $i++ ) {
+			$mags = explode( ",", $staffUsers[$i]["showMagazines"] );
+			$index = array_search( $mag[0]["id"], $mags );
+
+			if( $index !== false ) {
 				array_splice( $mags, $index, 1 );
 				}
-			
+			sql_update( "accounts", "showMagazines='".(implode( ",", $mags ))."'", "id='".$staffUsers[$i]["id"]."'" );
+			}
+
+		//Látásra Flaggelés
+		for( $i = 0; $i < count( $selectedUsers ); $i++ ) {
+			$temp = sql_aget(  "accounts", "id='".$selectedUsers[$i]."'", "*" );
+
+			$mags = explode( ",", $temp[0]["showMagazines"] );
+			while( ( $index = array_search( $mag[0]["id"], $mags ) ) !== false ) {
+				array_splice( $mags, $index, 1 );
+				}
+
 			$mags[] = $mag[0]["id"];
-			
+
 			sql_update( "accounts", "showMagazines='".implode( ",", $mags )."'", "id='".$temp[0]["id"]."'" );
 			}
 
-		$emails = array();
-		for( $i = 0; $i < count( $_POST["mailto"] ); $i++ ) {
-			$temp = sql_aget( "accounts", "id='".$_POST["mailto"][$i]."'", "*" );
-			$right_temp = sql_aget( 'user_groups', 'id="'.$temp[0]["group"].'"', '*' );
-			
-			if( !empty( $temp[0]["email"] ) && $right_temp[0]["magazine_upload"] == "1" ) {
-				$emails[] = trim( $temp[0]["email"] );
+		//Ideiglenes userek eltávolítása
+		if( $mag[0]["type"] == "Adhoc" ) {
+			for( $i = 0; $i < count( $existingTempUsers ); $i++ ) {
+				sql_update( "accounts", "showMagazines=''", "id='".$existingTempUsers[$i]["id"]."'" );
 				}
 			}
 
-		for( $i = 0; $i < count( $_POST["tempregmailto"] ); $i++ ) {
-			$temp = sql_aget( "accounts", "id='".$_POST["tempregmailto"][$i]."'", "*" );
-			$right_temp = sql_aget( 'user_groups', 'id="'.$temp[0]["group"].'"', '*' );
-			
-			if( !empty( $temp[0]["email"] ) && $right_temp[0]["magazine_upload"] == "1" ) {
-				$emails[] = trim( $temp[0]["email"] );
-				}
-			}
-		
 		//Ideiglenes felhasználók kezelése
 		if( $mag[0]["type"] == "Adhoc" ) {
 			//Újjonnan felvittek hozzáadása
-			for( $i = 0; $i < count( $_POST["tempusers"] ); $i++ ) {
-				$check = sql_aget( "accounts", "email='".$_POST["tempusers"][$i]."' AND temppubid='".$pub[0]["id"]."'", "*" );
+			for( $i = 0; $i < count( $_POST["tempusers"] ?? array() ); $i++ ) {
+				$check = sql_aget( "accounts", "email='".$_POST["tempusers"][$i]."' AND temppubid='".$pubRow[0]["id"]."'", "*" );
 				if( empty( $check[0]["id"] ) ) {
-					$names = array( "name", "pass", "type", "publisher", "email", "full_name", "group", "actual", "showMagazines", "usertype", "temppubid" );
-					$values = array( "", "", "adhoc", $pub[0]["publisher_id"], $_POST["tempusers"][$i], $_POST["tempusers"][$i], $_POST["tempusersgroup"][$i], $pub[0]["code"]."_".$pub[0]["code"], $pub[0]["magazine_id"], "Temp", $pub[0]["id"] );
+					// If this email already belongs to a real registered account,
+					// this job-scoped Temp row is a separate access link for them
+					// (their global role is unaffected everywhere else) rather than
+					// an unknown one-off contact - link back to it so the panel can
+					// show whose invite this is, and greet them by name instead of
+					// leaving name/full_name blank.
+					$existing = sql_aget( "accounts", "email='".$_POST["tempusers"][$i]."' AND usertype!='Temp'", "*" );
+					$linkedId = !empty( $existing[0]["id"] ) ? $existing[0]["id"] : 0;
+					$fullName = $linkedId ? $existing[0]["full_name"] : $_POST["tempusers"][$i];
+
+					$names = array( "name", "pass", "type", "publisher", "email", "full_name", "group", "actual", "showMagazines", "usertype", "temppubid", "linked_account_id" );
+					$values = array( "", "", "adhoc", $pubRow[0]["publisher_id"], $_POST["tempusers"][$i], $fullName, $_POST["tempusersgroup"][$i], $pubRow[0]["code"]."_".$pubRow[0]["code"], $pubRow[0]["magazine_id"], "Temp", $pubRow[0]["id"], $linkedId );
 					$uid = sql_add( "accounts", $names, $values );
 
 					$hash = md5( "adhoctempuser-".time()."-".$_POST["tempusers"][$i] );
 					$names = array( "user_id", "hash", "magazine_id", "email", "time" );
-					$values = array( $uid, $hash, $pub[0]["magazine_id"], $_POST["tempusers"][$i], time() );
-					sql_add( "adhoc_hotlinks", $names, $values );	
-					
+					$values = array( $uid, $hash, $pubRow[0]["magazine_id"], $_POST["tempusers"][$i], time() );
+					sql_add( "adhoc_hotlinks", $names, $values );
+
 					$link = "https://".URL."/index.php?hash=".$hash;
 					$to = $_POST["tempusers"][$i]."|".$_POST["tempusers"][$i];
 					$subject =  "".$mag[0]["name"]." - Colorcom Tracker hozzáférés";
-					$body = "Kedves ".$_POST["tempusers"][$i].",<br>
-					<br>
-					a(z) ".$mag[0]["name"]." kiadvány létrehozásában való közreműködéshez kérjük lépj be a Colorcom Tracker rendszerbe a következő linkre kattintva: <a href='".$link."'>".$link."</a>.<br>
-					<br>
-					Üdvözlettel:<br>
-					Colorcom Media";
+					if( $linkedId ) {
+						$body = "Kedves ".$fullName.",<br>
+						<br>
+						a(z) ".$mag[0]["name"]." kiadvány létrehozásában való közreműködéshez ehhez a munkához tartozó, elkülönített hozzáférési linket kaptál (ez nem a meglévő Tracker fiókod, a jogosultságaid ezen a linken csak erre a munkára vonatkoznak): <a href='".$link."'>".$link."</a>.<br>
+						<br>
+						Üdvözlettel:<br>
+						Colorcom Media";
+						}
+					else {
+						$body = "Kedves ".$_POST["tempusers"][$i].",<br>
+						<br>
+						a(z) ".$mag[0]["name"]." kiadvány létrehozásában való közreműködéshez kérjük lépj be a Colorcom Tracker rendszerbe a következő linkre kattintva: <a href='".$link."'>".$link."</a>.<br>
+						<br>
+						Üdvözlettel:<br>
+						Colorcom Media";
+						}
 					produkcioSendmail( $subject, $body, $to );
 					$emails[] = trim( $_POST["tempusers"][$i] );
 					}
 				}
-				
+
 			//Eltávolítottak törlése
-			$users = sql_aget( "accounts", "usertype='Temp' AND temppubid='".$pub[0]["id"]."'", "*" );
-			$utemp = $users;
-			for( $i = 0; $i < count( $users ); $i++ ) {
-				if( in_array( $users[$i]["email"], $_POST["tempregusers"] ) ) {
-					unset( $utemp );
-					}
-				}
-			sort( $utemp );
 			for( $i = 0; $i < count( $utemp ); $i++ ) {
 				sql_delete( "accounts", "id='".$utemp[$i]["id"]."'" );
 				sql_delete( "adhoc_hotlinks", "user_id='".$utemp[$i]["id"]."'" );
 				}
 			}
-		
+
 		//PMD Módosítás
 		
 		if( count( $emails ) > 0 ) {
