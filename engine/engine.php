@@ -233,6 +233,24 @@ function clearRememberToken( $accountId ) {
 	sql_update( 'accounts', "remember_token=NULL", "id='".(int) $accountId."'" );
 	}
 
+// "Multiple Logins" enforcement. When a user with multiplelogin=0 logs in
+// again, the *previous* session was never actually invalidated anywhere -
+// logged_in/remember_token are per-account, not per-session, so the old
+// browser just kept working. Each login now stamps a fresh per-session
+// token; any older session (which still holds the previous token) fails
+// validation and gets logged out on its next request.
+function issueSessionToken( $accountId ) {
+	$token = bin2hex( random_bytes( 32 ) );
+	sql_update( 'accounts', "session_token='".hash( 'sha256', $token )."'", "id='".(int) $accountId."'" );
+	return $token;
+	}
+
+function sessionTokenValid( $accountId, $token ) {
+	$check = sql_get( 'accounts', "id='".(int) $accountId."'", 'session_token' );
+	if( empty( $check[0][0] ) ) return true;
+	return !empty( $token ) && hash_equals( $check[0][0], hash( 'sha256', $token ) );
+	}
+
 function securityAlert( $uname, $pass ) {
 	$subject = "Sikertelen Tracker bejelentkezés";
 	

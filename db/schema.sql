@@ -55,6 +55,7 @@ CREATE TABLE `accounts` (
   `uploadparams` int(11) NOT NULL DEFAULT 1,
   `downloadsettings` varchar(255) DEFAULT NULL,
   `remember_token` varchar(255) DEFAULT NULL,
+  `session_token` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=441 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

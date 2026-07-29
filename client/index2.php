@@ -68,6 +68,12 @@ if( isset( $_COOKIE["intra_user"] ) && $_COOKIE["intra_user"] != "" ) {
 	if( $resolvedId !== null ) {
 		$_SESSION['intra_user'] = $resolvedId;
 		$_SESSION['intra_timer'] = time();
+		// Only stamp a new session token if this session doesn't already carry
+		// one - an already-active session re-resolving its own cookie on every
+		// request must not keep reclaiming ownership from a genuinely newer login.
+		if( !isset( $_SESSION['session_token'] ) ) {
+			$_SESSION['session_token'] = issueSessionToken( $resolvedId );
+			}
 		sql_update( "accounts", "logged_in='1'", 'id=\''.$resolvedId.'\'' );
 		}
 	else {
@@ -85,6 +91,7 @@ elseif( isset($_GET['username'] ) && isset($_GET['password'] ) ) {
 		issueRememberToken( $user[0][0] );
 		$_SESSION['intra_user'] = $user[0][0];
 		$_SESSION['intra_timer'] = time();
+		$_SESSION['session_token'] = issueSessionToken( $user[0][0] );
 
 		sql_update( 'accounts', 'logged_in=\'1\'', 'id=\''.$user[0][0].'\'' );
 		sql_update( 'accounts', 'lastlogin='.time().'', 'id=\''.$user[0][0].'\'' );
@@ -105,6 +112,7 @@ elseif( isset($_POST['username'] ) && isset($_POST['password'] ) ) {
 			issueRememberToken( $user[0][0] );
 			$_SESSION['intra_user'] = $user[0][0];
 			$_SESSION['intra_timer'] = time();
+			$_SESSION['session_token'] = issueSessionToken( $user[0][0] );
 			sql_update( 'accounts', 'logged_in=\'1\'', 'id=\''.$user[0][0].'\'' );
 			sql_update( 'accounts', 'lastlogin='.time().'', 'id=\''.$user[0][0].'\'' );
 
@@ -146,6 +154,17 @@ if( $_SESSION['intra_user'] == "1") {
 $rights = array();
 if( isset( $_SESSION['intra_user'] ) ) {
 	$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
+
+	// multiplelogin=0 accounts get exactly one live session: if a newer login
+	// elsewhere has since stamped a different session_token, this session was
+	// the one superseded - kill it here instead of leaving it silently valid.
+	if( !empty( $user[0][0] ) && $user[0][27] == "0" && !sessionTokenValid( $_SESSION['intra_user'], $_SESSION['session_token'] ?? '' ) ) {
+		session_unset();
+		session_destroy();
+		echo "<script>window.top.location.reload();</script>";
+		exit;
+		}
+
 	$r = sql_aget( 'user_groups', 'id="'.$user[0][8].'"', '*' );
 	foreach( $r[0] as $key => $val ) {
 		$rights[$key] = $val;
@@ -239,7 +258,7 @@ else $background = "#103d8b";
 			<?php } ?>
 			
 			
-			<? if( isset( $_SESSION['intra_user'] ) ) { ?> 
+			<? if( isset( $_SESSION['intra_user'] ) && $user[0][36] != 'Temp' ) { ?>
 			<map name="ccmlogo">
 				<area shape="rect" coords="207,16,216,37" href="javascript:logoMenu()">
 			<? } ?>
@@ -448,6 +467,10 @@ function setResponse() {
 			type: "GET",
 			dataType: 'json',
 			success:function( data ) {
+        if( data == "logged_out" ) {
+          window.top.location.reload();
+          return;
+          }
         setTimeout(function(){ setResponse(); }, 1000);
         }
 			});
