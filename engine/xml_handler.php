@@ -51,7 +51,16 @@
 				if( is_file( TRKPATH.'/advertisements/'.$adRows[$i]["name"].'_preview.jpg' ) ) {
 					@unlink( TRKPATH.'/advertisements/'.$adRows[$i]["name"].'_preview.jpg' );
 					}
-				$adFiles = glob( TRKPATH.'/advertisements/'.strtoupper( $adRows[$i]["name"] ).'_'.$magazineCode.'_'.$issueCode.'_*' );
+				// Same Adhoc-vs-Regular single/double segment distinction as
+				// ajax.php's load_adverts and __cleaner__.php - Adhoc jobs
+				// have publications.code == magazines.code (there's no
+				// separate issue), so their checked-ad files are named
+				// NAME_CODE_TYPE, not NAME_CODE_CODE_TYPE. Without this, the
+				// glob below never matches an Adhoc job's real files and
+				// they survive every publication delete. Confirmed live
+				// 2026-07-29 deleting UXE01 (Adhoc).
+				$issueSegment = ( $magazineCode == $issueCode ) ? '' : '_'.$issueCode;
+				$adFiles = glob( TRKPATH.'/advertisements/'.strtoupper( $adRows[$i]["name"] ).'_'.$magazineCode.$issueSegment.'_*' );
 				for( $y = 0; $y < count( $adFiles ); $y++ ) {
 					@unlink( $adFiles[$y] );
 					}
@@ -59,7 +68,25 @@
 			}
 		sql_delete( 'ads', "pub_id='".$pubId."'" );
 
+		// Catch-all safety net: the per-ad loop above only removes files
+		// matching a name it read from the row it's currently deleting.
+		// Confirmed via the 2026-08-02 audit that files can still survive
+		// with the ads row already gone (20 orphaned files found across
+		// magazines whose ads table was otherwise empty) - a broader sweep
+		// on the magazineCode/issueCode segment alone catches anything the
+		// name-keyed pass missed, regardless of why.
+		$issueSegment = ( $magazineCode == $issueCode ) ? '' : '_'.$issueCode;
+		$strayAdFiles = glob( TRKPATH.'/advertisements/*_'.$magazineCode.$issueSegment.'_*' );
+		for( $y = 0; $y < count( $strayAdFiles ); $y++ ) {
+			@unlink( $strayAdFiles[$y] );
+			}
+
 		sql_delete( 'parts', "pub_id='".$pubId."'" );
+
+		// flatplan_articletypes was never wired into this cleanup at all -
+		// confirmed 28 orphaned rows via the 2026-08-02 audit (publications
+		// table was empty, every one of those pub_ids was already gone).
+		sql_delete( 'flatplan_articletypes', "pub_id='".$pubId."'" );
 
 		$packs = sql_get( 'packages', 'publication_id="'.$pubId.'"', '*' );
 		for( $i = 0; $i < count( $packs ); $i++ ) {
