@@ -27,9 +27,9 @@
 		$comment = sql_get( 'comments', 'id="'.$_GET['id'].'"', '*' );
 		
 		$txt = $lang["flatplan"]["autoreply"];
-		
-		$names = array( 'pub_id', 'parent', 'left', 'top', 'width', 'height', 'page', 'text', 'user', 'shape' );
-		$values = array( $comment[0][1], $_GET['id'], 0, 0, 0, 0, $comment[0][7], $txt, $_SESSION['intra_user'] );
+
+		$names = array( 'pub_id', 'parent', 'left', 'top', 'width', 'height', 'page', 'text', 'user', 'shape', 'pageType', 'pageVersion', 'part' );
+		$values = array( $comment[0][1], $_GET['id'], 0, 0, 0, 0, $comment[0][7], $txt, $_SESSION['intra_user'], '', $comment[0][13], $comment[0][14], $comment[0][16] );
 		$id = sql_add( 'comments', $names, $values );
 		
 		$p_id = sql_get( 'publications', 'id="'.$comment[0][1].'"', '*' );
@@ -44,11 +44,11 @@
 		$comment = sql_get( 'comments', 'id="'.$_GET['id'].'"', '*' );
 		
 		$user = ( $_GET["visitor"] != "" ? $_GET["visitor"] : $_GET['intra_user'] );
-		
-		$names = array( 'pub_id', 'parent', 'left', 'top', 'width', 'height', 'page', 'text', 'user', 'shape' );
-		$values = array( $comment[0][1], $_GET['id'], 0, 0, 0, 0, $comment[0][7], $_GET['txt'], $user, '' );
-		
-		$id = sql_add( 'comments', $names, $values );		
+
+		$names = array( 'pub_id', 'parent', 'left', 'top', 'width', 'height', 'page', 'text', 'user', 'shape', 'pageType', 'pageVersion', 'part' );
+		$values = array( $comment[0][1], $_GET['id'], 0, 0, 0, 0, $comment[0][7], $_GET['txt'], $user, '', $comment[0][13], $comment[0][14], $comment[0][16] );
+
+		$id = sql_add( 'comments', $names, $values );
 
 		$p_id = sql_get( 'publications', 'id="'.$comment[0][1].'"', '*' );
 		$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status' );

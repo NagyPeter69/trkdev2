@@ -1628,9 +1628,27 @@ function reloadBG( switchTo, from ) {
 				else if( compareMode == "on" && ( switchTo == "trimbox" || switchTo == "mediabox" ) ) {
 					compareGetPages();
 					}
-	
-				setTimeout( function(){ 
-					placeBox('force', '', from ); }, 50 ); 
+
+				// All of centerToolbar()'s inputs (page number, version
+				// badges, color-standard label, approve/reject state) are
+				// already known at this point - none of them come from the
+				// page image placeBox()/rendering() is about to fetch below.
+				// Fetching the real approve/reject status here (rather than
+				// waiting for refreshPageStatus()'s independent 600ms poll
+				// to eventually catch up - see applyPageStatus() in
+				// flatplan_preview.php) and positioning right after means
+				// the footer lays out exactly once per navigation, with
+				// already-correct content, instead of once with
+				// still-stale status text and again whenever the poll
+				// happens to land. showFooterControls() (called once the
+				// image render actually finishes) only reveals what's
+				// already positioned here - it never repositions.
+				applyPageStatus( function() {
+					centerToolbar();
+					});
+
+				setTimeout( function(){
+					placeBox('force', '', from ); }, 50 );
 				}
 			else {
 				$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");

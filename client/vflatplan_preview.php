@@ -1452,7 +1452,20 @@ function divHandle() {
 	
 	nextDraw++;
 	if( graphState == "dot" ) {
-		$( '.pagePreview' ).mouseup();
+		// Deferred rather than called inline: this runs the whole
+		// stopDraw()->addText() chain (which ends in focusing the new
+		// comment's textarea) synchronously inside the mousedown handler,
+		// since a "dot" placement has no drag to wait for. Left inline,
+		// that focus() call races the browser's own mousedown-driven
+		// focus/blur handling for the *same* still-in-flight gesture and
+		// reliably loses - the textarea appeared but never actually took
+		// focus. rect/oval don't hit this because their addText() only
+		// ever runs off the real mouseup, by which point mousedown's own
+		// focus handling is long finished. Pushing this to a fresh tick
+		// puts the dot tool on the same footing.
+		setTimeout( function() {
+			$( '.pagePreview' ).mouseup();
+			}, 0 );
 		}
 	}
 

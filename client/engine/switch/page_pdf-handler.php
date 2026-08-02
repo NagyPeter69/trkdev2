@@ -375,7 +375,20 @@ if( $go ) {
 						}
 					else {
 						if( $type == "ad" ) {
-							$checker = sql_get( 'pageinfo', 'type="ad" AND code="'.$jcode.'" AND issue="'.$issue.'" AND pack_id="'.$pack_id.'"', '*' );
+							// This is meant to clean up a stale leftover row on
+							// the page this ad USED to occupy after it's been
+							// moved elsewhere - without excluding the current
+							// page, a duplicate/retried page_pdf delivery for
+							// the SAME placement (this ad's row already carries
+							// this pack_id from the update a few lines above)
+							// matches its own just-written row and deletes it,
+							// even though nothing actually moved. Confirmed live
+							// 2026-07-29: a redelivered Switch callback for
+							// Frivol/page 5 (PRFEB/2601) deleted that page's own
+							// pageinfo row this way, leaving an empty Flatplan
+							// slot even though ads.uploaded (set independently
+							// further below) still read "5".
+							$checker = sql_get( 'pageinfo', 'type="ad" AND code="'.$jcode.'" AND issue="'.$issue.'" AND pack_id="'.$pack_id.'" AND page!="'.$page.'"', '*' );
 							for( $i = 0; $i < count( $checker ); $i++ ) {
 								$ad = sql_get( 'ads', 'id="'.$checker[$i][1].'"', '*' );
 								if( $ad[0][3] == "2/1" ) {
@@ -451,41 +464,57 @@ if( $go ) {
 					$oldFile = str_pad(intval( $pageInfo[0][5] ), 3, '0', STR_PAD_LEFT)."_".$pageInfo[0][1]."_".( $pageInfo[0][6] == "ad" ? "ad_" : "" )."preview";
 					
 					sql_update( 'pageinfo', 'status="'.$s.'"', 'id="'.$pageInfo[0][0].'"' );
-					
+
 					error_log( "RÉGI HELY: ");
 					error_log( $prevDir."/".$oldFile.".jpg" );
 					error_log( "ÚJ HELY: ");
 					error_log( $path."/_old".( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) )."/".$oldFile."_".$pageInfo[0][3].".jpg" );
-					
-					if( copy( $prevDir."/".$oldFile.".jpg", $path."/_old".( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) )."/".$oldFile."_".$pageInfo[0][3].".jpg" ) ) {
-						// A fresh page replaces whatever preflight result the
-						// PREVIOUS version of this page had - any past error
-						// no longer applies to what's actually on disk now.
-						// A "_report" submission for the new version (see the
-						// str_ends_with() check above) re-flags this row if it
-						// fails too, but until/unless that arrives the marker
-						// must not survive a resubmission - otherwise a page
-						// the client already fixed would keep showing a stale
-						// error forever.
-						if( $type == "alter" )
-							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
-						else
-							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
-						$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'info' );
-						$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
-						$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
-						sql_add( 'action_log', $names, $values );							
-						
-						$a = $path.'/_old'.( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) ).'/'.$oldFile.'_'.$pageInfo[0][3].'.pdf';
-						$b = $prevDir.'/'.$oldFile.'.pdf';
-						
+
+					// This archival copy of the OLD thumbnail is best-effort
+					// (e.g. it's legitimately missing after a cleanup pass)
+					// and must NOT gate the version bump below - a page that
+					// actually landed on disk has to be reflected in
+					// pageinfo.version regardless of whether we could also
+					// archive its previous thumbnail. It used to be an
+					// if(copy(...)){...} wrapping the whole block below,
+					// which meant a missing old thumbnail silently skipped
+					// the version/status/pack_id update AND left $id unset,
+					// so the render step further down ran with no page id.
+					copy( $prevDir."/".$oldFile.".jpg", $path."/_old".( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) )."/".$oldFile."_".$pageInfo[0][3].".jpg" );
+
+					// A fresh page replaces whatever preflight result the
+					// PREVIOUS version of this page had - any past error
+					// no longer applies to what's actually on disk now.
+					// A "_report" submission for the new version (see the
+					// str_ends_with() check above) re-flags this row if it
+					// fails too, but until/unless that arrives the marker
+					// must not survive a resubmission - otherwise a page
+					// the client already fixed would keep showing a stale
+					// error forever.
+					if( $type == "alter" )
+						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
+					else
+						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
+					$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'info' );
+					$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
+					$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
+					sql_add( 'action_log', $names, $values );
+
+					$a = $path.'/_old'.( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) ).'/'.$oldFile.'_'.$pageInfo[0][3].'.pdf';
+					$b = $prevDir.'/'.$oldFile.'.pdf';
+
+					// AUTOCOMPARE needs both the archived old PDF and the
+					// still-in-place previous PDF to actually diff - gated on
+					// their real presence now, rather than on the unrelated
+					// jpg copy above.
+					if( is_file( $a ) && is_file( $b ) ) {
 						echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
 						$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
 						file_put_contents( '/var/www/html/client/tests/B-E.out', $end );
 						echo $end."<br>";
 						sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
-						$id = $pageInfo[0][0];
-						}															
+						}
+					$id = $pageInfo[0][0];
 					}
 				else {
 					if( $pageWidth > 1 ) {
@@ -645,7 +674,7 @@ if( $go ) {
 					
 					error_log( "PDF STANDARD: ".$standard );
 					if( $standard == "Web" ) {
-						dynaPrework( $new, $pageWidth );
+						dynaPrework( $new, $pageWidth, $color );
 						}
 					else {
 						thumbCreate2( $new, $pageWidth, $color );	

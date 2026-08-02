@@ -347,8 +347,23 @@ Tracker<br>";
 				$names = array( "publisher_id", "name", "code", "calendarGroup", "type" );
 				$values = array( $publisher[0]["id"], $_POST["Name"], $_POST["Code"], "", $_POST["Type"] );
 				$mid = sql_add( "magazines", $names, $values );
-				
-				changeXmlDatabase( 'add', $_POST );	
+
+				changeXmlDatabase( 'add', $_POST );
+
+				// Whatever Parts the create.php dialog collected need to be
+				// saved as this magazine's pub_id="0" template row set -
+				// the same convention jobsettings.php and newIssue.php read
+				// from ("pub_id='0' AND mag_id=...") to pre-populate the
+				// Parts table for the first issue. This was previously
+				// discarded entirely: create.php submits under "parttype",
+				// not "type", and nothing here ever read it, so page
+				// sequences typed in at creation silently vanished and the
+				// first New Issue dialog opened with zero Part rows.
+				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
+				for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
+					$values = array( "0", $_POST["parttype"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
+					sql_add( "parts", $names, $values );
+					}
 				}
 			
 			$allowedMags = explode( ",", $user[0][21] );
@@ -398,10 +413,17 @@ Tracker<br>";
 				"pubName" => $_POST['Name'],
 				"jobCode" => $_POST['Code'],
 				);
-			
-			$error = SwitchSend_TESZT( $array );
+
+			// Was previously stored back into $error, clobbering the
+			// (empty-on-success) validation-errors array with Switch's
+			// [status, message] response tuple - menuApply()'s JS never saw
+			// the data[0][0]===true / empty-data[0] shape it needs to close
+			// the dialog and reload, so every Adhoc creation left the
+			// "Create" panel stuck open even though the job was created
+			// successfully. Confirmed live 2026-07-29 creating FKB30.
+			$switchResponse = SwitchSend_TESZT( $array );
 			}
-		
+
 		$result = array( $error );
 		}
 	
@@ -988,7 +1010,7 @@ Tracker<br>";
 				$txt .= "<tr>";
 					if( $key == "Client" ) { $txt .= "<td valign='top' align='left'>".$lang['xml'][$key]."</td>"; }
 					elseif( $key == "Mails" ) {
-						$txt .= "<td align='left'><span class='mailBox'>".$lang['xml'][$key]."</span><span class='userBox' style='display: none;'>Art Director</span></td>";
+						$txt .= "<td align='left'><span class='mailBox' style='display: none;'>".$lang['xml'][$key]."</span><span class='userBox'>Art Director</span></td>";
 						}
 					else { $txt .= "<td align='left' style='width: 188px;'>".$lang['xml'][$key]."</td>"; }
 						
@@ -1000,9 +1022,9 @@ Tracker<br>";
 							$txt .= "<input type='text' id='".$key."' name='".$key."' value='".codeGen()."' readonly>";
 							}
 						elseif( $key == 'Client' ) {
-							$txt .= "<input type='radio' name='ClientType' class='ClientType' value='unknown' checked>Ad-hoc";
+							$txt .= "<input type='radio' name='ClientType' class='ClientType' value='unknown'>Ad-hoc";
 							$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;";
-							$txt .= "<input type='radio' name='ClientType' class='ClientType' value='known'>Registered";
+							$txt .= "<input type='radio' name='ClientType' class='ClientType' value='known' checked>Registered";
 							$txt .= "<br>";
 							// A clientless Adhoc job's Client must always be an empty
 							// string, never a free-typed name - Switch has its own
@@ -1015,8 +1037,8 @@ Tracker<br>";
 							// creation triggers. Hidden input keeps $_POST['Client']
 							// defined (avoiding an undefined-array-key warning further
 							// down) while making "" the only possible value.
-							$txt .= "<span id='unknownClient'><input type='hidden' id='".$key."' name='".$key."' value=''></span>";
-							$txt .= "<span id='knownClient' style='display: none;'>";
+							$txt .= "<span id='unknownClient' style='display: none;'><input type='hidden' id='".$key."' name='".$key."' value=''></span>";
+							$txt .= "<span id='knownClient'>";
 								$txt .= "<select style='margin-left: -1px;' id='".$key."2' name='".$key."2'>";
 								$txt .= "<option value='' selected disabled>--- Select Client ---</option>";
 								foreach( $temp as $t ) {
@@ -1029,10 +1051,10 @@ Tracker<br>";
 							$txt .= "<input type='text' class='datepicker' id='".$key."' name='".$key."' value=''>";
 							}							
 						elseif( $key == 'Mails' ) {
-							$txt .= "<span class='mailBox'><input type='text' id='".$key."' name='".$key."' value=''></span>";
+							$txt .= "<span class='mailBox' style='display: none;'><input type='text' id='".$key."' name='".$key."' value=''></span>";
 							
 							//$pubs = sql_get( 'publishers', '1 ORDER BY `name` ASC ', '*' );
-							$txt .= "<span class='userBox userSelect' style='display: none;'>";
+							$txt .= "<span class='userBox userSelect'>";
 								$u = sql_aget( "accounts", "publisher='".$pubs[0][0]."'", "*" );
 								$txt .= "<select id='adhocUser' name='adhocUser'>";
 									for( $i = 0; $i < count( $u ); $i++ ) {

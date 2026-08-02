@@ -810,28 +810,37 @@
 		$u_ads = sql_get( 'ads', 'pub_id="'.$pub[0][0].'" ORDER BY cast(`uploaded` as unsigned) ASC', '*' );
 		for( $i = 0; $i < count($u_ads); $i++ ) {
 			if( $u_ads[$i][8] != '' && $u_ads[$i][8] != '-' && $u_ads[$i][8] != 'Feltöltés alatt' && $u_ads[$i][8] != 'error' ) {
+				// American-numbered jobs land an ad on one of several named
+				// Parts (Cover/Inside/etc), not just a page number -
+				// booked_part is only ever set by push_ad for those jobs,
+				// so this naturally stays blank (and adds nothing here) for
+				// Regular/European ads with no Part concept.
+				$partLabel = !empty( $u_ads[$i][12] ) ? '<div style="float: left; padding-left: 10px;">'.$u_ads[$i][12].'</div>' : '';
 				if( $u_ads[$i][3] == '2/1' ) {
 					$pages = explode( '-', $u_ads[$i][8] );
 					$text .= '<div style="text-align: left;">';
 						$text .= '<div style="float: left; padding-left: 10px;">'.sprintf( "%03d", $pages[0] ).'</div>';
+						$text .= $partLabel;
 						$text .= '<div style="float: left; padding-left: 10px;">'.strtoupper( $u_ads[$i][2] ).'</div>';
 						$text .= '<div style="float: right; padding-right: 10px;">'.$u_ads[$i][3].'</div>';
 						$text .= '<div style="clear: both;"></div>';
 					$text .= '</div>';
 					$text .= '<div style="text-align: left;">';
 						$text .= '<div style="float: left; padding-left: 10px;">'.sprintf( "%03d", $pages[1] ).'</div>';
+						$text .= $partLabel;
 						$text .= '<div style="float: left; padding-left: 10px;">'.strtoupper( $u_ads[$i][2] ).'</div>';
 						$text .= '<div style="float: right; padding-right: 10px;">'.$u_ads[$i][3].'</div>';
 						$text .= '<div style="clear: both;"></div>';
-					$text .= '</div>';								
+					$text .= '</div>';
 					}
 				else {
 					$text .= '<div style="text-align: left;">';
 						$text .= '<div style="float: left; padding-left: 10px;">'.sprintf("%03d", $u_ads[$i][8]).'</div>';
+						$text .= $partLabel;
 						$text .= '<div style="float: left; padding-left: 10px;">'.strtoupper( $u_ads[$i][2] ).'</div>';
 						$text .= '<div style="float: right; padding-right: 10px;">'.$u_ads[$i][3].'</div>';
 						$text .= '<div style="clear: both;"></div>';
-					$text .= '</div>';							
+					$text .= '</div>';
 					}
 				}
 			}
@@ -857,7 +866,14 @@
 				break;
 			}
 			
-		$outer_path = 'advertisements/'.strtoupper( $t_sql[0][2].'_'.strtoupper( $magazine[0][3] ).'_'.$pub[0][10].'_'.$type );	
+		// Switch names the checked file back as NAME_CODE_TYPE - it only adds
+		// a separate issue segment when the publication's own code actually
+		// differs from the magazine code (Regular, multi-issue titles).
+		// Adhoc jobs have publications.code == magazines.code (there's no
+		// separate issue), so appending pub[0][10] there would just repeat
+		// the job code and never match the file Switch actually sent back.
+		$issueSegment = ( $magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];
+		$outer_path = 'advertisements/'.strtoupper( $t_sql[0][2].'_'.$magazine[0][3].$issueSegment.'_'.$type );
 		$txt = '<div><input type="hidden" id="hid" name="hid" value="'.$id.'">';
 		if( $t_sql[0][3] == '2/1' ) {
 			$txt .= '<input type="hidden" id="type" name="type" value="D">';
@@ -1102,7 +1118,13 @@
 		
 		$txt = '<div class="loaded_ads" style="float: left; width:'.$divWidth.'px;">';
 		if( $rights['ad_view'] ) {
-			$tempAds = sql_get( 'ads', 'publisher="'.$pub[0][1].'" AND pub_id="'.$pub[0][0].'" ORDER BY `name` ASC', '*' );
+			// pub_id alone already uniquely scopes this to one publication -
+			// the publisher= condition was redundant at best, and actively
+			// wrong for Adhoc jobs: publications.publisher_id (what $pub[0][1]
+			// is here) is always "0" for those by convention, while
+			// ads.publisher correctly holds the resolved client id, so this
+			// join used to filter out every Adhoc job's adverts.
+			$tempAds = sql_get( 'ads', 'pub_id="'.$pub[0][0].'" ORDER BY `name` ASC', '*' );
 			
 			$counter = 1;
 			$ads = array();
@@ -1163,8 +1185,15 @@
 				
 				$force = 0;
 				if( $status > 1 ) {
-					$path = '../advertisements/'.strtoupper( $ads[$i][2].'_'.strtoupper( $magazine[0][3] ).'_'.$pub[0][10].'_'.$type );
-					$outer_path = 'advertisements/'.strtoupper( $ads[$i][2].'_'.strtoupper( $magazine[0][3] ).'_'.$pub[0][10].'_'.$type );
+					// Adhoc publications have a single-segment code (e.g.
+					// "UXE01"), not Regular's magazine-code_issue-code pair
+					// ("TMG"/"2601") - Switch never had a separate issue
+					// segment to echo back for them, so appending pub[0][10]
+					// here (== magazine[0][3] for Adhoc) just duplicates the
+					// code and can never match the file Switch actually sent.
+					$issueSegment = ( $magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];
+					$path = '../advertisements/'.strtoupper( $ads[$i][2].'_'.$magazine[0][3].$issueSegment.'_'.$type );
+					$outer_path = 'advertisements/'.strtoupper( $ads[$i][2].'_'.$magazine[0][3].$issueSegment.'_'.$type );
 					if( $type == 'D' ) {
 						if( is_file( $path.'L.xml' ) ) {
 							$xml = simplexml_load_file( $path.'L.xml' );
@@ -1282,8 +1311,10 @@
 					
 					}
 				elseif( $status == 0 ) {
-					$path = '../advertisements/'.strtoupper( $ads[$i][2].'_'.strtoupper( $magazine[0][3] ).'_'.$pub[0][10].'_'.$type );
-					$outer_path = 'advertisements/'.strtoupper( $ads[$i][2].'_'.strtoupper( $magazine[0][3] ).'_'.$pub[0][10].'_'.$type );
+					// Same Adhoc-vs-Regular code-segment distinction as above.
+					$issueSegment = ( $magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];
+					$path = '../advertisements/'.strtoupper( $ads[$i][2].'_'.$magazine[0][3].$issueSegment.'_'.$type );
+					$outer_path = 'advertisements/'.strtoupper( $ads[$i][2].'_'.$magazine[0][3].$issueSegment.'_'.$type );
 
 					$class = 'accepted3';
 					$force = 1;
@@ -1404,7 +1435,14 @@
 		$ad = sql_get( 'ads', 'id="'.$_GET['ad_id'].'"', '*' );
 		$issue = sql_get( 'publications', 'id="'.$ad[0][1].'"', '*' );
 		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'"', '*' );
-		$client = sql_get( 'publishers', 'id="'.$issue[0][1].'"', '*' );
+		// Adhoc jobs carry publisher_id="0" by convention - fall back to
+		// publications.owner, same as resolveJobPublisherName() in
+		// switchAPI.php - otherwise the "client" sent to Switch is empty.
+		$publisherId = $issue[0][1];
+		if( empty( $publisherId ) || $publisherId == '0' ) {
+			$publisherId = $issue[0][23];
+			}
+		$client = sql_get( 'publishers', 'id="'.$publisherId.'"', '*' );
 		$array = array();	
 		
 		$maxpage = $issue[0][6];
@@ -1436,17 +1474,34 @@
 			error_log( print_r( $array, true ) );
 			
 			if( $ad[0][3] == '2/1' or $ad[0][3] == '1/1' ) {
-				// Queued instead of calling SwitchSend_TESZT() inline - that's
-				// a blocking curl call (5s connect / 15s total worst case)
-				// the user would otherwise sit through on every Upload
-				// click. The ads.uploaded update below (what the UI
-				// actually reflects) happens immediately either way;
-				// delivery to Switch itself happens in the background via
-				// client/cron/switch_sync_worker.php - same durable
-				// queue+retry pattern already used for
-				// XMLUpload2()/SendPmdXmlToSwitch() and SwitchSend_Rename()
-				// (see download_ajax.php's accept/page-approve handler).
-				QueueSwitchRetry( 'upload_ad', $array );
+				// Synchronous-first-with-queued-fallback, same pattern as
+				// XMLUpload2()/SendPmdXmlToSwitch() (see SYSTEM_STATE.md's
+				// "Enfocus Switch integration" section - this was the
+				// explicitly-flagged next candidate for it). Purely-queued
+				// delivery (the previous approach here) meant every Upload
+				// click waited on the next switch_sync_worker.php cron tick
+				// to actually reach Switch - up to a full minute, worse in
+				// practice than the blocking call it was meant to avoid,
+				// and a real complaint from actual ad-desk users watching
+				// for confirmation. SwitchSend_TESZT()'s own curl timeouts
+				// (5s connect / 15s total) are the worst case now, only
+				// when Switch is genuinely unreachable; the common case
+				// (Switch up, which is the normal state - see the same doc
+				// section) resolves in well under a second, same as every
+				// other real round-trip already seen working end-to-end
+				// this session.
+				$response = SwitchSend_TESZT( $array );
+				if( $response[0] === null ) {
+					// Same retryable-vs-terminal convention
+					// switch_sync_worker.php already uses: null status means
+					// the curl call itself failed/timed out (Switch
+					// unreachable), not a real response from Switch, so this
+					// is the only case queued for the cron worker to retry.
+					// "blocked" (DEV TestCo-only gate) or any real Switch
+					// response (success or error) is a completed attempt -
+					// nothing left to retry.
+					QueueSwitchRetry( 'upload_ad', $array );
+					}
 				}
 			
 			else {
@@ -1635,12 +1690,20 @@
 			$ad = sql_get( 'ads', 'id="'.$_GET['id'].'"', '*' );
 			$issue = sql_get( 'publications', 'id="'.$ad[0][1].'"', '*' );
 			$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'"', '*' );
-			$client = sql_get( 'publishers', 'id="'.$issue[0][1].'"', '*' );
+			// Adhoc jobs carry publisher_id="0" by convention - fall back to
+			// publications.owner, same as resolveJobPublisherName() in
+			// switchAPI.php - otherwise the "client" sent to Switch is empty.
+			$publisherId = $issue[0][1];
+			if( empty( $publisherId ) || $publisherId == '0' ) {
+				$publisherId = $issue[0][23];
+				}
+			$client = sql_get( 'publishers', 'id="'.$publisherId.'"', '*' );
 			$array = array();
 	
 			$array = array(
 				"event" => "delete_ad",
 				"client" => $client[0][1],
+				"pubName" => $magazine[0][2],
 				"jobCode" => $magazine[0][3],
 				"issue" => $issue[0][10],
 				"description" => strtoupper( $ad[0][2] ),
@@ -1671,6 +1734,26 @@
 					sql_delete( 'partial_ads', 'id="'.$p_ad[$i][0].'"' );
 					}
 				sql_delete( 'ads', 'id="'.$ad[0][0].'"' );
+
+				// If this ad was already placed on a page, that pageinfo row
+				// (type="ad", pack_id=this ad's id) and its rendered preview
+				// files are otherwise never cleaned up - deleting only the
+				// `ads` row leaves an orphaned placement that keeps rendering
+				// the deleted ad's last-known artwork on the Flatplan/Pages
+				// grid forever, indistinguishable from a real, current
+				// placement. Confirmed live 2026-07-29: a deleted-and-
+				// recreated "Broken" ad left exactly this kind of stale
+				// pageinfo row behind, which looked like a successful
+				// placement of the NEW ad of the same name.
+				$stalePages = sql_get( 'pageinfo', 'type="ad" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND pack_id="'.$ad[0][0].'"', '*' );
+				for( $z = 0; $z < count( $stalePages ); $z++ ) {
+					$staleFile = fileRemove( $stalePages[$z], TRKPATH.'/packages/'.$magazine[0][3].'/'.$issue[0][10], 'pdf' );
+					if( is_file( $staleFile ) ) { unlink( $staleFile ); }
+					$staleFile = fileRemove( $stalePages[$z], TRKPATH.'/packages/'.$magazine[0][3].'/'.$issue[0][10], 'jpg' );
+					if( is_file( $staleFile ) ) { unlink( $staleFile ); }
+					sql_delete( 'pageinfo', 'id="'.$stalePages[$z][0].'"' );
+					}
+
 				switch( $ad[0][3] ) {
 					case '2/1':
 						$type = 'D';
@@ -1682,7 +1765,12 @@
 						$type = 'P';
 						break;
 					}
-				$file_name = strtoupper( $ad[0][2] ).'_'.$magazine[0][3].'_'.$issue[0][10].'_'.$type;
+				// Same Adhoc-vs-Regular code-segment distinction as in
+				// load_adverts - Adhoc jobs have a single-segment code
+				// (issue[0][10] == magazine[0][3]), so Switch never sent
+				// back a separate issue segment for them to begin with.
+				$issueSegment = ( $magazine[0][3] == $issue[0][10] ) ? '' : '_'.$issue[0][10];
+				$file_name = strtoupper( $ad[0][2] ).'_'.$magazine[0][3].$issueSegment.'_'.$type;
 				$dir = '../advertisements';
 				$dirFiles = load_dir_files( $dir, $file_name );
 				for( $y = 0; $y < count( $dirFiles ); $y++ ) {

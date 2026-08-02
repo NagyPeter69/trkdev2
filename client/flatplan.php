@@ -76,6 +76,11 @@ foreach( $wfXpath as $wfTemp ) {
 		}
 	}
 $hybridFP = ( (string) $wfXml->Item[$wfI]->Workflow == "Hybrid" );
+// Same "no second stage" case the fin-forcing block below handles for
+// $_GET['opt'] - reused further down (see the customMenu accept/reject/
+// cancel <li> block) so that gate doesn't have to rely on $_GET['opt']
+// ever equalling "FIN" for these jobs, since it deliberately never does.
+$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and !$hybridFP );
 if( $hybridFP ) {
 	$_GET['opt'] = "FIN";
 	}
@@ -94,7 +99,7 @@ if( $hybridFP ) {
 // whole page list to fin='1', so every real (fin=0) page vanishes from
 // the grid while only the ad (fin=1) remains - looking exactly like the
 // other pages were deleted, when they were just filtered out of view.
-elseif( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" ) {
+elseif( $stages1 ) {
 	$_GET['opt'] = "";
 	}
 
@@ -434,7 +439,14 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 						
 						
 							$logSettings = sql_aget( 'userLogSettings', 'user="'.$_SESSION['intra_user'].'" LIMIT 1', '*' );
-							$logSettings = $logSettings[0];
+							// Temp/Adhoc-scoped accounts (job-scoped access-link
+							// accounts, see the Users panel) never get a
+							// userLogSettings row created for them - array_reverse()
+							// on the resulting null was a PHP 8 TypeError that
+							// fataled this whole page for exactly those accounts,
+							// the one real difference between why Flatplan crashed
+							// for them while every other view worked.
+							$logSettings = $logSettings[0] ?? array();
 							$logSettings = array_reverse($logSettings, true);
 							unset( $logSettings['id'] ); unset( $logSettings['user'] );
 							$i = $m = 0; $c = 1;
@@ -598,11 +610,25 @@ $allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
   	<hr style="padding: 0;">
   	<li data-action="proof"><?= $lang["flatplan"]["proof"] ?></li>
   <? } ?>
-  <? if( $user[0][0] == "1" && $_GET["opt"] == "FIN" && $rights["sendHotlink"] ) { ?>
+  <? // Same $stages1 bypass as the accept/reject/cancel gate below: for a
+     // FlatplanStages==1 job, $_GET['opt'] is force-blanked above and can
+     // never equal "FIN", so without this the hotlink item would silently
+     // never render for these jobs even for an admin with sendHotlink rights.
+     if( $user[0][0] == "1" && ( $_GET["opt"] == "FIN" || $stages1 ) && $rights["sendHotlink"] ) { ?>
   	<hr style="padding: 0;">
   	<li data-action="hotlink"><?= $lang["flatplan"]["sendHotlink"] ?></li>
   <? } ?>
-  <? if( ( ( $rights["acceptPage"] or $rights["cancelApprove"] ) && $_GET['opt'] == $allowedOpt ) && ( $pub[0][12] == "created" or $pub[0][12] == "active" or $pub[0][12] == "current" ) ) { ?>
+  <? // $allowedOpt=="FIN" as soon as the job has any fin='1' pageinfo row
+     // at all (ad slots routinely do, even outside a real "FIN" stage -
+     // see $stages1 above). For a normal 2/3-stage job that's fine: opt
+     // genuinely tracks which stage the user is viewing, and it only
+     // needs to equal "FIN" to unlock these actions there. But a
+     // FlatplanStages==1 job has $_GET['opt'] force-blanked above
+     // precisely so it's never "FIN" (no such stage exists for it) - so
+     // without the $stages1 bypass here, this condition was permanently
+     // false and the whole accept/reject/cancel block silently never
+     // rendered for these jobs, even with the right and an active pub.
+     if( ( ( $rights["acceptPage"] or $rights["cancelApprove"] ) && ( $_GET['opt'] == $allowedOpt or $stages1 ) ) && ( $pub[0][12] == "created" or $pub[0][12] == "active" or $pub[0][12] == "current" ) ) { ?>
   	<hr style="padding: 0;">
   	 <? if( $rights["acceptPage"] ) { ?>
   	 	 <li data-action="accept"><?= $lang["flatplan"]["accept"] ?></li>

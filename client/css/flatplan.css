@@ -1020,6 +1020,59 @@ select[name="comp_operation"]:disabled {
 	left: 229px;
 	color: rgb( 191, 191, 191 );
 	font-size: 14px;
+	/* #state_a/#state_b/#state_c/#state_d/#side_a/#side_b (the compare-mode
+	page-image layers in flatplan_preview.php) carry inline z-index up to 26
+	and grow to the current zoom's full box size - without an explicit
+	z-index here, #fpFooter (and everything in it, including the zoom
+	slider) has no stacking context of its own and those layers paint (and
+	capture clicks) on top of it once they're large enough to overlap the
+	footer's screen position. 50 clears every content-layer z-index in this
+	file while staying below the tooltip/modal-class overlays (100+). */
+	z-index: 50;
+	}
+
+/* #leftArrow/#rightArrow (nav arrows) used to be 35x35 PNGs
+(images/icons/leftArrow.png etc.) inside a 35px-wide container - the actual
+opaque triangle within each PNG's canvas isn't guaranteed to sit at an
+identical inset on both assets, so even mathematically-equal left/right
+container positioning (see centerToolbar() in flatplan_preview.php) could
+still look visually uneven, asset padding being outside CSS's control. These
+are pure CSS triangles instead - their visible bounds are exactly what's
+declared here, so centering the container centers what you actually see.
+Positioned absolute against the container (#leftArrow/#rightArrow/their
+_hover twins, all already position:absolute) rather than flex-centered -
+jQuery's fadeIn()/fadeOut() on the _hover twins sets an inline
+"display:block", which would silently defeat a "display:flex" on the
+container (inline style always wins over a CSS class), leaving the triangle
+unstyled top-left instead of centered. Absolute positioning doesn't depend
+on the container's display mode at all, so it survives that toggle. 35px
+container, 12px-wide/18px-tall triangle -> (35-12)/2=11.5, (35-18)/2=8.5. */
+.cssArrow {
+	position: absolute;
+	/* 2px shorter than the original 18px (9+9) - top:10.5px (was 8.5px)
+	keeps the bottom corner exactly where the original 18px-tall shape had
+	it (8.5+18 == 10.5+16). border-top/border-bottom both 8px (equal) so
+	the tip sits at the vertical midpoint of the base - the previous 7/9
+	split kept the bottom corner fixed but left the tip off-center,
+	producing two unequal slanted edges (not a true isosceles triangle). */
+	top: 10.5px;
+	left: 11.5px;
+	width: 0;
+	height: 0;
+	border-top: 8px solid transparent;
+	border-bottom: 8px solid transparent;
+	}
+.cssArrowLeft {
+	border-right: 12px solid rgb( 191, 191, 191 );
+	}
+.cssArrowRight {
+	border-left: 12px solid rgb( 191, 191, 191 );
+	}
+.cssArrowLeftHover {
+	border-right: 12px solid #FFFFFF;
+	}
+.cssArrowRightHover {
+	border-left: 12px solid #FFFFFF;
 	}
 
 #content_box {

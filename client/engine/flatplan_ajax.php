@@ -84,7 +84,7 @@
 		}
 
 	function preloadCommentMarks( $id ) {
-		global $myPublisher;
+		global $myPublisher, $lang;
 
 		$marks = array();
 		$comments = sql_get( 'comments', 'pub_id="'.$id.'"', '*' );
@@ -143,11 +143,11 @@
 
 		foreach( $byKey as $key => $result ) {
 			if( $result["red"] > 0 )
-				$marks[ $key ] = "<div class='commentRed'></div>";
+				$marks[ $key ] = "<div class='commentRed' title='".htmlspecialchars( $lang["flatplan"]["fpcomment_red_tip"] )."'></div>";
 			elseif( $result["green"] > 0 )
-				$marks[ $key ] = "<div class='commentGreen'></div>";
+				$marks[ $key ] = "<div class='commentGreen' title='".htmlspecialchars( $lang["flatplan"]["fpcomment_green_tip"] )."'></div>";
 			else
-				$marks[ $key ] = "<div class='commentBlue'></div>";
+				$marks[ $key ] = "<div class='commentBlue' title='".htmlspecialchars( $lang["flatplan"]["fpcomment_blue_tip"] )."'></div>";
 			}
 
 		return $marks;
@@ -331,7 +331,7 @@
 		}
 	
 	function drawPage( $id, $page, $class, $i, $pageType = 'normal' ) {
-		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $pages, $length;
+		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $pages, $length, $lang;
 		
 		list( $w, $h ) = $sizes;
 
@@ -780,30 +780,32 @@
 			$txt .= "<div style='pointer-events: none; float:left; margin-left: 4px;'>".$version."</div><div style='pointer-events: none; float:right; margin-right: 4px;'>".str_pad( $page, 3, '0', STR_PAD_LEFT)."</div>";
 			$commentPlace = "<div style='float: right; margin-top: 3px; margin-right: 3px;'>".$commentMark."</div>";
 	
-			if( $fPage[0][13] > 0 ) {	
-				$proof = "<div class='proof' style='float: right; margin-top: 3px; margin-right: 0px; margin-left: 3px;'></div>";
+			if( $fPage[0][13] > 0 ) {
+				$proof = "<div class='proof' title='".htmlspecialchars( $lang["flatplan"]["fpproof_tip"] )."' style='float: right; margin-top: 3px; margin-right: 0px; margin-left: 3px;'></div>";
 				}
 			//$proof = $check[0]["id"];
-			if( $fPage[0][12] != "" ) {		
-				$triangle = "<div class='".$fPage[0][12]."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+			if( $fPage[0][12] != "" ) {
+				$diffTip = ( $fPage[0][12] == "different" ) ? $lang["flatplan"]["fpdiff_changed_tip"] : $lang["flatplan"]["fpdiff_nochange_tip"];
+				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			}
 		elseif( $class == 'left' ) {
 			$txt .= "<div style='pointer-events: none; float:left; margin-left: 4px;'>".str_pad( $page, 3, '0', STR_PAD_LEFT)."</div><div style='pointer-events: none; float:right; margin-right: 4px;'>".$version."</div>";
-			$commentPlace = "<div style='float: left; margin-top: 3px; margin-left: 3px;'>".$commentMark."</div>";		
+			$commentPlace = "<div style='float: left; margin-top: 3px; margin-left: 3px;'>".$commentMark."</div>";
 
 			if( $fPage[0][13] > 0 ) {
-				$proof = "<div class='proof' style='float: left; margin-top: 3px; margin-right: 3px; margin-left: 0px;'></div>";
+				$proof = "<div class='proof' title='".htmlspecialchars( $lang["flatplan"]["fpproof_tip"] )."' style='float: left; margin-top: 3px; margin-right: 3px; margin-left: 0px;'></div>";
 				}
-			
-			if( $fPage[0][12] != "" ) {		
-				$triangle = "<div class='".$fPage[0][12]."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+
+			if( $fPage[0][12] != "" ) {
+				$diffTip = ( $fPage[0][12] == "different" ) ? $lang["flatplan"]["fpdiff_changed_tip"] : $lang["flatplan"]["fpdiff_nochange_tip"];
+				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			}
 
@@ -852,7 +854,7 @@
 		}
 
 	function drawAmericanPage( $id, $page, $class, $i, $pageType = 'normal' ) {
-		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $fpStages;
+		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $fpStages, $lang;
 		
 		list( $w, $h ) = $sizes;
 
@@ -1257,14 +1259,15 @@
 			$commentPlace = "<div style='float: right; margin-top: 3px; margin-right: 3px;'>".$commentMark."</div>";
 	
 			if( $fPage[0][13] > 0 ) {
-				$proof = "<div class='proof' style='float: right; margin-top: 3px; margin-right: 0px; margin-left: 3px;'></div>";
+				$proof = "<div class='proof' title='".htmlspecialchars( $lang["flatplan"]["fpproof_tip"] )."' style='float: right; margin-top: 3px; margin-right: 0px; margin-left: 3px;'></div>";
 				}
 			//$proof = $check[0]["id"];
 			if( $fPage[0][12] != "" ) {
-				$triangle = "<div class='".$fPage[0][12]."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+				$diffTip = ( $fPage[0][12] == "different" ) ? $lang["flatplan"]["fpdiff_changed_tip"] : $lang["flatplan"]["fpdiff_nochange_tip"];
+				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			}
 		elseif( $class == 'left' ) {
@@ -1272,14 +1275,15 @@
 			$commentPlace = "<div style='float: left; margin-top: 3px; margin-left: 3px;'>".$commentMark."</div>";
 
 			if( $fPage[0][13] > 0 ) {
-				$proof = "<div class='proof' style='float: left; margin-top: 3px; margin-right: 3px; margin-left: 0px;'></div>";
+				$proof = "<div class='proof' title='".htmlspecialchars( $lang["flatplan"]["fpproof_tip"] )."' style='float: left; margin-top: 3px; margin-right: 3px; margin-left: 0px;'></div>";
 				}
 
 			if( $fPage[0][12] != "" ) {
-				$triangle = "<div class='".$fPage[0][12]."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+				$diffTip = ( $fPage[0][12] == "different" ) ? $lang["flatplan"]["fpdiff_changed_tip"] : $lang["flatplan"]["fpdiff_nochange_tip"];
+				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			}
 
@@ -1428,17 +1432,28 @@
 			// out of the grid entirely instead of rendering as an empty slot,
 			// and every slot after it shifts down/renumbers.
 			$allPartPages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' AND part='".$_GET["part"]."' ORDER BY page ASC", "id,page" );
-			$first = $allPartPages[0][1];
-			$last = $allPartPages[count($allPartPages)-1][1];
+			// A brand-new Part has no pageinfo rows at all yet - indexing
+			// [0]/[count-1] unconditionally threw undefined-array-key
+			// warnings that (display_errors is on) got printed straight
+			// into this endpoint's JSON response, corrupting it before the
+			// existing "no pages yet" branch below ever got a chance to
+			// run, so the caller's ajax success handler never fired at all.
+			$first = !empty( $allPartPages ) ? $allPartPages[0][1] : 0;
+			$last = !empty( $allPartPages ) ? $allPartPages[count($allPartPages)-1][1] : 0;
 			$length = $last;
 			$ptype = $_GET["opt"];
 			if( empty( $ptype ) ) {
 				$ptype = "normal";
 				}
-			
+
 			//error_log( "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' AND part='".$_GET["part"]."' ".$moreQuery." ORDER BY page ASC LIMIT 2" );
 			$sizes = sql_get( 'pageinfo', "code='".$magazine[0][3]."' AND state='' AND issue='".$issue[0][10]."' AND part='".$_GET["part"]."' ".$moreQuery." LIMIT 2", '*' );
-			$sizes = calculateSize( $sizes[0], $magazine[0][3], $issue[0][10] );
+			// Same empty-Part case as $allPartPages above - calculateSize()
+			// indexes into whatever row it's given without checking it's
+			// non-empty, so skip the call entirely rather than feed it a
+			// row that doesn't exist; its own fallback size (81x97) is used
+			// directly instead.
+			$sizes = !empty( $sizes ) ? calculateSize( $sizes[0], $magazine[0][3], $issue[0][10] ) : array( 81, 97 );
 			$row = intval( intval($_GET['maxWidth'] )/229 );
 			$divWidth = $row*229;
 				
@@ -1524,6 +1539,15 @@
 			elseif( $_GET['opt'] == '' or $_GET['opt'] == 'FIN' ) {
 				$length = intval( $issue[0][6] );
 				if( $length == 0 ) {
+					// Adhoc jobs never get a fixed page count - by design their
+					// Parts are defined up front but the page count is meant to
+					// grow freely as pages are uploaded (unlike Regular jobs,
+					// where the page sequence per Part is fixed at creation and
+					// publications.pages is always set). Dropping the part=''
+					// restriction here matters because Adhoc jobs using
+					// American part numbering (e.g. BEL/BOR) never have an
+					// empty part on their pageinfo rows, so that condition
+					// excluded exactly the jobs this fallback exists for.
 					$moreQuery = "";
 					if( $_GET["opt"] == "FIN" ) {
 						$moreQuery .= " AND fin='1'";
@@ -1531,7 +1555,7 @@
 					else {
 						$moreQuery .= " AND fin='0'";
 						}
-					$pages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' AND part='' ".$moreQuery." ORDER BY page DESC LIMIT 1", "*" );
+					$pages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' ".$moreQuery." ORDER BY page DESC LIMIT 1", "*" );
 					$length = $pages[0][5];
 					}
 				$counter = 1;
@@ -2251,21 +2275,58 @@
     if( $_GET['op'] == 'sendHandout' ) {
 	    $pub = sql_aget( "publications", "id='".$_GET["id"]."'", "*" );
 	    $magazine = sql_get( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
-	    $client = sql_get( 'publishers', 'id="'.$pub[0]["publisher_id"].'"', '*' );
-	    
+	    // Adhoc jobs carry publisher_id="0" by convention - fall back to
+	    // publications.owner, same as resolveJobPublisherName() and every
+	    // other Switch-facing call site in this codebase. Without this,
+	    // the "client" sent to Switch was empty for every Adhoc handout.
+	    $publisherId = $pub[0]["publisher_id"];
+	    if( empty( $publisherId ) || $publisherId == '0' ) {
+		    $publisherId = $pub[0]["owner"];
+		    }
+	    $client = sql_get( 'publishers', 'id="'.$publisherId.'"', '*' );
+
 		$pages = $pub[0]["pages"];
 		if( $pages == 0 ) {
-			$pages = sql_aget( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$pub[0][10]."' AND state='' AND fin='1'", "*" );
-			$pages = count( $pages );
-			
-			if( $pages == 0 ) {
-				$pages = sql_aget( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$pub[0][10]."' AND state=''", "*" );
+			// $pub was fetched via sql_aget() - purely associative, no
+			// numeric keys - so $pub[0][10] below (a leftover from
+			// sql_get()-style numeric access elsewhere) always evaluated to
+			// "", making both fallback queries run as issue='' and match
+			// nothing. That alone was enough to send Switch a "0" page
+			// count regardless of pagination scheme.
+			$pageNumbering = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], "PageNumbering", $returnnode = '' );
+			$pageNumbering = (string) $pageNumbering["PageNumbering"];
+
+			if( $pageNumbering == "American" ) {
+				// American jobs number pages per-Part (Cover, Inside, etc -
+				// each its own 1..N sequence), not as one flat range across
+				// the whole issue - the handout's page count is the SUM of
+				// every Part's own page count, not a single pageinfo
+				// row-count query. By the time the Generate Handout icon is
+				// even clickable, loadhandoutmenu's $haveall check has
+				// already confirmed every Part with pages is a gap-free
+				// sequence from its own page 1, so that Part's highest page
+				// number IS its page count. Confirmed live 2026-07-30
+				// (BQW39: Cover=4 + Inside=16 = 20).
+				$pages = 0;
+				$parts = sql_aget( 'parts', "pub_id='".$pub[0]['id']."'", "*" );
+				foreach( $parts as $partRow ) {
+					$partPages = sql_aget( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$pub[0]['code']."' AND state='' AND part='".$partRow["name"]."' order by page ASC", "*" );
+					if( count( $partPages ) > 0 ) {
+						$pages += intval( $partPages[ count($partPages)-1 ]["page"] );
+						}
+					}
+				}
+			else {
+				$pages = sql_aget( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$pub[0]['code']."' AND state='' AND fin='1'", "*" );
 				$pages = count( $pages );
+
+				if( $pages == 0 ) {
+					$pages = sql_aget( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$pub[0]['code']."' AND state=''", "*" );
+					$pages = count( $pages );
+					}
 				}
 			}
-			
-			
-		
+
 		$array = array(
 			"event" => "handout",
 			"client" => $client[0][1],
@@ -2276,9 +2337,21 @@
 			);
 		
 		$response = SwitchSend( $array );
-		
+
+		// Same Adhoc-vs-Regular single/double segment distinction fixed
+		// elsewhere this session (ajax.php's load_adverts, __cleaner__.php,
+		// cleanupPublicationRemnants()) - Adhoc jobs have publications.code
+		// == magazines.code (there's no separate issue), so Switch names
+		// the returned handout file NAME_handout.pdf, not
+		// NAME_NAME_handout.pdf. Without this, the stored filename never
+		// matched the file handout-handler.php's cron was looking for, so
+		// `arrived` never got set and the UI kept polling/spinning forever
+		// even after the file genuinely arrived. Confirmed live 2026-07-30
+		// (BQW39: file arrived as BQW39_handout.pdf, DB expected
+		// BQW39_BQW39_handout.pdf).
+		$issueSegment = ( $magazine[0][3] == $pub[0]["code"] ) ? '' : '_'.$pub[0]["code"];
 		$names = array( "userid", "pub_id", "filename", "date", "changed" );
-		$values = array( $_SESSION["intra_user"], $pub[0]["id"], $magazine[0][3]."_".$pub[0]["code"]."_handout.pdf", time(), "0" );
+		$values = array( $_SESSION["intra_user"], $pub[0]["id"], $magazine[0][3].$issueSegment."_handout.pdf", time(), "0" );
 		sql_add( "flatplan_handout", $names, $values );
 		
 		$result = $response;    
@@ -2311,9 +2384,10 @@
 				$checker = sql_get( 'pageinfo', 'issue="'.$pub[0][10].'" AND code="'.$magazine[0][3].'" order by page DESC LIMIT 1', '*' );
 				$allpage = intval( $checker[0][5] );
 				}
-				
-			$fpstages = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], array( "FlatplanStages", "Workflow" ), $returnnode = '' );
+
+			$fpstages = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], array( "FlatplanStages", "Workflow", "PageNumbering" ), $returnnode = '' );
 			$fpworkflow = (string) $fpstages["Workflow"];
+			$pageNumbering = (string) $fpstages["PageNumbering"];
 			$fpstages = $fpstages["FlatplanStages"];
 			// A FlatplanStages==1 job has only the one flatplan, so its real
 			// content pages routinely stay fin=0 forever (there's no later
@@ -2329,38 +2403,89 @@
 			// fin filter entirely and match on the mix directly instead.
 			$stages1 = ( (string) $fpstages == "1" and $fpworkflow != "Hybrid" );
 
-			if( $stages1 ) {
-				$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." order by page ASC ", "*" );
+			if( $pageNumbering == "American" ) {
+				// American jobs number pages per-Part (each Part - Cover,
+				// Interior, etc - is its own independent 1..N sequence), not
+				// as one global range across the whole issue like European
+				// jobs. The single-sequence check below, run unscoped by
+				// part, mixes every Part's page numbers into one query -
+				// meaningless for this numbering scheme, and vacuously
+				// "complete" (0 of 0 expected pages) for a brand-new job
+				// with zero pageinfo rows anywhere, which is exactly what
+				// showed the handout icon for a publication with nothing in
+				// it yet. Require instead: at least one Part actually has
+				// pages, and every Part that does is itself a gap-free
+				// sequence from its own page 1. Confirmed live 2026-07-29
+				// (BQW39, a brand-new empty Adhoc/American publication).
+				$haveall = false;
+				$anyPartHasPages = false;
+				$allPartsContinuous = true;
+				$parts = sql_aget( 'parts', "pub_id='".$pub[0][0]."'", "*" );
+				foreach( $parts as $partRow ) {
+					$partName = $partRow["name"];
+					if( $stages1 ) {
+						$partPages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND part='".$partName."' order by page ASC ", "*" );
+						}
+					else {
+						$partPages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND part='".$partName."' AND fin='1' order by page ASC ", "*" );
+						if( count( $partPages ) == 0 ) {
+							$partPages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND part='".$partName."' AND fin='0' order by page ASC ", "*" );
+							}
+						}
+
+					if( count( $partPages ) == 0 ) {
+						continue;
+						}
+					$anyPartHasPages = true;
+
+					$partMax = intval( $partPages[ count($partPages)-1 ]["page"] );
+					$expected = 1;
+					$idx = 0;
+					while( $expected <= $partMax ) {
+						if( empty( $partPages[ $idx ]["id"] ) || intval( $partPages[ $idx ]["page"] ) != $expected ) {
+							$allPartsContinuous = false;
+							break 2;
+							}
+						$expected += max( 1, intval( $partPages[ $idx ]["width"] ) );
+						$idx++;
+						}
+					}
+				$haveall = ( $anyPartHasPages && $allPartsContinuous );
 				}
 			else {
-				$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC ", "*" );
-				//error_log( "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC " );
-				//error_log( "PAGES IN SQL: ".count($pages)."" );
-				if( count( $pages ) == 0 ) {
-					$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='0' order by page ASC ", "*" );
+				if( $stages1 ) {
+					$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." order by page ASC ", "*" );
 					}
-				}
-			
-			// Walk $pages in row order, tracking the page NUMBER we expect
-			// next, instead of trusting array position to line up with it.
-			// $pages has no row at all for a genuinely missing page, and no
-			// separate row for a spread's second half - both shrink the
-			// array without moving $i, so position and real page number
-			// silently drift apart after either one. Checking array-slot
-			// emptiness alone can't tell "page really missing" from "array
-			// just got shorter than $allpage for a legitimate reason", and
-			// two such drifts (e.g. a gap plus a spread) can cancel out and
-			// falsely read as complete.
-			$expected = 1;
-			$idx = 0;
-			while( $expected <= $allpage ) {
-				if( empty( $pages[ $idx ]["id"] ) || intval( $pages[ $idx ]["page"] ) != $expected ) {
-					$haveall = false;
-					break;
+				else {
+					$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC ", "*" );
+					//error_log( "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='1' order by page ASC " );
+					//error_log( "PAGES IN SQL: ".count($pages)."" );
+					if( count( $pages ) == 0 ) {
+						$pages = sql_aget( "pageinfo", "issue='".$pub[0][10]."' AND code='".$magazine[0][3]."' AND type != 'PRE' AND state='' AND page <= ".$allpage." AND fin='0' order by page ASC ", "*" );
+						}
 					}
 
-				$expected += max( 1, intval( $pages[ $idx ]["width"] ) );
-				$idx++;
+				// Walk $pages in row order, tracking the page NUMBER we expect
+				// next, instead of trusting array position to line up with it.
+				// $pages has no row at all for a genuinely missing page, and no
+				// separate row for a spread's second half - both shrink the
+				// array without moving $i, so position and real page number
+				// silently drift apart after either one. Checking array-slot
+				// emptiness alone can't tell "page really missing" from "array
+				// just got shorter than $allpage for a legitimate reason", and
+				// two such drifts (e.g. a gap plus a spread) can cancel out and
+				// falsely read as complete.
+				$expected = 1;
+				$idx = 0;
+				while( $expected <= $allpage ) {
+					if( empty( $pages[ $idx ]["id"] ) || intval( $pages[ $idx ]["page"] ) != $expected ) {
+						$haveall = false;
+						break;
+						}
+
+					$expected += max( 1, intval( $pages[ $idx ]["width"] ) );
+					$idx++;
+					}
 				}
 
 			if( !$haveall ) {

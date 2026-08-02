@@ -135,6 +135,8 @@ $types = PARTTYPES;
 </form>		
 
 <script>
+var posname = "Pages";
+
 function checkParts() {
 	$val = $("#PageNumbering option:selected").val();
 	if( $val == "American" ) {
@@ -191,6 +193,12 @@ function newLine() {
 			}
 	?>
 	text += '</select></span>';
+	// Adhoc jobs defer their page count/range to the later editing flow
+	// (jobsettings.php) - Regular jobs still define it per Part right here,
+	// same as before this field was (over-broadly) dropped for both types.
+	if( $("#Type").val() != "Adhoc" ) {
+		text += '<span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span>';
+		}
 	text += '<span class="trimsize" style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span>';
 	text += '<span style="padding-left: 10px;">Color standard: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?></select></span>';
 	text += '<?= grayscaleCheckbox() ?>';

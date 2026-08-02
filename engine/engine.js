@@ -975,6 +975,29 @@ $.strPad = function(i,l,s) {
 var lister = [];
 var lvalue = [];
 
+// Ctrl/Cmd+click on a page thumbnail (used to bring up flatplan.php's/
+// vflatplan.php's right-click context menu on Mac) fires a full native
+// click in addition to contextmenu - same Safari/WebKit behavior
+// documented in advertisement.php's identical fix (confirmed there via
+// live diagnostics: mousedown -> contextmenu -> mouseup -> click). Left
+// unguarded, that trailing click reaches singleDoubleClick()'s delegated
+// handler below and runs its normal single-click toggle on whichever
+// .pagenr/.thumb was under the cursor - deselecting (unhighlighting)
+// that one page even when it was already part of a multi-page selection,
+// right as the context menu opens on top of it.
+// advertisement.php's own fix notes that jQuery 1.10.2 (2013) doesn't
+// reliably normalize ctrlKey on Safari/WebKit for this gesture, so a
+// jQuery-level check inside singleDoubleClick()'s own handler would
+// silently never fire. A raw capture-phase listener with
+// stopImmediatePropagation(), same as that fix, sidesteps that
+// normalization gap and stops the event before it ever reaches
+// singleDoubleClick()'s bubble-phase handler on body.
+document.addEventListener("click", function( event ) {
+	if( ( event.ctrlKey || event.metaKey ) && event.target.closest(".pagenr, .thumb") ) {
+		event.stopImmediatePropagation();
+		}
+	}, true );
+
 function simulateClick(x, y) {
     jQuery(document.elementFromPoint(x, y)).click();
 	}

@@ -438,29 +438,44 @@ if( $go ) {
 						}
 					$oldFile = str_pad(intval( $pageInfo[0][5] ), 3, '0', STR_PAD_LEFT)."_".$pageInfo[0][1]."_".( $pageInfo[0][6] == "ad" ? "ad_" : "" )."preview";
 
-					if( copy( $prevDir."/".$oldFile.".jpg", $path."/_old".( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) )."/".$oldFile."_".$pageInfo[0][3].".jpg" ) ) {
-						// See page_pdf-handler.php: a fresh page replaces
-						// whatever preflight result the previous version
-						// had, so it must not survive a resubmission.
-						if( $type == "alter" )
-							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
-						else
-							sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
-						$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'comment' );
-						$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
-						$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
-						sql_add( 'action_log', $names, $values );							
-						
-						$a = $path.'/_old'.( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) ).'/'.$oldFile.'_'.$pageInfo[0][3].'.pdf';
-						$b = $prevDir.'/'.$oldFile.'.pdf';
-						
+					// This archival copy of the OLD thumbnail is best-effort
+					// (e.g. it's legitimately missing after a cleanup pass)
+					// and must NOT gate the version bump below - see
+					// page_pdf-handler.php for the full rationale. It used
+					// to be an if(copy(...)){...} wrapping the whole block
+					// below, which meant a missing old thumbnail silently
+					// skipped the version/status/pack_id update AND left
+					// $id unset, so the render step further down ran with
+					// no page id.
+					copy( $prevDir."/".$oldFile.".jpg", $path."/_old".( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) )."/".$oldFile."_".$pageInfo[0][3].".jpg" );
+
+					// See page_pdf-handler.php: a fresh page replaces
+					// whatever preflight result the previous version
+					// had, so it must not survive a resubmission.
+					if( $type == "alter" )
+						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
+					else
+						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
+					$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'comment' );
+					$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
+					$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
+					sql_add( 'action_log', $names, $values );
+
+					$a = $path.'/_old'.( $pageInfo[0][11] == "1" ? "/FIN" : ( $pageInfo[0][6] == "PRE" ? "/_PRE" : "" ) ).'/'.$oldFile.'_'.$pageInfo[0][3].'.pdf';
+					$b = $prevDir.'/'.$oldFile.'.pdf';
+
+					// AUTOCOMPARE needs both the archived old PDF and the
+					// still-in-place previous PDF to actually diff - gated
+					// on their real presence now, rather than on the
+					// unrelated jpg copy above.
+					if( is_file( $a ) && is_file( $b ) ) {
 						echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
 						$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
 						file_put_contents( '/var/www/html/client/tests/B-E.out', $end );
 						echo $end."<br>";
 						sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
-						$id = $pageInfo[0][0];
-						}															
+						}
+					$id = $pageInfo[0][0];
 					}
 				else {
 					echo "nincs a pageinfoba";
@@ -615,7 +630,7 @@ if( $go ) {
 					
 					error_log( "PDF STANDARD: ".$standard );
 					if( $standard == "Web" ) {
-						dynaPrework( $new, $pageWidth );
+						dynaPrework( $new, $pageWidth, $color );
 						}
 					else {
 						thumbCreate2( $new, $pageWidth, $color );	

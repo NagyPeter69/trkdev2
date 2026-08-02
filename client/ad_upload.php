@@ -28,7 +28,20 @@ if( in_array( $type, $allowed ) ) {
 	if ( @move_uploaded_file($tmp_name, $target.'/'.$doc_name ) ) {
 		$issue = sql_get( 'publications', 'id="'.$_POST['p_id'].'"', '*' );
 		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'"', '*' );
-		$client = sql_get( 'publishers', 'id="'.$issue[0][1].'"', '*' );
+		// Adhoc jobs always carry publisher_id="0" by convention - the real
+		// client lives on publications.owner instead (see
+		// resolveJobPublisherName() in switchAPI.php). Without this fallback,
+		// $client comes back empty for every Adhoc job, and the empty
+		// publisher id below fails the ads insert outright under
+		// STRICT_TRANS_TABLES (ads.publisher is int NOT NULL) - silently,
+		// since sql_add()'s return value isn't checked - so the advert never
+		// appears in the checking queue even though the file itself uploaded
+		// and the UI reported success.
+		$publisherId = $issue[0][1];
+		if( empty( $publisherId ) || $publisherId == '0' ) {
+			$publisherId = $issue[0][23];
+			}
+		$client = sql_get( 'publishers', 'id="'.$publisherId.'"', '*' );
 		$array = array();
 	
 		$array["client"] = $client[0][1];
@@ -49,11 +62,12 @@ if( in_array( $type, $allowed ) ) {
 			$array = array(
 				"event" => "new_ad",
 				"client" => $client[0][1],
+				"pubName" => $magazine[0][2],
 				"jobCode" => $magazine[0][3],
 				"issue" => $issue[0][10],
 				"description" => strtoupper( $_POST['job_code'] ),
 				"size" => str_replace( '/', '_', $_POST['size'] ),
-				);			
+				);
 			
 			$file = array( 
 				"name" => $doc_name,

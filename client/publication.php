@@ -144,7 +144,10 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 						
 						
 							$logSettings = sql_aget( 'userLogSettings', 'user="'.$_SESSION['intra_user'].'" LIMIT 1', '*' );
-							$logSettings = $logSettings[0];
+							// See client/flatplan.php's identical guard - accounts
+							// with no userLogSettings row (Temp/Adhoc-scoped ones)
+							// otherwise fatal here (PHP 8 array_reverse(null)).
+							$logSettings = $logSettings[0] ?? array();
 							$logSettings = array_reverse($logSettings, true);
 							unset( $logSettings['id'] ); unset( $logSettings['user'] );
 							$i = $m = 0; $c = 1;

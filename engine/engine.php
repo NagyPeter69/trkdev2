@@ -10,7 +10,13 @@ function GetHighestPageNumber( $xml, $pub ) {
 	
 	if( $xml->FlatplanStages == "1" ) {
 		$pages = sql_aget( "pageinfo", "code='".$pub[0][10]."' AND fin='0' ORDER BY `page` DESC", "*" );
-		$pn = $pages[0]["page"];
+		// A brand-new publication has no pageinfo rows yet - indexing [0]
+		// unconditionally threw an undefined-array-key warning that PHP
+		// printed straight into advertisement.php's markup (display_errors
+		// is on), breaking the Ads panel header for exactly this case.
+		if( !empty( $pages ) ) {
+			$pn = $pages[0]["page"];
+			}
 		}
 	
 	return $pn;

@@ -679,6 +679,24 @@ migration, since they're a much larger, separate body of work:
   something to bundle into ongoing bug fixes. Revisit only if explicitly asked to scope
   that work.
 
+### Pages View footer: deferred perf optimization (small, not urgent)
+
+During the 2026-08-01 Pages View zoom/footer session (`client/flatplan_preview.php`,
+`client/plugins/preview_rightPanel.php`, `client/css/flatplan.css`), navigation
+(`reloadBG()`) was changed to fetch the real approve/reject status synchronously via a new
+`applyPageStatus()` call (a *second* AJAX request to `engine/flatplan_ajax.php`), rather than
+waiting on the pre-existing independent 600ms `refreshPageStatus()` poll — this fixed a real
+race where the footer visibly repositioned twice per navigation. Project owner would like
+this folded into `reloadBG()`'s own existing response instead (`engine/flatplan_reloadbg.php`,
+one round-trip instead of two — a guaranteed few-ms win per navigation), but explicitly asked
+to defer it and avoid risky changes for now: the status-HTML logic being moved
+(`flatplan_ajax.php`'s `op=refreshPageStatus` handler) has real permission checks and separate
+Hybrid-workflow/FlatplanStages handling, and duplicating rather than sharing it risks the
+"two copies silently drift apart" failure mode this codebase already has plenty of (see
+"What was migrated" / duplication note above). Do this as its own scoped session, factoring
+the logic into a function both endpoints call — don't just copy-paste it into
+`flatplan_reloadbg.php`.
+
 ## Deploying to production
 
 See `bin/deploy-to-prod.sh` (and its `--help`) for the actual mechanism. In short: this

@@ -12,7 +12,13 @@
 	$pub = sql_get( 'publications', 'id="'.$ad[0][1].'"', '*' );
 	$issue = $pub[0][10];
 	$magazine = sql_get( 'magazines', 'id="'.$pub[0][2].'"', '*' );
-	$client = sql_get( 'publishers', 'id="'.$pub[0][1].'"', '*' );
+	// Adhoc jobs carry publisher_id="0" by convention - fall back to
+	// publications.owner, same as resolveJobPublisherName() in switchAPI.php.
+	$publisherId = $pub[0][1];
+	if( empty( $publisherId ) || $publisherId == '0' ) {
+		$publisherId = $pub[0][23];
+		}
+	$client = sql_get( 'publishers', 'id="'.$publisherId.'"', '*' );
 
 	if( $_GET['op'] == "force" ) {
 		sql_update( "ads", "status='0'", "id='".$ad[0][0]."'" );
@@ -43,6 +49,7 @@
 			$array = array(
 				"event" => "proof",
 				"client" => $client[0][1],
+				"pubName" => $magazine[0][2],
 				"jobCode" => $magazine[0][3],
 				"issue" => $issue,
 				"description" => strtoupper( $ad[0][2] ),

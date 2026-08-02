@@ -95,7 +95,15 @@ for( $i = 0; $i < count( $assets ); $i++ ) {
 	$pub = sql_get( 'publications', '', '*' );
 	for( $x = 0; $x < count( $pub ); $x++ ) {
 		$magazine = sql_get( 'magazines', 'id="'.$pub[$x][2].'"', '*' );
-		$filter[] = "_".$magazine[0][3]."_".$pub[$x][10]."_";
+		// Adhoc jobs have publications.code == magazines.code (there's no
+		// separate issue) - Switch never had a separate issue segment to
+		// name their files with, so the filter must match the single-
+		// segment "_CODE_" they actually use, not "_CODE_CODE_" which no
+		// real Adhoc ad file has. Same distinction as ajax.php's
+		// load_adverts. Without this, every Adhoc job's correctly-named
+		// ad files look orphaned and get deleted below.
+		$issueSegment = ( $magazine[0][3] == $pub[$x][10] ) ? '' : '_'.$pub[$x][10];
+		$filter[] = "_".$magazine[0][3].$issueSegment."_";
 		}
 
 	$dirFiles2 = load_dir_files( $dir2, "." );
@@ -124,8 +132,11 @@ for( $i = 0; $i < count( $assets ); $i++ ) {
 				break;
 			}
 		
-		$checker = strtoupper( $ads[$x][2] ).'_'.$magazine[0][3].'_'.$pub[0][10];
-		$file_name = strtoupper( $ads[$x][2] ).'_'.$magazine[0][3].'_'.$pub[0][10].'_'.$type;
+		// Same Adhoc-vs-Regular single/double segment distinction as the
+		// filter loop above.
+		$issueSegment = ( $magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];
+		$checker = strtoupper( $ads[$x][2] ).'_'.$magazine[0][3].$issueSegment;
+		$file_name = strtoupper( $ads[$x][2] ).'_'.$magazine[0][3].$issueSegment.'_'.$type;
 		
 		$dirFiles2 = load_dir_files( $dir2, $checker );
 		for( $z = 0; $z < count( $dirFiles2 ); $z++ ) {

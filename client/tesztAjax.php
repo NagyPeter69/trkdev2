@@ -71,16 +71,50 @@ function point__( $num, $_zoom = '' ) {
 	return $num * 72 / $_zoom;
 	}
 
+// Shared page->colorStd lookup for BOTH branches (R3's PDFtoImage__ and
+// DynaPDF's DynaToImage) - they need to agree on the same source profile
+// for a given page or the two renders visibly diverge.
+//
+// partDetect() alone (without a $part) falls back to matching each Part's
+// <place> page-range in the issue XML - but some issues (e.g. American-
+// numbering jobs) only ever populate <pages> as a plain count, never
+// <place>, so that range-match can never succeed and partDetect() quietly
+// defaults to FOGRA_39 regardless of the page's real Part. Resolving
+// $part from the pageinfo row first (same lookup preview_ajax.php's
+// loadPages op and PDF_prework() already rely on) sidesteps the XML
+// entirely and is unambiguous either way.
+function tesztPageColorStd( $from ) {
+	global $pub;
+	$nameParts = explode( "/", $from );
+	$nameParts = end($nameParts);
+	$nameParts = explode( "_", $nameParts );
+	$page = intval( $nameParts[0] );
+	// Page numbers alone are NOT unique within a publication - a Cover
+	// Part's page 1 and an Inside Part's page 1 (or a same-numbered ad)
+	// are different pageinfo rows that happen to share "page". pack_id
+	// (already encoded right after the page number in every one of these
+	// filenames, e.g. "001_69_preview.pdf" / "001_70_preview.pdf") is
+	// what actually disambiguates which row - and therefore which Part -
+	// this specific file belongs to.
+	$packId = intval( $nameParts[1] );
+
+	$magazine = sql_aget( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
+	$row = sql_aget( "pageinfo", "(type=\"ad\" OR type=\"magazine\") AND code=\"".$magazine[0]["code"]."\" AND issue=\"".$pub[0]["code"]."\" AND page=\"".$page."\" AND pack_id=\"".$packId."\"", "*" );
+	$part = $row[0]["part"];
+
+	return partDetect( $pub[0]["id"], $page, "color", $part );
+	}
+
 function PDFtoImage__( $sizes, $to ) {
 	global $from, $colors, $col, $pub;
-	
+
 	error_log( "PUBID: ".$pub[0]["id"] );
 	$page = explode( "/", $from );
 	$page = end($page);
 	$page = explode( "_", $page );
 	$page = intval( $page[0] );
 	error_log( "TARFILE: ".$page );
-	$col = partDetect( $pub[0]["id"], $page );
+	$col = tesztPageColorStd( $from );
 	error_log( "PART: ".$col );
 	error_log( "PROFIL LÉTEZIK? ".is_file( TRKPATH."/engine/r3/".$col.".icc" ) );
 	//$col = "ISOcoated_v2_eci";
@@ -152,7 +186,7 @@ if( floatval( str_replace( ",", ".", $sizes['left'] ) ) >= floatval( str_replace
 			error_log( "itt");
 			if( $_GET["pdfstand"] == "Web" ) {
 				$to = "/var/www/html/client/engine/dyna/".$to;
-				$debug = DynaToImage( $sizes, $zoom, $from, $to );
+				$debug = DynaToImage( $sizes, $zoom, $from, $to, tesztPageColorStd( $from ) );
 				}
 			else {
 				$d = PDFtoImage__( $sizes, $to );
@@ -199,7 +233,7 @@ elseif( $difference > 0 && $_POST['file'][1]["Name"] != "" ) {
 	
 	if( $_GET["pdfstand"] == "Web" ) {
 		$to_left = "/var/www/html/client/engine/dyna/left".$_GET['intra_user'].".jpg";
-		$debug = DynaToImage( $sizes, $zoom, $from, $to_left );
+		$debug = DynaToImage( $sizes, $zoom, $from, $to_left, tesztPageColorStd( $from ) );
 		}
 	else {
 		$debug = PDFtoImage__( $sizes, "left".$_GET['intra_user'].".jpg" );
@@ -234,7 +268,7 @@ elseif( $difference > 0 && $_POST['file'][1]["Name"] != "" ) {
 		$sizes["top"] = $sizes["top"]-$_POST['corr'][0]["Bottom"]+$_POST['corr'][1]["Bottom"];
 		if( $_GET["pdfstand"] == "Web" ) {
 			$to_right = "/var/www/html/client/engine/dyna/right".$_GET['intra_user'].".jpg";
-			$debug = DynaToImage( $sizes, $zoom, $from, $to_right );
+			$debug = DynaToImage( $sizes, $zoom, $from, $to_right, tesztPageColorStd( $from ) );
 			}
 		else {
 			$debug = PDFtoImage__( $sizes, "right".$_GET['intra_user'].".jpg" );
@@ -283,7 +317,7 @@ else {
 	
 	if( $_GET["pdfstand"] == "Web" ) {
 		$to = "/var/www/html/client/engine/dyna/".$to;
-		$debug = DynaToImage( $sizes, $zoom, $from, $to );
+		$debug = DynaToImage( $sizes, $zoom, $from, $to, tesztPageColorStd( $from ) );
 		}
 	else {
 		$debug = PDFtoImage__( $sizes, $to );

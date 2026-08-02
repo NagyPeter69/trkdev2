@@ -678,7 +678,24 @@ for( $i = 0; $i < count( $pages ); $i++ ) {
 $terminalPath = "/var/www/intra/client";
 $postfix = $_SESSION['intra_user'];
 
-if( count( $pages ) > 1 ) {
+if( count( $pages ) == 0 ) {
+	// No pages exist for this publication/part yet - the loop above never
+	// ran, so $file/$pageinfo have nothing real to read. Both branches
+	// below unconditionally index into $file[0]/$pageinfo assuming at
+	// least one page was loaded, throwing undefined-array-key warnings
+	// that (display_errors is on) got printed straight into the inline
+	// <script> block further down that embeds file[0]/boxSize into JS
+	// (~line 1700), corrupting it - which left toolbar/icon positioning
+	// (centerToolbar() etc.) working off garbage/stale coordinates
+	// instead of the page grid simply rendering empty. Confirmed live
+	// 2026-07-29 (BQW39, a brand-new empty Adhoc publication). The
+	// existing degenerate-geometry fallback just below (fullSizes<=0)
+	// picks this up and applies its own placeholder size.
+	$file[0] = array( "Path" => "", "Name" => "" );
+	$sizes = array( 'Height' => 0 );
+	$fullSizes = 0;
+	}
+elseif( count( $pages ) > 1 ) {
 	$correctionBoxTemp = $user[0][15];
 	if( $pdfstand == "Web" ) {
 		$correctionBoxTemp = "mediabox";
@@ -1169,12 +1186,12 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 					<i class="fas fa-caret-left" style="font-size: 50px;"></i>
 				</div>
 			<?php } else { ?>
-				<div id='leftArrow' onclick="changePic('<?= $prev_link ?>')" style='cursor: pointer; position: absolute; left: 300px; width: 35px;'>
-					<img src='images/icons/leftArrow.png'>
+				<div id='leftArrow' onclick="changePic('<?= $prev_link ?>')" style='cursor: pointer; position: absolute; left: 300px; width: 35px; height: 35px;'>
+					<div class='cssArrow cssArrowLeft'></div>
 				</div>
-				
-				<div id='leftArrow_hover' onclick="changePic('<?= $prev_link ?>')" style='display:none; cursor: pointer; position: absolute; left: 300px; width: 35px;'>
-					<img src='images/icons/leftArrow_hover.png'>
+
+				<div id='leftArrow_hover' onclick="changePic('<?= $prev_link ?>')" style='display:none; cursor: pointer; position: absolute; left: 300px; width: 35px; height: 35px;'>
+					<div class='cssArrow cssArrowLeftHover'></div>
 				</div>
 			<?php } ?>
 	
@@ -1204,11 +1221,11 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 					<i class="fas fa-caret-right" style="font-size: 50px;"></i>
 				</div>			
 			<?php } else { ?>
-				<div id='rightArrow' onclick="changePic('<?= $next_link ?>')" style='z-index: 2; cursor: pointer; position: absolute; left: 300px; width: 35px;'>
-					<img src='images/icons/rightArrow.png'>
+				<div id='rightArrow' onclick="changePic('<?= $next_link ?>')" style='z-index: 2; cursor: pointer; position: absolute; left: 300px; width: 35px; height: 35px;'>
+					<div class='cssArrow cssArrowRight'></div>
 				</div>
-				<div id='rightArrow_hover' onclick="changePic('<?= $next_link ?>')" style='z-index: 2; display:none; cursor: pointer; position: absolute; left: 300px; width: 35px;'>
-					<img src='images/icons/rightArrow_hover.png'>
+				<div id='rightArrow_hover' onclick="changePic('<?= $next_link ?>')" style='z-index: 2; display:none; cursor: pointer; position: absolute; left: 300px; width: 35px; height: 35px;'>
+					<div class='cssArrow cssArrowRightHover'></div>
 				</div>
 			<?php } ?>	
 		</div>
@@ -1422,10 +1439,24 @@ var dcolors = {
 		}
 ?>
 
+// Set true for the whole span of a zoom-slider drag, cleared one tick after
+// mouseup (not synchronously in stop: - jQuery UI's own document-level
+// mouseup listener, which fires stop:, runs BEFORE this app's window-level
+// mouseup listener further down for the very same native event, so clearing
+// it inside stop: itself would already be false by the time that handler's
+// check ran). event.target on that native mouseup can't be used to detect
+// "this was the zoom slider" instead - jQuery UI tracks the drag via its own
+// document mousemove/mouseup listeners, so by release time the cursor (and
+// therefore event.target) is wherever the drag ended, which is very often
+// nowhere near #zoomRange at all.
+var zoomSliderDragging = false;
 $( "#zoomRange" ).slider({
   max: 800,
   min: 60,
   value: zoom,
+  start: function( event, ui ) {
+    zoomSliderDragging = true;
+    },
   slide: function( event, ui ) {
     $( "#zoomLevel" ).val( $( "#zoomRange" ).slider("value") );
     },
@@ -1433,8 +1464,9 @@ $( "#zoomRange" ).slider({
     var newZoom = parseInt( $( "#zoomRange" ).slider("value") );
     if( newZoom < 1 ) newZoom = 1;
     if( newZoom > 1500 ) newZoom = 1500;
-	
+
     _zoom( '', 'roll', newZoom );
+    setTimeout( function() { zoomSliderDragging = false; }, 0 );
     }
   });
 $( "#zoomLevel" ).focusout(function() {
@@ -1476,7 +1508,24 @@ $(function() {
 	});
 
 var opt = '<?= $alter ?>';
-function refreshPageStatus() {
+// Fetches the real approve/reject status for the current pageID set and
+// writes it into .status1/.status2 - extracted out of refreshPageStatus()
+// so navigation (reloadBG(), see preview_rightPanel.php) can call this
+// directly, synchronously with the rest of the page's metadata, instead of
+// only ever finding out via refreshPageStatus()'s own free-running 600ms
+// poll. That poll used to be the ONLY place .status1/.status2's real content
+// (as opposed to page number/version badges/color-standard label, all set
+// directly by reloadBG()) ever got refreshed - navigating to a new page left
+// it showing the PREVIOUS page's approval state until the poll's next tick
+// happened to land, unsynchronized with navigation. If that tick landed
+// after rendering() had already finished and repositioned the footer once
+// (using the stale width), the poll's own catch-up update produced a
+// second, visibly different reposition a moment later - the "settles twice"
+// jitter. Does not call centerToolbar() itself or reschedule anything -
+// purely fetch-and-apply; onComplete(statusChanged) lets each caller decide
+// what layout/scheduling follow-up (if any) is appropriate for its own
+// context.
+function applyPageStatus( onComplete ) {
 	var Pages = pageID.toString();
 	$.ajax	({
 		url:"engine/flatplan_ajax.php",
@@ -1494,23 +1543,6 @@ function refreshPageStatus() {
 			if( i < 2 ) {
 				$( ".status2" ).html( '' );
 				}
-			// .status1/.status2's width changes with approval state (the
-			// two-button REJECT/APPROVE group is wider than a plain
-			// "Approved"/"Rejected" text), and #colorStdLabel1/2 trail
-			// directly off that width - reposition them whenever it changed.
-			// This poll runs on its own free-running 600ms timer, completely
-			// decoupled from changePic()/reloadBG()/rendering() - if its
-			// response happens to land while a page nav is still in flight
-			// (disableZoom true), .pagePreview and file[] are mid-transition
-			// and centerToolbar() would measure a transient, inconsistent
-			// state, visibly yanking the toolbar left for a moment before
-			// rendering()'s own completion snaps it back. Skipping the
-			// reposition here while disableZoom is true loses nothing -
-			// rendering() always repositions again once it finishes, by
-			// which point statusText/.status1/.status2 already reflect
-			// whatever this poll last wrote into them regardless.
-			if( statusChanged && !disableZoom ) centerToolbar();
-			fit_box();
 			$("#pstatus>div>img").mouseenter(function(e) {
 				var id = $(this).parent().attr("id");
 				var search = id.indexOf("_hover");
@@ -1530,15 +1562,33 @@ function refreshPageStatus() {
 					$("#"+id).fadeOut(1);
 					$("#"+id+"_hover").fadeIn(1);
 					}
-				else {		
+				else {
 					id = id.substring( 0, search );
 					$("#"+id).fadeIn(1);
 					$("#"+id+"_hover").fadeOut(1);
 					}
 				});
-			
-			setTimeout(function(){ refreshPageStatus(); }, 600);
+
+			if( typeof onComplete === "function" ) onComplete( statusChanged );
 			}
+		});
+	}
+
+// Background safety net for status changes that happen while the user is
+// just sitting on a page (someone else approves/rejects it elsewhere) -
+// navigation itself no longer depends on this, see applyPageStatus() above.
+function refreshPageStatus() {
+	applyPageStatus( function( statusChanged ) {
+		// .status1/.status2's width changes with approval state (the
+		// two-button REJECT/APPROVE group is wider than a plain
+		// "Approved"/"Rejected" text), and #colorStdLabel1/2 trail directly
+		// off that width - reposition them whenever it changed. Skipping the
+		// reposition here while disableZoom is true loses nothing - a
+		// render is in flight, which will call applyPageStatus()+
+		// centerToolbar() itself once it's ready (see reloadBG()).
+		if( statusChanged && !disableZoom ) centerToolbar();
+		fit_box();
+		setTimeout(function(){ refreshPageStatus(); }, 600);
 		});
 	}
 refreshPageStatus();
@@ -2082,7 +2132,7 @@ function rendering( command, newZoom ) {
 								$( "#zoomRange" ).slider( "option", { disabled: false } );
 								}
 							disableZoom = false;
-							centerToolbar();
+							showFooterControls();
 							setTimeout(function() { refreshComments(''); }, 200 );
 							var currentPos = {
 								left: $('#content_box').scrollLeft(),
@@ -2153,7 +2203,7 @@ function rendering( command, newZoom ) {
 						$( "#zoomRange" ).slider( "option", { disabled: false } );
 						}
 					disableZoom = false;
-					centerToolbar();
+					showFooterControls();
 					setTimeout(function() { refreshComments(''); }, 200 );
 					var currentPos = {
 						left: $('#content_box').scrollLeft(),
@@ -2197,7 +2247,7 @@ function rendering( command, newZoom ) {
 						$( "#zoomRange" ).slider( "option", { disabled: false } );
 						}
 					disableZoom = false;
-					centerToolbar();
+					showFooterControls();
 					setTimeout(function() { refreshComments(''); }, 200 );
 					var currentPos = {
 						left: $('#content_box').scrollLeft(),
@@ -2218,34 +2268,53 @@ $('#content_box').on('mousedown', function() {
 var norefresh = [ "compareTable", "compare_selector", "comp_operation", "compRange", "inner", "hover", "custom-menu", "ownerOnly", "commentBox", "replyComment", "subCancel", "subSave", "panel_top", "panel", "panelElement", "commentText", "commentEnabler", "square", "circle", "dot", "rightPanel", "rightPanel_top", "cyan", "magenta", "yellow", "kblack", "rightPanelElement", "rightPanel_bottom", "fpstatusbutton", "approveButton" ];
 window.addEventListener("mouseup", function(event) {
 	if( event.button == 0 ) {
+		// #zoomRange (the zoom slider) already drives its own dedicated
+		// render/scroll-adjust cycle via its jQuery UI "stop" handler ->
+		// _zoom() -> placeBox() -> rendering('force', ...). Its drag-handle
+		// element has no id and a multi-class className (e.g.
+		// "ui-slider-handle ui-corner-all ui-state-default"), so it never
+		// matched the plain id/className lookups below the way "compRange"
+		// does for the compare slider - every mouseup ending a zoom-slider
+		// drag ALSO fell through to the generic rendering() call 10ms later,
+		// firing a second, uncoordinated render + scroll-adjustment pass
+		// concurrently with the slider's own. The two raced over
+		// oldmaxscroll/actualPos, corrupting the scroll bookkeeping that
+		// later zoom steps (and centerToolbar()) depend on - the page
+		// appearing to "jump" and the slider seeming to stop responding.
+		// zoomSliderDragging (not event.target ancestry - see its own
+		// definition) is what actually identifies "this mouseup belongs to
+		// the zoom slider", since a drag can end with the cursor anywhere,
+		// not necessarily still over #zoomRange.
+		if( !zoomSliderDragging ) {
 		if( jQuery.inArray( event.target.id, norefresh ) == -1 ) {
 			if( jQuery.inArray( event.target.className, norefresh ) == -1 ) {
 				down = false;
 				if( !ajaxDisabled ) {
-					setTimeout( function() { 					
+					setTimeout( function() {
 						if( graphState != "magnify" || graphState != "colorPicker" ) {
 							if( compareMode == "on" && graphState != "magnify" ) {
 								if( cMode == "SideBySide" ) {
 									renderComparePages( $("select[name='state_a']").val(), "side_a", 0 );
 									renderComparePages( $("select[name='state_b']").val(), "side_b", 1 );
 									}
-								
+
 								else {
 									renderComparePages( $("select[name='state_a']").val(), "state_a", 0 );
 									renderComparePages( $("select[name='state_b']").val(), "state_b", 1 );
 									if( pages == "2" ) {
 										renderComparePages( $("select[name='state_c']").val(), "state_c", 3 );
 										renderComparePages( $("select[name='state_d']").val(), "state_d", 4 );
-										} 
-									}							
+										}
+									}
 								}
-							
+
 							rendering();
 							}
 						}, 10 );
 					}
 				}
 			}
+		}
 		}
 	});
 
@@ -2316,9 +2385,11 @@ function changePic( data ) {
 		// them - otherwise they sit there fully clickable, still showing the
 		// PREVIOUS page's state, for the whole render round-trip (can be over
 		// a second), and a click during that window approves/rejects the
-		// wrong page. visibility (not display) so centerToolbar() can still
-		// measure their width once render completes and it's safe to show
-		// them again.
+		// wrong page. visibility (not display) so centerToolbar() - now
+		// called from reloadBG(), well before the image render finishes -
+		// can still measure their width while hidden; showFooterControls()
+		// (called once the image render actually completes and it's safe)
+		// reveals what's already correctly positioned here.
 		$(".status1, .status2, #colorStdLabel1, #colorStdLabel2").css( "visibility", "hidden" );
 		data = data.split( "&" );
 		$("#renderedIMG1").hide( 0 ).attr('src', '' );
@@ -2469,7 +2540,20 @@ function divHandle() {
 	
 	nextDraw++;
 	if( graphState == "dot" ) {
-		$( '.pagePreview' ).mouseup();
+		// Deferred rather than called inline: this runs the whole
+		// stopDraw()->addText() chain (which ends in focusing the new
+		// comment's textarea) synchronously inside the mousedown handler,
+		// since a "dot" placement has no drag to wait for. Left inline,
+		// that focus() call races the browser's own mousedown-driven
+		// focus/blur handling for the *same* still-in-flight gesture and
+		// reliably loses - the textarea appeared but never actually took
+		// focus. rect/oval don't hit this because their addText() only
+		// ever runs off the real mouseup, by which point mousedown's own
+		// focus handling is long finished. Pushing this to a fresh tick
+		// puts the dot tool on the same footing.
+		setTimeout( function() {
+			$( '.pagePreview' ).mouseup();
+			}, 0 );
 		}
 	}
 
@@ -3105,51 +3189,79 @@ function refreshComments( suboption ) {
 // (default) applies instantly, for initial load / resize.
 function centerToolbar( animate ) {
 	var fcOffset = $(".footer_content").offset().left;
-	var ppOffset = $(".pagePreview").offset().left;
-	var leftWidthPx = pixel( parseFloat( file[0]['Right'] )-parseFloat( file[0]['Left'] ) );
 	// file[1] always exists as an object even in single-page mode (just with
 	// empty Left/Right/Width), so pages > 1 is the only reliable check here.
 	var isPair = ( pages > 1 );
 
 	var pagesWidth = parseInt( $(".pages").outerWidth() );
 	var status1Width = parseInt( $(".status1").outerWidth() );
+	var labelGap = 8;
+	var colorLabelWidth = parseInt( $("#colorStdLabel1").outerWidth() ) || 0;
+	var extra = colorLabelWidth > 0 ? labelGap+colorLabelWidth : 0;
 
+	// #content_box's right edge, converted into .footer_content's coordinate
+	// space (what pagesLeft/status1Left/status2Left are expressed in) - built
+	// from fpBox.Width (== $("#content_box").width(), the same value
+	// posPreview() centers .pagePreview against - see
+	// plugins/preview_rightPanel.php) rather than #fpFooter's own
+	// getBoundingClientRect(). The two normally coincide, but .width() is a
+	// content-box measurement (excludes a visible scrollbar) while
+	// getBoundingClientRect() is border-box - whenever #content_box actually
+	// shows a scrollbar (common right at a "fits the window" zoom, from
+	// rounding), that gap was enough to visibly throw .pages off the true
+	// page/spread center by a few pixels. Matching posPreview()'s own basis
+	// keeps this centered on the SAME "content area" .pagePreview itself is
+	// centered against, whichever way it's measured.
+	var footerRightEdge = ( $("#content_box").offset().left+fpBox.Width )-fcOffset;
+
+	// #zoomdiv (left:-15px, width:50px -> right edge 35px) and #zoomRange
+	// (left:42px, width:67px -> right edge 109px, per their own CSS in
+	// flatplan.css) occupy the start of .footer_content's coordinate space -
+	// nothing else may sit left of this.
+	var leftSafeBound = 109+8;
+	var groupGap = 8;
+
+	// Deliberately independent of zoom/scroll: an earlier version derived
+	// these from the rendered page's live on-screen position (ppOffset),
+	// which meant every control here drifted, collapsed onto each other, or
+	// ran off-screen as zoom/scroll changed - because the bar itself never
+	// grows, but the page being tracked does. The only inputs that should
+	// ever move these are things that change the bar's own available width
+	// (window resize, the side-panel toggle - both already re-run
+	// centerToolbar() on their own) - not what part of the page happens to
+	// be in view right now.
 	var pagesLeft, status1Left, status2Left;
 
-	if( isPair ) {
-		var rightWidthPx = pixel( parseFloat( file[1]['Right'] )-parseFloat( file[1]['Left'] ) );
-		var spineX = ( ppOffset-fcOffset )+leftWidthPx;
-		var leftCenterX = spineX-( leftWidthPx/2 );
-		var rightCenterX = spineX+( rightWidthPx/2 );
-		var status2Width = parseInt( $(".status2").outerWidth() );
+	// Centered on the bar's FULL width (0 to footerRightEdge), not the
+	// range left after excluding the zoom controls - #content_box spans the
+	// exact same width as #fpFooter, so the bar's true midpoint is also the
+	// rendered page/spread's true midpoint. Reserving leftSafeBound out of
+	// the centering range itself (rather than clamping the result) would
+	// skew the center rightward by half that reservation, same mistake as
+	// the "moving right" bug from before, just smaller and constant instead
+	// of zoom-driven.
+	pagesLeft = ( footerRightEdge-pagesWidth )/2;
+	if( pagesLeft < leftSafeBound ) pagesLeft = leftSafeBound;
 
-		pagesLeft = spineX-( pagesWidth/2 );
-		status1Left = leftCenterX-( status1Width/2 );
-		status2Left = rightCenterX-( status2Width/2 );
+	if( isPair ) {
+		var status2Width = parseInt( $(".status2").outerWidth() );
+		var colorLabel2Width = parseInt( $("#colorStdLabel2").outerWidth() ) || 0;
+		var extra2 = colorLabel2Width > 0 ? labelGap+colorLabel2Width : 0;
+
+		// status1 centered in the free space left of .pages, status2
+		// centered in the free space right of it.
+		var leftSegmentEnd = pagesLeft-groupGap;
+		status1Left = leftSafeBound+( ( leftSegmentEnd-leftSafeBound-( status1Width+extra ) )/2 );
+
+		var rightSegmentStart = pagesLeft+pagesWidth+groupGap;
+		status2Left = rightSegmentStart+( ( footerRightEdge-rightSegmentStart-( status2Width+extra2 ) )/2 );
 		}
 	else {
-		// Single page: .pages always centers on the page's own midline, full
-		// stop - it never shifts to make room for anything else. .status1
-		// (+ its trailing color-standard label, which collapses to 0 width
-		// if it doesn't exist - prepress tools off) instead sits to the
-		// right of .pages, centered within whatever toolbar space is
-		// actually left over there (.pages' right edge out to the bar's own
-		// right edge) - the same "center within the real free space"
-		// approach already used to keep this complex clear of the zoom
-		// controls on the left.
-		var pageCenterX = ( ppOffset-fcOffset )+( leftWidthPx/2 );
-		pagesLeft = pageCenterX-( pagesWidth/2 );
-
-		// #fpFooter's own right edge, converted into .footer_content's
-		// coordinate space (what pagesLeft/status1Left are expressed in) -
-		// not just #fpFooter's outerWidth taken at face value, since
-		// .footer_content sits inset from #fpFooter's own left edge by its
-		// own "left: 15px" and that inset would otherwise silently throw
-		// this centering off by half its size.
-		var footerRightEdge = $("#fpFooter")[0].getBoundingClientRect().right-fcOffset;
-		var labelGap = 8;
-		var colorLabelWidth = parseInt( $("#colorStdLabel1").outerWidth() ) || 0;
-		var extra = colorLabelWidth > 0 ? labelGap+colorLabelWidth : 0;
+		// Single page: .status1 (+ its trailing color-standard label, which
+		// collapses to 0 width if it doesn't exist - prepress tools off)
+		// sits to the right of .pages, centered within whatever toolbar
+		// space is actually left over there (.pages' right edge out to the
+		// bar's own right edge).
 		var rightAvailStart = pagesLeft+pagesWidth;
 		status1Left = rightAvailStart+( ( footerRightEdge-rightAvailStart-( status1Width+extra ) )/2 );
 		status2Left = null;
@@ -3162,7 +3274,26 @@ function centerToolbar( animate ) {
 		}
 
 	setLeft( $(".pages"), pagesLeft );
-	setLeft( $("#leftArrow, #leftArrow_hover"), pagesLeft-36 );
+	// Both arrow containers are 35px wide: left's "left" is measured
+	// backwards from .pages (container's RIGHT edge = pagesLeft-40+35 =
+	// pagesLeft-5, i.e. a 5px gap), right's is measured forwards from
+	// .pages' own right edge directly (+5 = a 5px gap).
+	//
+	// .pv1 (the left version badge, e.g. "v2") reserves a fixed 19px via
+	// .pageVer's own width:19px - even when it has no content and sits at
+	// opacity:0 (reloadBG()'s success handler, see preview_rightPanel.php,
+	// only ever gives it real content when there's more than one version to
+	// show; otherwise it's left empty and #pageNr gets margin-left:-10px to
+	// visually compensate). That leaves 9px (19-10) of invisible, unseen
+	// space at the very start of .pages' own box in the empty-.pv1 case -
+	// measured live 2026-08-01: real visible-content gap was 25.5px on the
+	// left (pv1 empty) vs 16.5px on the right (pv2 always populated when
+	// it's the one shown), a live-confirmed 9px mismatch, not a screenshot
+	// estimate. Only the left side needs this - .pv2 is always either
+	// populated or, in the two-version case, so is .pv1, so the right
+	// arrow's gap is never thrown off this way.
+	var pv1Empty = $(".pv1").text() === "";
+	setLeft( $("#leftArrow, #leftArrow_hover"), pagesLeft-40+( pv1Empty ? 9 : 0 ) );
 	setLeft( $("#rightArrow, #rightArrow_hover"), pagesLeft+pagesWidth+5 );
 	setLeft( $(".status1"), status1Left );
 	setLeft( $(".status2"), status2Left );
@@ -3173,17 +3304,19 @@ function centerToolbar( animate ) {
 	setLeft( $("#colorStdLabel1"), status1Left+status1Width+8 );
 	if( isPair ) setLeft( $("#colorStdLabel2"), status2Left+parseInt( $(".status2").outerWidth() )+8 );
 
-	// Only reveal the approve/reject buttons (and their trailing label) once
-	// they're correctly positioned for whatever is actually on screen right
-	// now - if disableZoom is still true, a render is still in flight and
-	// changePic()/reloadBG() hid them for exactly that reason; showing them
-	// here too would undo that and risk an approve/reject click landing on
-	// the wrong, not-yet-superseded page.
+	return pagesLeft;
+	}
+
+// Split out of centerToolbar() - positioning now runs from reloadBG(),
+// synchronously with navigation, well before the (much slower, more
+// variable-latency) page image has finished rendering. Revealing here too
+// would let an approve/reject click land on the wrong, not-yet-superseded
+// page; call this instead, only once rendering() actually finishes and
+// disableZoom clears, to reveal the (already correctly positioned) controls.
+function showFooterControls() {
 	if( !disableZoom ) {
 		$(".status1, .status2, #colorStdLabel1, #colorStdLabel2").css( "visibility", "visible" );
 		}
-
-	return pagesLeft;
 	}
 
 function fit_pages() {

@@ -1,10 +1,10 @@
 <?php
 
-function dynaPrework( $file, $pageWidth ) {
+function dynaPrework( $file, $pageWidth, $colorStd = "FOGRA_39" ) {
 	$pdf = new dynapdf();
 	include('/var/www/html/config.inc.php');
 	$pdf->CreateNewPDF(NULL);
-		
+
 	$pdf->InitColorManagement( NULL, NULL , 1 );
 	$pdf->SetImportFlags(dynapdf::ifImportAll | dynapdf::ifImportAsPage | dynapdf::ifDocInfo);
 	$pdf->SetImportFlags2(dynapdf::if2UseProxy);
@@ -17,8 +17,12 @@ function dynaPrework( $file, $pageWidth ) {
 	$isCollection = $pdf->GetInIsCollection();
 	$destPage = 1;
 	$pdf->ImportPDFFile($destPage, 1.0, 1.0);
-	$pdf->AddOutputIntent( "sRGB_Color_Space_Profile.icc" );
-		
+	// AddOutputIntent() wants the page's SOURCE profile (the part's real
+	// colorStd, e.g. FOGRA_51/FOGRA_52), not the sRGB display target -
+	// R3's renders resolve this via partDetect()/resolveIccProfileByName()
+	// and this needs to match or the two renders visibly diverge.
+	$pdf->AddOutputIntent( "/var/www/html/r3API/r3/".resolveIccProfileByName( $colorStd ) );
+
 	$pdf->CloseImportFile();
 		
 	$pdf->EditPage(1);
@@ -54,7 +58,7 @@ function dynaPrework( $file, $pageWidth ) {
 	$pdf->CloseFile();	
 	}
 
-function DynaToImage( $sizes, $zoom, $from, $to ) {
+function DynaToImage( $sizes, $zoom, $from, $to, $colorStd = "FOGRA_39" ) {
 	error_log( $from );
 	error_log( $to );
 	
@@ -108,10 +112,10 @@ function DynaToImage( $sizes, $zoom, $from, $to ) {
 	$isCollection = $pdf->GetInIsCollection();
 	$destPage = 1;
 	$pdf->ImportPDFFile($destPage, 1.0, 1.0);
-	$pdf->AddOutputIntent( "sRGB_Color_Space_Profile.icc" );
-	
+	$pdf->AddOutputIntent( "/var/www/html/r3API/r3/".resolveIccProfileByName( $colorStd ) );
+
 	$pdf->CloseImportFile();
-	
+
 	$pdf->EditPage(1);
 		//$pdf->SetBBox( dynapdf::pbCropBox, $cut["left"], $cut["bottom"], $cut["right"], $cut["top"] );
 		$pdf->SetBBox( dynapdf::pbCropBox, $cut["left"], $cut["bottom"], $cut["right"], $cut["top"] );
@@ -125,7 +129,7 @@ function DynaToImage( $sizes, $zoom, $from, $to ) {
 	return true;
 	}
 
-function renderDynaPage( $origfile, $pdfname, $imgname, $imgwidth ) {
+function renderDynaPage( $origfile, $pdfname, $imgname, $imgwidth, $colorStd = "FOGRA_39" ) {
 	$pdf = new dynapdf();
 	include('/var/www/html/config.inc.php');
 	
@@ -151,9 +155,9 @@ function renderDynaPage( $origfile, $pdfname, $imgname, $imgwidth ) {
 	$isCollection = $pdf->GetInIsCollection();
 	$destPage = 1;
 	$pdf->ImportPDFFile($destPage, 1.0, 1.0);
-	$pdf->AddOutputIntent( "sRGB_Color_Space_Profile.icc" );
+	$pdf->AddOutputIntent( "/var/www/html/r3API/r3/".resolveIccProfileByName( $colorStd ) );
 	$pdf->CloseImportFile();
-	
+
 	if( !empty( $imgname ) ) {
 		$pdf->RenderPageToImage(1, $imgname, 0, $imgwidth, 0, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmPNG);
 		}

@@ -701,9 +701,19 @@ if( $_GET['op'] == 'reloadbg' ) {
 		$tempSql = sql_get( 'pageinfo', 'issue="'.$issue[0][10].'" AND code="'.$magazine[0][3].'" AND pack_id="'.$temp[1].'"', '*' );
 		if( $user[0][14] == "pair" ) {
 			if( $next == ( intval( $pages2[$needle] )+1 ) && $next % 2 != 0 && $tempSql[0][9] == 1 ) {
-	  			$next = intval( $pages2[$needle+2] );
-	  			$temp = explode( "_", $pages2[$needle+2] );
-	  			}
+				// Mirrors the $prev branch's own verification above (see its
+				// comment for the full history) - that one already learned
+				// the hard way that trusting $pages2[$needle-2] unconditionally
+				// can snap to a page/pack_id combination that doesn't actually
+				// exist in $pages2 at all, which then makes THIS lookup fail
+				// for a later request built from that bad pack_id, collapsing
+				// both prev_link and next_link to the dead placeholder at
+				// once. This branch never got the equivalent check.
+				if( intval( $pages2[$needle+2] ) == ( $next+1 ) ) {
+					$next = intval( $pages2[$needle+2] );
+					$temp = explode( "_", $pages2[$needle+2] );
+					}
+				}
 			}
 		$next_id = $temp[1];
 		}
