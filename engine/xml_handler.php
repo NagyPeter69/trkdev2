@@ -96,8 +96,22 @@
 		if( is_dir( TRKPATH.'/packages/'.$magazineCode.'/'.$issueCode ) ) {
 			delTree( TRKPATH.'/packages/'.$magazineCode.'/'.$issueCode );
 			}
-		if( is_dir( '/var/www/switchReports/'.$magazineCode.'/'.$issueCode ) ) {
-			delTree( '/var/www/switchReports/'.$magazineCode.'/'.$issueCode );
+		// This has been deleting from the wrong path since it was written
+		// (git blame: only ever touched once) - reports are actually served
+		// from /var/www/html/switchReports/ (see teszt.php / new_indd_package_
+		// submitted-handler.php's report link, built as "https://".$url.
+		// "/switchReports/..." - that resolves through the web root,
+		// /var/www/html/, not /var/www/). /var/www/switchReports/ is a
+		// different, essentially-empty directory. Confirmed via the
+		// 2026-08-02 audit: 1210 real report files (HTML + JPEGs) sitting
+		// there back to 2021, none ever cleaned up on any deletion.
+		// Same Adhoc-vs-Regular segment distinction as every other
+		// magazineCode/issueCode path in this function - Adhoc reports sit
+		// directly in {magazineCode}/, not {magazineCode}/{magazineCode}/,
+		// since there's no separate issue segment.
+		$issueSegment = ( $magazineCode == $issueCode ) ? '' : '/'.$issueCode;
+		if( is_dir( '/var/www/html/switchReports/'.$magazineCode.$issueSegment ) ) {
+			delTree( '/var/www/html/switchReports/'.$magazineCode.$issueSegment );
 			}
 
 		sql_delete( 'pageinfo', 'issue="'.$issueCode.'" AND code="'.$magazineCode.'"' );
