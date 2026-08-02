@@ -10,6 +10,18 @@ dynAPI/tracker/
 dynAPI/rendered/
 dynAPI/op/rendered/
 
+# client/engine/r3/'s scratch render output (compare.php / flatplan_reloadbg.php /
+# tesztAjax.php's render cache) - not r3API/r3/ below, that's the separate
+# licensed-binary directory. 126 of these files were accidentally swept into
+# the "Initial commit: trkdev2 baseline" snapshot and re-touched by a later
+# unrelated commit; confirmed via the 2026-08-02 audit that every one of them
+# matches a purely runtime-generated naming pattern (bg<id>.jpg,
+# compare_<a>_<b>.jpg, bgcomp_<id>*.jpg, <id>_diff_<ts>.png, _cache_<hash>.jpg)
+# with no exceptions, so untracking the whole directory rather than picking
+# through it file by file. See client/cron/r3_cleaner.php for the actual
+# cleanup (age-based sweep, same as the other client/cron/*_cleaner.php jobs).
+client/engine/r3/
+
 # Runtime-generated
 *.log
 *.tmp
