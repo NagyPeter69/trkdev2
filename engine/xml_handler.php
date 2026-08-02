@@ -909,7 +909,10 @@
 					$code->addChild( 'RemoteStorage', $values['RemoteStorage'] ?? '' );
 					$code->addChild( 'Parent', $values['Parent'] ?? '' );
 					$code->addChild( 'FinalOutput', $values['FinalOutput'] ?? '' );
-					$code->addChild( 'ArchiveMode', $values['ArchiveMode'] );
+					// No Regular creation form (create.php) actually submits this -
+					// same "Undefined array key" class of bug as the Adhoc fields
+					// above, just missed for this one when those were fixed.
+					$code->addChild( 'ArchiveMode', $values['ArchiveMode'] ?? '' );
 					$code->addChild( 'Mails', "" );
 					$code->addChild( 'MailComm', "Yes" );
 					$ads = $code->addChild( 'AdSizes' );
@@ -925,7 +928,25 @@
 		$dom->preserveWhiteSpace = false;
 		$dom->loadXML($xml->asXML());
 		$dom->formatOutput = true;
-		file_put_contents( $xml2, $dom->saveXML() );
+
+		// This is THE PMD sync point - every publication/magazine create or
+		// edit ends up here, and a failed write is otherwise completely
+		// silent: file_put_contents() returns false (not an exception), and
+		// nothing downstream checks it, so a permissions problem (confirmed
+		// to happen in practice - client/xml/pmd.xml was found root:root
+		// instead of www-data:www-data for 12 days, silently dropping every
+		// single new publication's PMD entry the whole time with no error
+		// anywhere) can go completely unnoticed until someone manually
+		// diffs the DB against the XML. Logging loudly here is the
+		// independent-of-cron safety net; see SYSTEM_STATE.md's "PMD file
+		// ownership" section for the cron-based self-heal that's the other
+		// half of this fix.
+		if( file_put_contents( $xml2, $dom->saveXML() ) === false ) {
+			error_log( "CRITICAL: PMD XML WRITE FAILED - '".$xml2."' could not be written (permissions? disk full?). "
+				."is_writable=".var_export( is_writable( $xml2 ), true )." running as uid=".getmyuid()
+				.". This publication/magazine change was saved to the database but is now OUT OF SYNC with PMD "
+				."until this is fixed and the write is retried." );
+			}
 
 		// Every call to changeXmlDatabase() changes the on-disk dataset, so
 		// every call must push it to Switch - this used to be an inline
@@ -1087,11 +1108,23 @@
 			"jobCode" => $magazine[0][0],
 			);
 			
-		$file = array( 
+		$file = array(
 			"name" => $name.".xml",
 			"path" => "xml",
 			);
 		$response = SwitchSend_TESZT( $array, $file );
+
+		// This return value was previously discarded entirely - a blocked
+		// or failed delivery (e.g. the DEV "TestCo only" gate in
+		// switchClientAllowed(), which unknown-client Adhoc jobs can never
+		// pass since they have no resolvable publisher name) left no trace
+		// anywhere: the publication, parts, and accounts all got created
+		// successfully and the create dialog closed normally, so nothing
+		// indicated Switch never actually received this event.
+		// Confirmed live 2026-07-29 (YXY32, an unknown-client Adhoc job).
+		if( $response[0] === null || $response[0] === 'blocked' ) {
+			error_log( "toSwitch('".$type."') did not reach Switch for jobCode='".$magazine[0][0]."': ".( $response[1] ?? 'no response' ) );
+			}
 		}
 	
 	function remove_from_xml( $xml, $target, $criteria ) {

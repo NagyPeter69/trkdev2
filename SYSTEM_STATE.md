@@ -378,6 +378,43 @@ one call site:**
    curl failure, so a transient "file not written yet" race retries normally instead of taking
    the whole worker down.
 
+### PMD file ownership (2026-07-27 incident)
+
+`client/xml/pmd.xml` is the single local source of truth this whole integration reads from
+and writes to (`changeXmlDatabase()` in `engine/xml_handler.php`) - every publication/magazine
+create or edit goes through it before anything reaches Switch. **It must always be owned
+`www-data:www-data`**, same as every other file in `client/xml/` - PHP-FPM runs as `www-data`
+and has no write access to a root-owned file.
+
+Found live: `pmd.xml` (and a same-dated `.bak-zqxt9-removal-...` file next to it) was owned
+`root:root`, almost certainly left that way by a one-off manual root-run cleanup around
+2026-07-15. `changeXmlDatabase()`'s `file_put_contents()` call doesn't throw on a permissions
+failure - it just returns `false` and nothing downstream checked that return value - so this
+was completely silent: **every new publication/magazine created for 12 days had its PMD entry
+silently dropped**, with the database and PMD drifting out of sync the whole time and no error
+anywhere to notice it by. It surfaced only because a newly-created job's `Workflow`/
+`PageNumbering` lookups (which read from PMD, not the DB) were coming back null, which cascaded
+into wrong-branch UI bugs several layers removed from the actual cause (see the Adhoc job
+Parts-page-sequence investigation this same day).
+
+Two-part fix, both intentional, don't remove either thinking it's redundant with the other:
+
+1. **Loud failure at the write site**: `changeXmlDatabase()` now checks `file_put_contents()`'s
+   return value and `error_log()`s a `CRITICAL:` line (including `is_writable()` and the
+   running uid) if it ever fails, for *any* reason (permissions, disk full, etc.) - independent
+   of the cron cadence below, so a fresh occurrence is visible immediately in the logs rather
+   than only after the next self-heal tick.
+2. **Self-healing cron**: `client/cron/enforce_pmd_ownership.php`, added to root's crontab
+   (`* * * * *`, see "Cron jobs" below) - checks `pmd.xml`'s owner/group every minute and
+   `chown`s it back to `www-data:www-data` if it's ever anything else. This has to be a
+   root-run cron job, not an in-app check - `www-data` can never `chown` a root-owned file back
+   to itself; only root can.
+
+If you're ever manually editing `pmd.xml` directly (as root, via SSH, for a one-off fix or
+cleanup script) - **restore `www-data:www-data` ownership before you're done**, or rely on the
+cron job above to do it within a minute. Either way, verify with
+`stat -c "%U:%G" client/xml/pmd.xml` before assuming a manual edit "worked."
+
 ## DynaPDF
 
 The actual PDF-rendering engine behind print-proof previews (`engine.php`'s `pdftoimage()`
@@ -598,7 +635,9 @@ assuming the current one is the *only* one that matters if certs ever seem to mi
 
 All 7 original jobs from the old box's crontab were re-created here (they hadn't been for a
 while during this migration — don't assume they were already running just because the code
-was deployed). Plus the new `switch_sync_worker.php`. See `crontab -l` as root for the
+was deployed). Plus `switch_sync_worker.php` and `enforce_pmd_ownership.php` (see "PMD file
+ownership" above — this one has no DB dependency, so its crontab line skips the
+`/etc/trkdev-db.env` sourcing the others need). See `crontab -l` as root for the
 authoritative list. **Credentials note**: the DB password needed by these scripts (via
 `getenv('TRKDEV_DB_PASSWORD')`, same mechanism `connect.php` uses) is *not* embedded in the
 crontab file itself (a persistent, `crontab -l`-inspectable artifact) — it lives in
