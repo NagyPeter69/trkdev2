@@ -149,8 +149,8 @@
 					$uid = sql_add( "accounts", $names, $values );
 
 					$hash = md5( "adhoctempuser-".time()."-".$_POST["tempusers"][$i] );
-					$names = array( "user_id", "hash", "magazine_id", "email", "time" );
-					$values = array( $uid, $hash, $pubRow[0]["magazine_id"], $_POST["tempusers"][$i], time() );
+					$names = array( "user_id", "hash", "magazine_id", "email", "time", "pubid" );
+					$values = array( $uid, $hash, $pubRow[0]["magazine_id"], $_POST["tempusers"][$i], time(), $pubRow[0]["id"] );
 					sql_add( "adhoc_hotlinks", $names, $values );
 
 					$link = "https://".URL."/index.php?hash=".$hash;

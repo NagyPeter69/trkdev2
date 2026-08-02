@@ -35,7 +35,20 @@ if( $result == "success" ) {
 			}
 			
 		if( is_dir( '../packages/'.$magazine[0][3] ) )
-			delTree('../packages/'.$magazine[0][3] );	
+			delTree('../packages/'.$magazine[0][3] );
+
+		// Magazine-level data that isn't scoped to any single issue, so it
+		// can't be reached by cleanupPublicationRemnants()'s per-pub_id
+		// deletes above - confirmed orphaned via the 2026-08-02 audit.
+		// parts in particular can legitimately carry pub_id='0' for
+		// "Regular" magazines (see pubsApply.php) - that's the magazine's
+		// part-layout template, created before any issue exists, and only
+		// ever cleaned up here, at whole-magazine deletion.
+		sql_delete( 'ad_sizes', "magazine_id='".$mag[0][0]."'" );
+		sql_delete( 'parts', "mag_id='".$mag[0][0]."'" );
+		sql_delete( 'calendar_events', "magazine_id='".$mag[0][0]."'" );
+		sql_delete( 'calendar_post', "magazine_id='".$mag[0][0]."'" );
+		sql_delete( 'marquard_calendar', "magazine_id='".$mag[0][0]."'" );
 
 		$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status' );
 		$values = array( $user, 'deleteMagazine', $mag[0][2], $mag[0][2], '', '', time(), '' );

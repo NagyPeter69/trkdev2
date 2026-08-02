@@ -35,15 +35,12 @@ if( $_GET["sub"] == "resend" ) {
 				$hash = md5( "adhocuserdownload-".time()."-".$mails[$i] );
 				$user = sql_aget( "accounts", "email='".$mails[$i]."' AND showMagazines like '%".$mag[0]["id"]."%'", "*" );
 				
-				$pubid = "";
-				
 				if( empty( $user[0]["id"] ) ) {
 					$user[0]["id"] = 0;
-					$pubid = $pub[0]["id"];
 					}
-				
+
 				$names = array( "user_id", "hash", "magazine_id", "email", "time", "redirecto", "pubid" );
-				$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets", $pubid );
+				$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets", $pub[0]["id"] );
 				sql_add( "adhoc_hotlinks", $names, $values );
 					
 				$to = $mails[$i]."|".$mails[$i];

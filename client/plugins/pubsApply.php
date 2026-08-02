@@ -282,8 +282,8 @@ Tracker<br>";
 					}
 					
 				$hash = md5( "adhocmelo-".time()."-".$_POST["Mails"] );
-				$names = array( "user_id", "hash", "magazine_id", "email", "time" );
-				$values = array( $aid, $hash, $mid, $_POST["Mails"], time() );
+				$names = array( "user_id", "hash", "magazine_id", "email", "time", "pubid" );
+				$values = array( $aid, $hash, $mid, $_POST["Mails"], time(), $id );
 				sql_add( "adhoc_hotlinks", $names, $values );
 				
 				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );

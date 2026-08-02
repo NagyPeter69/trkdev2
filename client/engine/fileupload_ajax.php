@@ -159,9 +159,9 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 					$hash = md5( "adhocuserdownload-".time()."-".$mails[$i] );
 					$user = sql_aget( "accounts", "email='".$mails[$i]."' AND showMagazines like '%".$mag[0]["id"]."%' LIMIT 1", "*" );
 					if( !empty( $user[0]["id"] ) ) {
-						$names = array( "user_id", "hash", "magazine_id", "email", "time", "redirecto" );
-						$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets" );
-						sql_add( "adhoc_hotlinks", $names, $values );		
+						$names = array( "user_id", "hash", "magazine_id", "email", "time", "redirecto", "pubid" );
+						$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets", $pub[0]["id"] );
+						sql_add( "adhoc_hotlinks", $names, $values );
 						
 						$to = $mails[$i]."|".$mails[$i];
 						//$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
