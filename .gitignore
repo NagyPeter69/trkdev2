@@ -22,6 +22,21 @@ dynAPI/op/rendered/
 # cleanup (age-based sweep, same as the other client/cron/*_cleaner.php jobs).
 client/engine/r3/
 
+# switchReports/ (repo root, NOT client/ - served directly, see teszt.php's
+# report link) holds per-job Switch preflight reports (HTML + JPEGs, random
+# report-ID filenames). Same accidental-tracking mistake as r3/ above, at
+# 10x the scale: 1210 files going back to 2021, confirmed via the
+# 2026-08-02 audit that cleanupPublicationRemnants() had been pointed at
+# the wrong path (/var/www/switchReports/, essentially empty) this whole
+# time and never actually cleaned any of this up - now fixed to target this
+# directory instead, so keep it out of version control entirely rather
+# than repeat the mistake. css/ and images/ are the shared report
+# template's static assets (style.css, the logo), not per-job output -
+# keep those tracked.
+switchReports/*
+!switchReports/css/
+!switchReports/images/
+
 # Runtime-generated
 *.log
 *.tmp
