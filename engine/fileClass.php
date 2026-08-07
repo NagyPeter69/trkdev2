@@ -64,11 +64,12 @@ class file {
 			
 		$subject = $post["name"]." ::: feldolgozott képek";
 		
+		$link = PROTOCOL.URL."/client/filetransfer_view.php?transferid=".$id;
 		$body = "Tisztelt Ügyfelünk!<br>
 		<br>
 		A ".$jobname." munkához feldolgozott képeinek letöltéséhez kattintson az alábbi linkre:<br>
 		<br>
-		<a href='http://tracker.colorcom.hu/client/filetransfer_view.php?transferid=".$id."'>http://tracker.colorcom.hu/client/filetransfer_view.php?transferid=".$id."</a><br>
+		<a href='".$link."'>".$link."</a><br>
 		<br>
 		Fenti link 7 napig él, utána az anyagok törlésre kerülnek.<br>
 		<br>
@@ -76,12 +77,6 @@ class file {
 		Üdvözlettel:<br>
 		Colorcom Media";
 
-/*
-Letölthető egyben <a href='http://tracker.colorcom.hu/client/filetransfer_view.php?transferid=".$id."&op=mass'>IDE</a> kattintva,<br>
-vagy<br>
-Kijelölve <a href='http://tracker.colorcom.hu/client/filetransfer_view.php?transferid=".$id."'>IDE</a> kattintva.	
-*/
-		
 		for( $i = 0; $i < count( $maddress ); $i++ ) {
 			$to = trim( $maddress[$i] )."|".trim( $maddress[$i] );
 			wfSendMail( $subject, $body, $to, "" );

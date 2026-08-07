@@ -35,20 +35,6 @@
 				<td align='left'><input type='text' autocomplete="off" id='u_name' name='u_name' style='width: 200px;' value=""></td>
 			</tr>
 			
-			<?php
-			
-			$newpw = randomPWB()."".randomPWS()."".randomPWN()."".randomPWS()."".randomPWB()."".randomPWN();
-			
-			?>
-			
-			<tr>	
-				<td align='left' height='23px'><?= $lang["settings"]["pass"] ?></td>
-				<td align='left'><input type='password' autocomplete="off" id='u_password' name='u_password' style='width: 200px;' value="<?= $newpw ?>"></td>
-			</tr>
-			<tr>	
-				<td align='left' height='23px'><?= $lang["settings"]["pass2"] ?></td>
-				<td align='left'><input type='password' autocomplete="off" id='u_password2' name='u_password2' style='width: 200px;' value="<?= $newpw ?>"></td>
-			</tr>
 			<tr>
 				<td align='left' height='23px'><?= $lang["settings"]["fullname"] ?></td>
 				<td align='left'><input type='text' autocomplete="off" id='u_fullname' name='u_fullname' style='width: 200px;' value=""></td>

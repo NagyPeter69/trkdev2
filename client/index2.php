@@ -125,8 +125,16 @@ elseif( isset($_POST['username'] ) && isset($_POST['password'] ) ) {
 			header( 'Location: ?page='.$user[0][9].'' );
 			}
 		else {
+			// $lang isn't loaded until later in this file (it depends on the session
+			// user, which isn't resolved on this POST) - load the attempting user's
+			// own language file here directly, so this message isn't left blank.
+			include( !empty( $user[0][17] ) ? 'lang/'.$user[0][17].'.php' : 'lang/en.php' );
+			// Not every lang file has alreadyInQuestion translated yet - fall back
+			// to the English question rather than leaving the sentence hanging.
+			$alreadyInQuestion = $lang["login"]["alreadyInQuestion"] ?? 'Would you like to log off on that machine?';
+			$alreadyInMsg = json_encode( $lang["login"]["alreadyIn"]." ".$alreadyInQuestion );
 			echo "<script>";
-				echo "if( confirm( '".$lang["login"]["alreadyIn"]." Do you want to sign out of it?' ) ) {
+				echo "if( confirm( ".$alreadyInMsg." ) ) {
 						window.location.href = 'index.php?username=".urlencode($_POST['username'])."&password=".urlencode($_POST['password'])."';
 						}";
 			echo "</script>";
@@ -372,6 +380,7 @@ else $background = "#103d8b";
 		else {
 			if( $_GET['page'] == "vflatplan" ) { include_once( $_GET['page'].'.php' ); }
 			elseif( $_GET['page'] == "vflatplan_preview" ) { include_once( $_GET['page'].'.php' ); }
+			elseif( $_GET['page'] == "set_password" ) { include_once( $_GET['page'].'.php' ); }
 			elseif( isset( $_SESSION['intra_user'] ) ) { include_once( $_GET['page'].'.php' ); }
 			else { include_once('login.php'); }		
 			}

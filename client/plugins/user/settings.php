@@ -131,21 +131,14 @@
 			echo '<div style="-webkit-columns: 2 200px; -moz-columns: 2 200px; columns: 2 200px; -webkit-column-gap: 2em; -moz-column-gap: 2em; column-gap: 2em;";>';
 			}	
 		
+		// Gate B: this checkbox is the user's own, independent opt-out preference
+		// (accounts.mailOptOut) - separate from the admin's "M" checkbox in the
+		// publication's Users dialog (Gate A, PMD <Mails>). A magazine id in
+		// mailOptOut means unsubscribed; absent (the default) means subscribed.
+		$mailOptOut = array_filter( explode( ",", $user[0][43] ) );
 		for( $i = 0; $i < count( $magazines ); $i++ ) {
-			$xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
-			$xpath = $xml->xpath('/Publications');
-			foreach($xpath as $temp) {
-				for( $x = 0; $x < count( $temp->Item ); $x++ ) {
-					if( $temp->Item[$x]->Code == $magazines[$i]["code"] )
-						break;
-					}
-				}
-			
-			$pmdmails = (string) $xml->Item[$x]->Mails;
-			$pmdmails = explode( ";", $pmdmails );
-			
 			echo "<div style='display: inline-block; width: 150px; padding-top: 2px; padding-bottom: 2px;'>".$magazines[$i]["name"]."</div>";
-			echo "<div style='display: inline-block; padding-top: 2px; padding-bottom: 2px;'>Mails&nbsp;&nbsp;<input type='checkbox' name='userMails[]' value='".$magazines[$i]["code"]."' ".( in_array( $user[0][5], $pmdmails ) ? "checked" : "" )."></div>";
+			echo "<div style='display: inline-block; padding-top: 2px; padding-bottom: 2px;'>Mails&nbsp;&nbsp;<input type='checkbox' name='userMails[]' value='".$magazines[$i]["id"]."' ".( !in_array( $magazines[$i]["id"], $mailOptOut ) ? "checked" : "" )."></div>";
 			echo "<div style='clear: both;'></div>";
 			
 			/*echo "<table><tr>";

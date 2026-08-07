@@ -43,24 +43,34 @@ class tAPI {
 			$names = array( 'user' );
 			$values = array( $id );
 			sql_add( 'userLogSettings', $names, $values );
-			
+
+			// The password itself was set above from the caller's own newuserpass
+			// (external API contract unchanged) - but the human recipient may not
+			// know what the calling system chose, so the welcome mail carries a
+			// secure set-password link instead of echoing it in clear text.
+			$token = bin2hex( random_bytes( 32 ) );
+			sql_update( 'accounts', "pwset_token='".hash( 'sha256', $token )."', pwset_expires='".( time() + 172800 )."'", "id='".$id."'" );
+			$link = PROTOCOL.URL."/client/index.php?page=set_password&token=".$token;
+
 			$subject = "Tracker belépési adatok";
 			$to = $this->post[ "fullname" ]."|".$this->post[ "email" ];
 			$body = "
 Üdvözlünk a Colorcom Tracker felhasználói között!<br>
 <br>
-A Tracker rendszer elérése:<br>
+Az alábbi linkre kattintva tudsz jelszót beállítani a fiókodhoz:<br>
 <br>
-URL: <a href='".PROTOCOL."tracker.colorcom.hu'>".PROTOCOL."tracker.colorcom.hu</a><br>
+<a href='".$link."'>".$link."</a><br>
+<br>
 Login név: ".$this->post['newusername']."<br>
-Jelszó: ".$this->post['newuserpass']."<br>
+<br>
+A link 48 óráig érvényes.<br>
 <br>
 Üdvözlettel:<br>
 <br>
 Colorcom Media<br>
 			";
-			produkcioSendmail( $subject, $body, $to );			
-			
+			produkcioSendmail( $subject, $body, $to );
+
 			$this->response["success"] = true;
 			$this->response["message"] = "User successful created";
 			$this->response["userID"] = $id;

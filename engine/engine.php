@@ -262,8 +262,7 @@ function securityAlert( $uname, $pass ) {
 	
 	$body = "Sikertelen Tracker bejelentkezés:<br>";
 	$body .= "Beírt felhasználónév: ".$uname."<br>";
-	$body .= "Beírt jelszó: ".$pass."<br>";
-	
+
 	$res = "";
 	global $con;
 	$check = sql_aget( "accounts", "name='".mysqli_real_escape_string( $con, $uname )."' AND type!='adhoc'", "*" );
@@ -281,9 +280,6 @@ function securityAlert( $uname, $pass ) {
 	$body .= "IP cím: ".$_SERVER['HTTP_X_FORWARDED_FOR']."<br>";
 	//$body .= "IP cím: ".$_SERVER['REMOTE_ADDR']."<br>";
 	$body .= "Böngésző: ".$_SERVER['HTTP_USER_AGENT']."<br>";
-	
-	$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
-	produkcioSendmail( $subject, $body, $to );
 	
 	$to = "peter@colorcom.hu|peter@colorcom.hu";
 	produkcioSendmail( $subject, $body, $to );
@@ -323,6 +319,30 @@ function removeUserMailPMD( $email ) {
 		file_put_contents( $xml_path, $dom->saveXML() );
 		XMLUpload2( PMD.'.xml' );
 		}
+	}
+
+// Gate A (whether an address is even in the magazine's PMD Mails list at all) is applied
+// wherever that list gets written - the admin's "M" checkbox in the Users dialog
+// (userApply.php?sub=manage). This is Gate B: a user's own, independent per-magazine
+// unsubscribe preference (accounts.mailOptOut, set from their personal settings panel),
+// applied here at send time so it can never be defeated by re-checking PMD-Mails membership
+// or vice versa. Adhoc magazines are exempt - their short-lived, job-scoped users have no
+// standing subscription concept.
+function gatedMailRecipients( $magazineId, $magazineType, $pmdMailsCsv ) {
+	$addresses = array_filter( array_map( 'trim', explode( ';', $pmdMailsCsv ) ) );
+	if( $magazineType === 'Adhoc' ) return $addresses;
+
+	$out = array();
+	foreach( $addresses as $email ) {
+		$acct = sql_aget( 'accounts', "email='".addslashes( $email )."'", 'mailOptOut' );
+		if( empty( $acct ) ) {
+			$out[] = $email;
+			continue;
+			}
+		$optOut = array_filter( explode( ',', $acct[0]['mailOptOut'] ?? '' ) );
+		if( !in_array( (string) $magazineId, $optOut, true ) ) $out[] = $email;
+		}
+	return $out;
 	}
 
 function systemCurl($url, $post_array, $headers=null, $check_ssl=true) {
@@ -373,24 +393,6 @@ function codeGen( $word = 3, $number = 2 ) {
 		$id = codeGen( $word, $number );
 		}
 	return $id;
-	}
-
-function randomPWN() {
-	$characters = '23456789';
-	$charactersLength = strlen($characters);
-	return $characters[rand(0, $charactersLength - 1)];
-	}
-
-function randomPWS() {
-	$characters = 'abcdefghjkmnopqrstuvwx';
-	$charactersLength = strlen($characters);
-	return $characters[rand(0, $charactersLength - 1)];
-	}
-
-function randomPWB() {
-	$characters = 'ABCDEFGHJKMNOPQRSTUVWX';
-	$charactersLength = strlen($characters);
-	return $characters[rand(0, $charactersLength - 1)];
 	}
 
 function randomnumber() {
@@ -807,7 +809,8 @@ function imageList( $pubID ) {
 	
 	$adProof = 0;
 	$proof = 0;
-	$retussum = 0;	
+	$coverProof = 0;
+	$retussum = 0;
 
 	$temp = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND issue='".$pub[0]["code"]."' AND proofCounter != '0'", "*" );
 	for( $i = 0; $i < count( $temp ); $i++ ) {
@@ -827,23 +830,29 @@ function imageList( $pubID ) {
 	$adProofTemp = sql_aget( "pageinfo", "action='adProof' AND magazine='".$pub[0]["magazine_id"]."' AND issue='".$pub[0]["code"]."' ", "*" );
 	$adProof += count( $adProofTemp );
 	
-	if( $process == "Full" or $process == "Hybrid" ) {	
+	if( $process == "Full" or $process == "Hybrid" ) {
 		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."' AND retus > 0", "*" );
 		}
 	else {
 		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."'", "*" );
-		}		
-	
-	for( $i = 0; $i < count( $kepek ); $i++ ) {
-		$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$kepek[$i]["name"]."&nbsp;".( $kepek[$i]["retus"] != "0" ? "–&nbsp;".$kepek[$i]["retus"] : "" )."&nbsp;".( $kepek[$i]["maszk"] == "Maszk: 1" ? "1" : "" )."<br>";
-		$csv .= "\t".$kepek[$i]["name"]."\t".( $kepek[$i]["retus"] != "0" ? $kepek[$i]["retus"] : "" )."\t".( $kepek[$i]["maszk"] == "1" ? "1" : "" )."\n";
-		
-		$retussum += $kepek[$i]["retus"];
 		}
-		
-	if( $retussum > 0 ) {
-		$txt .= "Összesen (perc):".$retussum."<br>";
-		$csv .= "\tÖsszesen (perc)\t".$retussum."\t\n";
+
+	if( $process == "Resize" ) {
+		$txt .= "Képek száma: ".count( $kepek )."<br>";
+		$csv .= "Képek száma:\t".count( $kepek )."\n";
+		}
+	else {
+		for( $i = 0; $i < count( $kepek ); $i++ ) {
+			$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$kepek[$i]["name"]."&nbsp;".( $kepek[$i]["retus"] != "0" ? "–&nbsp;".$kepek[$i]["retus"] : "" )."&nbsp;".( $kepek[$i]["maszk"] == "Maszk: 1" ? "1" : "" )."<br>";
+			$csv .= "\t".$kepek[$i]["name"]."\t".( $kepek[$i]["retus"] != "0" ? $kepek[$i]["retus"] : "" )."\t".( $kepek[$i]["maszk"] == "1" ? "1" : "" )."\n";
+
+			$retussum += $kepek[$i]["retus"];
+			}
+
+		if( $retussum > 0 ) {
+			$txt .= "Összesen (perc):".$retussum."<br>";
+			$csv .= "\tÖsszesen (perc)\t".$retussum."\t\n";
+			}
 		}
 	
 	if( $process == "Full" or $process == "Hybrid" ) {
@@ -861,26 +870,6 @@ function imageList( $pubID ) {
 
 		$txt .= "Összesen: ".($adProof + $proof + $coverProof )."<br>";
 		$csv .= "Összesen:\t".($adProof + $proof + $coverProof )."\n";
-	
-		$txt .= "<br>Szerkesztőségi + borító proof-ok: ".( $proof + $coverProof )."<br>";
-		$csv .= "Szerkesztőségi + borító proof-ok:\t".( $proof + $coverProof )."\n";	
-		
-		$proofs = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND issue='".$pub[0]["code"]."' AND proofCounter != '0' AND type != 'ad'", "*" );
-		for( $i = 0; $i < count( $proofs ); $i++ ) {
-			$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".str_pad( $proofs[$i]["page"], 3, '0', STR_PAD_LEFT)."_".$magazine[0]["code"]."".$pub[0]["code"]." – ".$proofs[$i]["proofCounter"]." db<br>";
-			$csv .= "\t".str_pad( $proofs[$i]["page"], 3, '0', STR_PAD_LEFT)."_".$magazine[0]["code"]."".$pub[0]["code"]."\t".$proofs[$i]["proofCounter"]."\n";		
-			}
-	
-		$txt .= "<br>Hirdetési proof-ok: ".$adProof."<br>";
-		$csv .= "Hirdetési proof-ok:\t".$adProof."\n";	
-		
-		$proofs = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND issue='".$pub[0]["code"]."' AND proofCounter != '0' AND type = 'ad'", "*" );
-		for( $i = 0; $i < count( $proofs ); $i++ ) {
-			$ad = sql_aget( "ads", "id='".$proofs[$i]["pack_id"]."'", "*" );
-			
-			$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$ad[0]["name"]." ".$ad[0]["size"]." – ".$proofs[$i]["proofCounter"]." db<br>";
-			$csv .= "\t".$ad[0]["name"]."\t".$proofs[$i]["proofCounter"]."\n";
-			}
 		}
 		
 	return array( $txt, $csv );
@@ -898,9 +887,15 @@ function invoicingTESZT( $pubID ) {
 	$txt .= "Név: ".$magazine[0]["name"]."<br>";
 	$csv .= "Név:\t".$magazine[0]["name"]."\n";
 	
-	$txt .= "Megjelenés: ".$magazine[0]["code"]."_".$pub[0]["code"]."<br>";
-	$csv .= "Megjelenés:\t".$magazine[0]["code"]."_".$pub[0]["code"]."\n";
-	
+	$megjelenes = ( $magazine[0]["type"] == "Adhoc" ) ? $magazine[0]["code"] : $magazine[0]["code"]."_".$pub[0]["code"];
+	$txt .= "Megjelenés: ".$megjelenes."<br>";
+	$csv .= "Megjelenés:\t".$megjelenes."\n";
+
+	if( !empty( $pub[0]["specificName"] ) ) {
+		$txt .= "Egyedi név: ".$pub[0]["specificName"]."<br>";
+		$csv .= "Egyedi név:\t".$pub[0]["specificName"]."\n";
+		}
+
 	$txt .= "Lezárva: ".date( "Y-m-d\TH:i:s" , time() )."<br>";
 	$csv .= "Lezárva:\t".date( "Y-m-d\TH:i:s" , time() )."\n";
 
@@ -939,99 +934,6 @@ function invoicingTESZT( $pubID ) {
 	$body = $txt;
 	
 	$to = PENZUGY."|".PENZUGY;
-	produkcioSendmailAttach( $subject, $body, $to, $attach );
-	
-	$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
-	produkcioSendmailAttach( $subject, $body, $to, $attach );
-	unlink($magazine[0]["code"]."_".$pub[0]["code"].".csv");
-	
-	return $txt;
-	}
-
-function invoicing( $pubID ) {
-	$pub = sql_aget( "publications", "id='".$pubID."'", "*" );
-	$magazine = sql_aget( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
-	$hird = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND status='2' AND fin='1' AND issue='".$pub[0]["code"]."' AND type='ad' GROUP BY page", "*" );
-	
-	$adProof = 0;
-	$proof = 0;
-	$coverProof = 0;
-	$temp = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND issue='".$pub[0]["code"]."' AND proofCounter != '0' GROUP BY page", "*" );
-	for( $i = 0; $i < count( $temp ); $i++ ) {
-		if( $temp[$i]["type"] == "ad" ) {
-			$adProof += $temp[$i]["proofCounter"];
-			}
-		else {
-			if( $temp[$i]["page"] == "1" ) {
-				$coverProof += $temp[$i]["proofCounter"];
-				}
-			else {
-				$proof += $temp[$i]["proofCounter"];
-				}
-			}
-		}
-	
-	$adProofTemp = sql_aget( "pageinfo", "action='adProof' AND magazine='".$pub[0]["magazine_id"]."' AND issue='".$pub[0]["code"]."' ", "*" );
-	$adProof += count( $adProofTemp );
-	
-	$txt = "";
-	$csv = "";
-	
-	$txt .= "Név: ".$magazine[0]["name"]."<br>";
-	$csv .= "Név:;".$magazine[0]["name"]."\n";
-	
-	$txt .= "Megjelenés: ".$magazine[0]["code"]."_".$pub[0]["code"]."<br>";
-	$csv .= "Megjelenés:;".$magazine[0]["code"]."_".$pub[0]["code"]."\n";
-	
-	$txt .= "Lezárva: ".date( "Y-m-d\TH:i:s" , time() )."<br>";
-	$csv .= "Lezárva:;".date( "Y-m-d\TH:i:s" , time() )."\n";
-
-	$txt .= "Terjedelem: ".$pub[0]["pages"]."<br>";
-	$csv .= "Terjedelem:;".$pub[0]["pages"]."\n";
-	
-	$txt .= "Hirdetési oldalak: ".count( $hird )."<br>";
-	$csv .= "Hirdetési oldalak:;".count( $hird )."\n";	
-
-	$txt .= "Szerkesztőségi oldalak: ".( $pub[0]["pages"] - count( $hird ) )."<br>";
-	$csv .= "Szerkesztőségi oldalak:;".( $pub[0]["pages"] - count( $hird ) )."\n";	
-
-	$txt .= "Hirdetés proof: ".$adProof."<br>";
-	$csv .= "Hirdetés proof:;".$adProof."\n";	
-
-	$txt .= "Szerkesztőségi proof: ".$proof."<br>";
-	$csv .= "Szerkesztőségi proof:;".$proof."\n";
-	
-	$txt .= "Borító proof: ".$coverProof."<br>";
-	$csv .= "Borító proof:;".$coverProof."\n";	
-
-	$txt .= "Retusált képek:<br>";
-	$csv .= "Retusált képek\n";
-	
-	$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."'", "*" );
-	for( $i = 0; $i < count( $kepek ); $i++ ) {
-		$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$kepek[$i]["name"]." ".$kepek[$i]["retus"]."<br>";
-		$csv .= ";".$kepek[$i]["name"].";".$kepek[$i]["retus"]."\n";
-		}
-	
-	/*
-	$result = imageList( $pubID );
-	$txt .= $result[0];
-	$csv .= $result[1];
-	*/
-	
-	
-	$txt .= "<br><br>";
-	file_put_contents( $magazine[0]["code"]."_".$pub[0]["code"].".csv" , $csv );
-	$to = PENZUGY."|".PENZUGY;
-	//$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";	
-	$attach = $magazine[0]["code"]."_".$pub[0]["code"].".csv";
-	
-	$subject = $magazine[0]["name"]." – ".$pub[0]["code"]." segédlet számlázáshoz";
-	$body = $txt;
-	
-	produkcioSendmailAttach( $subject, $body, $to, $attach );
-	
-	$to = "peter@colorcom.hu|peter@colorcom.hu";
 	produkcioSendmailAttach( $subject, $body, $to, $attach );
 	unlink($magazine[0]["code"]."_".$pub[0]["code"].".csv");
 	
@@ -2448,259 +2350,122 @@ function isMobile() {
     return preg_match("/(android|webos|avantgo|iphone|ipad|ipod|blackbe‌​rry|iemobile|bolt|bo‌​ost|cricket|docomo|f‌​one|hiptop|mini|oper‌​a mini|kitkat|mobi|palm|phone|pie|tablet|up\.browser|up\.link|‌​webos|wos)/i", $_SERVER["HTTP_USER_AGENT"]);
 	}
 
-function produkcioSendmailAttach( $subject, $body, $to, $attach, $string = false ) {
-	if( is_file( '/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php' ) ) {
-		require_once('/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php');
-		}
-	else {
-		require_once('plugins/phpmail/PHPMailerAutoload.php');
-		}
-		
+// Single shared sender behind all the named wrappers below - they used to each carry
+// their own copy-pasted PHPMailer setup (~250 lines total) with only credentials,
+// reply-to, content-type and attachment handling actually differing between them.
+// $opts keys: user, pass, host, port, fromEmail, fromName, authType, replyTo
+// (['email'=>..,'name'=>..] or null to skip AddReplyTo entirely), clearReplyTo,
+// contentType ('text/plain'|'text/html'), encoding, timeout, attach
+// (['file'=>path] or ['string'=>[data,name]]), bcc (['email'=>..,'name'=>..]),
+// logSend (bool), voidReturn (bool - the two oldest wrappers never reported success/failure
+// to their callers; preserved as-is rather than silently changing their contract).
+function _smtpSend( $subject, $body, $to, $opts = array() ) {
+	require_once( '/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php' );
+
 	$mail = new PHPMailer();
 
 	$mail->IsSMTP();
 	$mail->SMTPDebug = 0;
+	if( !empty( $opts['timeout'] ) ) $mail->Timeout = $opts['timeout'];
 
 	$mail->SMTPAuth = true;
+	if( !empty( $opts['authType'] ) ) $mail->AuthType = $opts['authType'];
 	$mail->SMTPSecure = "ssl";
-	$mail->Host = "mail.colorcom.hu";
-	$mail->Port = "465";
+	$mail->Host = $opts['host'];
+	$mail->Port = $opts['port'];
 
-	$mail->Username = "tracker";
-	$mail->Password = "Akj7l4d";
+	$mail->Username = $opts['user'];
+	$mail->Password = $opts['pass'];
 
 	$mail->CharSet = 'utf-8';
-	
-	$mail->ClearReplyTos();
-	$mail->AddReplyTo( "produkcio@colorcom.hu", "Colorcom Prepress" );
+	if( !empty( $opts['encoding'] ) ) $mail->Encoding = $opts['encoding'];
 
-	$mail->SetFrom ('tracker@colorcom.hu', 'Colorcom Prepress');
+	if( !empty( $opts['clearReplyTo'] ) ) $mail->ClearReplyTos();
+	if( !empty( $opts['replyTo'] ) ) $mail->AddReplyTo( $opts['replyTo']['email'], $opts['replyTo']['name'] );
+
+	$mail->SetFrom( $opts['fromEmail'], $opts['fromName'] );
 	$mail->Subject = $subject;
-	$mail->ContentType = 'text/plain'; 
-	$mail->IsHTML(true);
+	$mail->ContentType = $opts['contentType'] ?? 'text/html';
+	$mail->IsHTML( true );
 
 	$mail->Body = "<html><body>".$body."</body></html>";
 	$to = explode( "|", $to );
+	if( !empty( $opts['logSend'] ) ) error_log( "LEVÉL KÜLDÉS: ".$to[1]." , ".$to[0]."" );
 	$mail->AddAddress( $to[1], $to[0] );
-	
-	if( $string === false ) {
-		$mail->AddAttachment( $attach );
+
+	if( !empty( $opts['bcc'] ) ) $mail->AddBCC( $opts['bcc']['email'], $opts['bcc']['name'] );
+
+	if( !empty( $opts['attach']['file'] ) ) {
+		$mail->AddAttachment( $opts['attach']['file'] );
 		}
-	else {
-		$mail->addStringAttachment( $attach, $string );
+	elseif( !empty( $opts['attach']['string'] ) ) {
+		$mail->addStringAttachment( $opts['attach']['string'][0], $opts['attach']['string'][1] );
 		}
-	
-	if(!$mail->Send()) {
-		error_log( "Mailer Error: " . $mail->ErrorInfo );
-		return false;
-		}	
-	else {
-		return true;
-		}
+
+	$sent = $mail->Send();
+	if( !$sent ) error_log( "Mailer Error: " . $mail->ErrorInfo );
+
+	if( !empty( $opts['voidReturn'] ) ) return;
+	return $sent;
+	}
+
+function produkcioSendmailAttach( $subject, $body, $to, $attach, $string = false ) {
+	return _smtpSend( $subject, $body, $to, array(
+		'user' => 'tracker', 'pass' => 'Akj7l4d', 'host' => 'mail.colorcom.hu', 'port' => '465',
+		'fromEmail' => 'tracker@colorcom.hu', 'fromName' => 'Colorcom Prepress',
+		'clearReplyTo' => true, 'replyTo' => array( 'email' => 'produkcio@colorcom.hu', 'name' => 'Colorcom Prepress' ),
+		'contentType' => 'text/plain',
+		'attach' => ( $string === false ) ? array( 'file' => $attach ) : array( 'string' => array( $attach, $string ) ),
+		) );
 	}
 
 function produkcioSendmail( $subject, $body, $to ) {
-	if( is_file( '/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php' ) ) {
-		require_once('/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php');
-		}
-	else {
-		require_once('plugins/phpmail/PHPMailerAutoload.php');
-		}
-	
-
-	$mail = new PHPMailer();
-
-	$mail->IsSMTP();
-	$mail->SMTPDebug = 0;
-
-	$mail->SMTPAuth = true;
-	$mail->AuthType = "CRAM-MD5";
-	$mail->SMTPSecure = "ssl";
-	$mail->Host = "mail.colorcom.hu";
-	$mail->Port = "465";
-
-	$mail->Username = "tracker";
-	$mail->Password = "Akj7l4d";
-	
-	$mail->AddReplyTo( "produkcio@colorcom.hu", "Colorcom Prepress" );
-	$mail->CharSet = 'utf-8';
-	$mail->SetFrom ('tracker@colorcom.hu', 'Colorcom Tracker');
-	$mail->Subject = $subject;
-	$mail->ContentType = 'text/plain'; 
-	$mail->IsHTML(true);
-
-	$mail->Body = "<html><body>".$body."</body></html>";;
-	$to = explode( "|", $to );
-	error_log("LEVÉL KÜLDÉS: ".$to[1]." , ".$to[0]."" );
-	$mail->AddAddress( $to[1], $to[0] );
-	
-	if(!$mail->Send()) {
-		error_log( "Mailer Error: " . $mail->ErrorInfo );
-		return false;
-		}	
-	else {
-		return true;
-		}
-	}
-
-function produkcioSendmail2( $subject, $body, $to ) {
-	if( is_file( '/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php' ) ) {
-		require_once('/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php');
-		}
-	else {
-		require_once('plugins/phpmail/PHPMailerAutoload.php');
-		}
-		
-	$mail = new PHPMailer();
-
-	$mail->IsSMTP();
-	$mail->SMTPDebug = 0;
-
-	$mail->SMTPAuth = true;
-	$mail->AuthType = "CRAM-MD5";
-	$mail->SMTPSecure = "ssl";
-	$mail->Host = "mail.colorcom.hu";
-	$mail->Port = "465";
-
-	$mail->Username = "tracker";
-	$mail->Password = "Akj7l4d";
-	
-	$mail->AddReplyTo( "produkcio@colorcom.hu", "Colorcom Prepress" );
-	$mail->CharSet = 'utf-8';
-	$mail->SetFrom ('tracker@colorcom.hu', 'Colorcom Tracker');
-	$mail->Subject = $subject;
-	$mail->ContentType = 'text/plain'; 
-	$mail->IsHTML(true);
-	
-	
-	$mail->Body = "<html><body>".$body."</body></html>";
-	$to = explode( "|", $to );
-	$mail->AddAddress( $to[1], $to[0] );
-	
-	if(!$mail->Send()) {
-		error_log( "Mailer Error: " . $mail->ErrorInfo );
-		return false;
-		}	
-	else {
-		return true;
-		}
+	return _smtpSend( $subject, $body, $to, array(
+		'user' => 'tracker', 'pass' => 'Akj7l4d', 'host' => 'mail.colorcom.hu', 'port' => '465',
+		'fromEmail' => 'tracker@colorcom.hu', 'fromName' => 'Colorcom Tracker',
+		'authType' => 'CRAM-MD5',
+		'replyTo' => array( 'email' => 'produkcio@colorcom.hu', 'name' => 'Colorcom Prepress' ),
+		'contentType' => 'text/plain', 'logSend' => true,
+		) );
 	}
 
 function sendMail_( $subject, $body, $to, $attach, $replyto = "" ) {
-	if( is_file( '/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php' ) ) {
-		require_once('/var/www/html/client/plugins/phpmail/PHPMailerAutoload.php');
-		}
-	else {
-		require_once('plugins/phpmail/PHPMailerAutoload.php');
-		}
-		
-	$mail = new PHPMailer();
+	$opts = array(
+		'user' => 'tracker', 'pass' => 'Akj7l4d', 'host' => 'mail.colorcom.hu', 'port' => '465',
+		'fromEmail' => 'tracker@colorcom.hu', 'fromName' => 'Colorcom Tracker',
+		'contentType' => 'text/plain', 'attach' => array( 'file' => $attach ),
+		);
 
-	$mail->IsSMTP();
-	$mail->SMTPDebug = 0;
-
-	$mail->SMTPAuth = true;
-	$mail->SMTPSecure = "ssl";
-	$mail->Host = "mail.colorcom.hu";
-	$mail->Port = "465";
-
-	$mail->Username = "tracker";
-	$mail->Password = "Akj7l4d";
-	
-	$mail->AddReplyTo( "produkcio@colorcom.hu", "Colorcom Prepress" );
-	$mail->CharSet = 'utf-8';
 	if( $replyto != "" ) {
-		$mail->ClearReplyTos();
 		$f = explode( "|", $replyto );
-		$mail->AddReplyTo( $f[1], $f[0] );
+		$opts['clearReplyTo'] = true;
+		$opts['replyTo'] = array( 'email' => $f[1], 'name' => $f[0] );
+		$opts['bcc'] = array( 'email' => $f[1], 'name' => $f[0] );
 		}
-	$mail->SetFrom ('tracker@colorcom.hu', 'Colorcom Tracker');
-	$mail->Subject = $subject;
-	$mail->ContentType = 'text/plain'; 
-	$mail->IsHTML(true);
-
-	$mail->Body = "<html><body>".$body."</body></html>";;
-	$to = explode( "|", $to );
-	$mail->AddAddress( $to[1], $to[0] );
-	$mail->AddBCC( $f[1], $f[0] );
-	$mail->AddAttachment( $attach );
-	
-	if(!$mail->Send()) {
-		error_log( "Mailer Error: " . $mail->ErrorInfo );
-		return false;
-		}	
 	else {
-		return true;
+		$opts['replyTo'] = array( 'email' => 'produkcio@colorcom.hu', 'name' => 'Colorcom Prepress' );
 		}
+
+	return _smtpSend( $subject, $body, $to, $opts );
 	}
 
 function wfSendMail( $subject, $body, $to, $cc ) {
-	require_once( TRKPATH.'/plugins/phpmail/PHPMailerAutoload.php');
-		
-	$mail = new PHPMailer();
-
-	$mail->IsSMTP();
-	$mail->SMTPDebug = 0;
-	$mail->Timeout = 120;
-	$mail->SMTPAuth = true;
-	$mail->AuthType = "CRAM-MD5";
-	$mail->SMTPSecure = "ssl";
-	$mail->Host = MAIL_HOST;
-	$mail->Port = MAIL_PORT;
-
-	$mail->Username = MAIL_WF_USERNAME;
-	$mail->Password = MAIL_WF_PASS;
-	
-	$mail->AddReplyTo( "produkcio@colorcom.hu", "Colorcom Prepress" );
-	$mail->CharSet = 'utf-8';
-	$mail->Encoding = 'base64';
-	$mail->SetFrom ( MAIL_WF_EMAIL, MAIL_WF_NAME );
-	$mail->Subject = $subject;
-	$mail->ContentType = 'text/html'; 
-	$mail->IsHTML(true);
-	
-	//$body = str_replace( "http://", "https://", $body );
-	$mail->Body = "<html><body>".$body."</body></html>";;
-	$to = explode( "|", $to );
-	$mail->AddAddress( $to[1], $to[0] );
-
-	if(!$mail->Send()) {
-		error_log( "Mailer Error: " . $mail->ErrorInfo );
-		}	
+	_smtpSend( $subject, $body, $to, array(
+		'user' => MAIL_WF_USERNAME, 'pass' => MAIL_WF_PASS, 'host' => MAIL_HOST, 'port' => MAIL_PORT,
+		'fromEmail' => MAIL_WF_EMAIL, 'fromName' => MAIL_WF_NAME,
+		'authType' => 'CRAM-MD5', 'timeout' => 120, 'encoding' => 'base64',
+		'replyTo' => array( 'email' => 'produkcio@colorcom.hu', 'name' => 'Colorcom Prepress' ),
+		'voidReturn' => true,
+		) );
 	}
 
 function sendMail( $subject, $body, $to, $cc = "" ) {
-	require_once( TRKPATH.'/plugins/phpmail/PHPMailerAutoload.php');
-		
-	$mail = new PHPMailer();
-
-	$mail->IsSMTP();
-	$mail->SMTPDebug = 0;
-	$mail->Timeout = 120;
-	$mail->SMTPAuth = true;
-	$mail->AuthType = "CRAM-MD5";
-	$mail->SMTPSecure = "ssl";
-	$mail->Host = MAIL_HOST;
-	$mail->Port = MAIL_PORT;
-
-	$mail->Username = MAIL_USERNAME;
-	$mail->Password = MAIL_PASS;
-
-	$mail->CharSet = 'utf-8';
-	$mail->Encoding = 'base64';
-	$mail->SetFrom ( MAIL_EMAIL, MAIL_NAME );
-	$mail->Subject = $subject;
-	$mail->ContentType = 'text/html'; 
-	$mail->IsHTML(true);
-	
-	//$body = str_replace( "http://", "https://", $body );
-	$mail->Body = "<html><body>".$body."</body></html>";;
-	$to = explode( "|", $to );
-	$mail->AddAddress( $to[1], $to[0] );
-
-	if(!$mail->Send()) {
-		error_log( "Mailer Error: " . $mail->ErrorInfo );
-		}	
+	_smtpSend( $subject, $body, $to, array(
+		'user' => MAIL_USERNAME, 'pass' => MAIL_PASS, 'host' => MAIL_HOST, 'port' => MAIL_PORT,
+		'fromEmail' => MAIL_EMAIL, 'fromName' => MAIL_NAME,
+		'authType' => 'CRAM-MD5', 'timeout' => 120, 'encoding' => 'base64',
+		'voidReturn' => true,
+		) );
 	}
 
 function adThumbCreate3( $path, $file, $to ) {
@@ -4268,13 +4033,53 @@ function querySort ($column = 3 ) {
     	};
 	}
 
-function delTree($dir) { 
-   $files = array_diff(scandir($dir), array('.','..')); 
-    foreach ($files as $file) { 
-      (is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file"); 
-    } 
-    return rmdir($dir); 
-  } 
+function delTree($dir) {
+   $files = array_diff(scandir($dir), array('.','..'));
+    foreach ($files as $file) {
+      if( is_dir("$dir/$file") ) {
+        delTree("$dir/$file");
+        }
+      else {
+        // Confirmed live 2026-08-05 (PRFU/2633's switchReports files,
+        // owned root:root - www-data has no write access to the
+        // containing directory): unlink() failing here used to be
+        // completely silent, so a delete could report success while
+        // real data was quietly left behind with no trace anywhere.
+        if( !@unlink("$dir/$file") ) {
+          error_log( "delTree: failed to unlink '".$dir."/".$file."' - check ownership/permissions on '".$dir."' (running as uid ".getmyuid().")." );
+          }
+        }
+    }
+    if( !@rmdir($dir) ) {
+      error_log( "delTree: failed to rmdir '".$dir."' - check ownership/permissions (running as uid ".getmyuid().")." );
+      return false;
+      }
+    return true;
+  }
+
+// Switch lands archives flat, directly under ARCHIVE_PATH (not nested by
+// magazine/issue - confirmed against the first real archive run, folder
+// "PRFU_2633__Palaye_Royale_archived"), named
+// {magazineCode}[_{issueCode}][__{specificName}]_archived - the issueCode
+// segment is dropped for Adhoc jobs (same magazineCode==issueCode rule as
+// switchReports/ in cleanupPublicationRemnants()), and the specificName
+// segment is only present when publications.specificName is set (Regular)
+// or always (Adhoc). Since none of that is stored anywhere Tracker can look
+// up - there's no DB row for the archive itself - this has to search for it
+// rather than compute a deterministic path. The two glob patterns (exact
+// "..._archived" vs "...__*_archived") avoid a shorter issueCode being
+// mistaken for a prefix of a longer one (e.g. "2633" matching a search for
+// "263"): the character immediately after the code is always either the
+// literal "_archived" suffix or a literal "__" separator, never anything
+// else.
+function findArchivePath( $magazineCode, $issueCode ) {
+	$prefix = ( $magazineCode == $issueCode ) ? $magazineCode : $magazineCode.'_'.$issueCode;
+
+	$matches = glob( ARCHIVE_PATH.'/'.$prefix.'_archived', GLOB_ONLYDIR );
+	$matches = array_merge( $matches, glob( ARCHIVE_PATH.'/'.$prefix.'__*_archived', GLOB_ONLYDIR ) );
+
+	return !empty( $matches[0] ) ? $matches[0] : null;
+	}
 
 function anotherPubs( $user, $spec_rows = '*' ) {
 	$anothers = explode( ",", $user[0][10] );

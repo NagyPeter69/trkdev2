@@ -286,90 +286,25 @@
 
 			sql_update( 'accounts', $command, 'id=\''.$_SESSION['intra_user'].'\'' );
 
-			//PMD belenyúlás - magazin levél
-			$magID = explode( ",", $user[0][21] );
-			$magazines = array();
+			// Gate B: the user's own per-magazine mail unsubscribe preference
+			// (accounts.mailOptOut), independent of the admin's PMD <Mails> "M"
+			// checkbox (Gate A) - this handler never touches the PMD XML. Rebuilt
+			// from scratch each save against every magazine the user is currently
+			// associated with (showMagazines); a magazine missing from the
+			// "userMails" checkboxes means the user unchecked "Mails" for it.
+			$magID = array_values( array_filter( explode( ",", $user[0][21] ) ) );
+			$userMails = $_POST["userMails"] ?? array();
+
+			$optOut = array();
 			for( $i = 0; $i < count( $magID ); $i++ ) {
-				$mag = sql_aget( 'magazines', 'id="'.$magID[$i].'" LIMIT 1', '*' );
-				for( $y = 0; $y < count( $mag ); $y++ ) {
-					$magazines[] = $mag[$y];
-					}
-				}
-			//error_log( print_r( $magazines, true ) );
-			$xmlChanged = false;
-			for( $i = 0; $i < count( $magazines ); $i++ ) {
-				error_log( $i );
-				$send = array();
-				
-				$xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
-				$xpath = $xml->xpath('/Publications');
-				foreach($xpath as $temp) {
-					for( $x = 0; $x < count( $temp->Item ); $x++ ) {
-						if( $temp->Item[$x]->Code == $magazines[$i]["code"] )
-							break;
-						}
-					}
-				
-				$code = (string) $xml->Item[$x]->Code;	
-				$pmdmails = (string) $xml->Item[$x]->Mails;
-				if( !empty( $pmdmails ) ) {
-					$pmdmails = explode( ";", $pmdmails );
-					}
-				else {
-					$pmdmails = array();
-					}
-				
-				//error_log( print_r( $_POST["userMails"], true ) );
-				//error_log( $code );
-				if( in_array( $code, $_POST["userMails"] ?? array() ) ) {
-					if( !in_array( $user[0][5] , $pmdmails ) ) {
-						error_log( "bentvagyok") ;
-						$pmdmails[] = trim( $user[0][5] );
-						$pmdmails = implode( ";", $pmdmails );
-						
-						error_log( $user[0][5] );
-						error_log( "pmdmails: ".$pmdmails );
-						
-						$send['Mails'] = $pmdmails;
-						$send['MailComm'] = "Yes";
-						$send['old_code'] = $code;
-						$send['deny'] = 'ki_set';
-						changeXmlDatabase_ext( 'modify', $send, '../xml/'.PMD.'.xml' );
-						$xmlChanged = true;
-						}
-					}
-				else {
-					if( in_array( $user[0][5] , $pmdmails ) ) {
-						$key = array_search( $user[0][5] , $pmdmails );
-						
-						unset( $pmdmails[$key] );
-						
-						if( count( $pmdmails ) > 0 ) {
-							$pmdmails = implode( ";", $pmdmails );
-							
-							$send['Mails'] = $pmdmails;
-							$send['MailComm'] = "Yes";
-							$send['old_code'] = $code;
-							$send['deny'] = 'ki_set';
-							}
-							
-						else {
-							$send['Mails'] = "";
-							$send['MailComm'] = "No";
-							$send['old_code'] = $code;
-							$send['deny'] = 'ki_set';
-							}
-						changeXmlDatabase_ext( 'modify', $send, '../xml/'.PMD.'.xml' );
-						$xmlChanged = true;
-						}
+				if( !in_array( $magID[$i], $userMails ) ) {
+					$optOut[] = $magID[$i];
 					}
 				}
 
-			if( $xmlChanged ) {
-				XMLUpload2( PMD.'.xml' );
-				}
+			sql_update( 'accounts', "mailOptOut='".implode( ",", $optOut )."'", 'id=\''.$_SESSION['intra_user'].'\'' );
 			}
-		
+
 		$result = array( $error, $langmod );
 		}
 	

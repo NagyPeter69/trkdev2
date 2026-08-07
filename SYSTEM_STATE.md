@@ -697,6 +697,53 @@ Hybrid-workflow/FlatplanStages handling, and duplicating rather than sharing it 
 the logic into a function both endpoints call — don't just copy-paste it into
 `flatplan_reloadbg.php`.
 
+## Mail system cleanup (2026-08-07)
+
+The mail subsystem had drifted badly: two vendored libraries (only PHPMailer was ever
+actually called - SwiftMailer at `client/plugins/swiftmailer/` had zero live call sites and
+was deleted whole), six copy-pasted PHPMailer wrapper functions in `engine/engine.php`, and a
+personal address (`peter.tamas@colorcom.hu`, the original developer) hardcoded as a recipient
+or silent BCC across a dozen files. All of that was consolidated/removed - see
+`git log` around this date for the specifics, not repeated here.
+
+**What's structural and worth knowing for future work:**
+
+- Every send now goes through one internal `_smtpSend()` in `engine/engine.php`; the
+  previously-6 public functions (`sendMail`, `wfSendMail`, `produkcioSendmail`,
+  `produkcioSendmailAttach`, `sendMail_`) are thin wrappers over it with their original call
+  signatures preserved. Two real SMTP accounts still exist on purpose (`MAIL_*` /
+  `MAIL_WF_*` in `engine/constans.php`, currently identical credentials but kept as separate
+  named accounts) - that's a mailbox choice, not the library duplication that was cleaned up.
+- **Two independent mail gates**, where there used to be one flag two UIs raced over:
+  - **Gate A** (admin, unchanged): the "M" checkbox in a publication's Users dialog
+    (`client/plugins/user/manage.php`, applied by `userApply.php?sub=manage`) controls PMD XML
+    `<Mails>` membership, same as always.
+  - **Gate B** (user, new): `accounts.mailOptOut` - a comma-separated magazine-id **opt-out**
+    list (empty = subscribed to everything, so nothing changed for existing users on
+    rollout), set from the user's own personal settings panel
+    (`client/plugins/user/settings.php`, applied by `userApply.php?sub=settings`). This
+    handler no longer touches the PMD XML at all - that used to be a real landmine (a personal
+    preference save silently racing the admin's shared PMD edit for the same magazine).
+  - Enforced at send time by `gatedMailRecipients( $magazineId, $magazineType, $pmdMailsCsv )`
+    in `engine/engine.php`, called right after every `explode(";", ...->Mails)` that drives an
+    automatic per-magazine notification. **Adhoc magazines are explicitly exempt** - short
+    job-scoped users have no standing subscription concept, per explicit instruction.
+    Manual, staff-typed one-off sends (asset resend, hotlink/handout share) are deliberately
+    *not* gated - there's no "association + subscription" to check against free-typed
+    addresses.
+- **No more plaintext passwords in mail.** Password reset (`accountsApply.php?sub=resetpw`),
+  new-account welcome mail (`accountsApply.php?sub=addMember`), and the external `tAPI`'s
+  `addUser()` all now mail a one-time link to `client/set_password.php` instead
+  (`accounts.pwset_token`/`pwset_expires`, same hashed-random-token pattern as
+  `remember_token`). `set_password.php` is reached pre-login via `index2.php`'s
+  `?page=set_password` route - it's allowlisted there alongside `vflatplan`/
+  `vflatplan_preview` as one of the few pages servable without an active session. New
+  accounts created via the admin's "Add Member" panel no longer get an admin-chosen password
+  at all - they start locked out and set their own via the link.
+- `securityAlert()` (failed-login mailer) no longer includes the attempted password in the
+  alert body - username, IP, user-agent, and match/no-match result only.
+
+
 ## Deploying to production
 
 See `bin/deploy-to-prod.sh` (and its `--help`) for the actual mechanism. In short: this
@@ -710,6 +757,37 @@ rollback until the new one's proven. Full production data (including the media/j
 directories deliberately excluded from this dev rebuild) would need its own migration plan
 at that time — this document's "what was left behind" section is exactly what a real
 production migration cannot skip.
+
+### `/var/www/server_constans.php` — every hostname in every outgoing email depends on this
+
+This file is **not in git** (deliberately, like `/etc/trkdev-db.env` — it's per-machine
+config, not code) and is not touched by `bin/deploy-to-prod.sh`. On trkdev2 it currently
+reads:
+
+```php
+define( "HOST", "Dev" );
+define( "URL", "trkdev2.colorcom.hu" );
+```
+
+Every mail-embedded link in the app (password reset, account welcome, hotlink/asset/handout
+notices, file-transfer download links — audited 2026-08-07 as part of the mail-system
+cleanup, see the section above) is built from `PROTOCOL.URL` (`PROTOCOL` is `"https://"` from
+`engine/constans.php`), never a hardcoded hostname — that audit found and fixed the two
+places that still hardcoded a stray literal host (`tAPI/tAPI.php`'s welcome-email link,
+`engine/fileClass.php`'s file-transfer-ready link both said `tracker.colorcom.hu`, an old
+hostname matching neither dev nor the intended `trk.colorcom.hu` production host) so that
+`URL` is now the single source of truth for every one of them.
+
+**Before cutover, production's own `/var/www/server_constans.php` must define
+`URL` as `"trk.colorcom.hu"`** — this is a manual step on the new box, not something the
+deploy script or a git pull will do for you. Forgetting it means every password-reset and
+welcome email in production silently links back to whatever `URL` was left as (or a fatal
+"Undefined constant" if the file is missing entirely). Verify after cutover by triggering one
+real reset-password send and checking the link in the actual received email, the same way
+this was verified on trkdev2 (2026-08-07, using real `test1user@colorcom.hu`/
+`test2user@colorcom.hu` mailboxes via IMAP against `mail.colorcom.hu`) — don't just trust the
+config file was edited correctly.
+
 
 ## Full database schema
 
