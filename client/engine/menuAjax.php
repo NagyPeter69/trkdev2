@@ -34,9 +34,34 @@
 			$txt .= "</tr>";
 			}
 
-		$result = $txt;		
+		$result = $txt;
 		}
-		
+
+	if( $_GET["op"] == "findAccount" ) {
+		$txt = "";
+		$term = "%".$_GET["value"]."%";
+		$users = sql_aget( "accounts", "(name LIKE '".$term."' OR email LIKE '".$term."' OR full_name LIKE '".$term."') ORDER BY full_name ASC", "*" );
+		for( $i = 0; $i < count( $users ); $i++ ) {
+			$pub = sql_get( "publishers", "id='".$users[$i]["publisher"]."'", "name" );
+			$label = htmlspecialchars( $users[$i]["full_name"]." (".$users[$i]["email"].")", ENT_QUOTES );
+			$txt .= "<tr>";
+				$txt .= "<td style='padding-bottom: 1px;'>".$users[$i]["id"]."</td>";
+				$txt .= "<td style='padding-bottom: 1px;'>".$users[$i]["full_name"]."</td>";
+				$txt .= "<td style='padding-bottom: 1px;'>".$users[$i]["name"]."</td>";
+				$txt .= "<td style='padding-bottom: 1px;'>".$users[$i]["email"]."</td>";
+				$txt .= "<td style='padding-bottom: 1px;'>".( $pub[0][0] ?? $users[$i]["publisher"] )."</td>";
+				$txt .= "<td style='padding-bottom: 1px;'>".date( "Y-m-d H:i", $users[$i]["lastlogin"])."</td>";
+				$txt .= "<td style='padding-bottom: 1px;'>";
+				if( $rights['accounts_removeMember'] ) {
+					$txt .= "<div class='panelButton' onclick=\"deleteFoundAccount(".$users[$i]["id"].", '".$label."')\">".$lang["standard"]["remove"]."</div>";
+					}
+				$txt .= "</td>";
+			$txt .= "</tr>";
+			}
+
+		$result = $txt;
+		}
+
 	if( $_GET["op"] == "generatejobmenu" ) {
 		$txt = "";
 		$head = 0;
@@ -755,7 +780,7 @@
 			
 		$sub = array(
 				"ftp" => array(	"create", "modify", "delete" ),
-				"accounts" => array( "addMember", "modifyMember", "removeMember", "userStat", "addGroup", "modifyGroup", "removeGroup", "addPlannerGroup", "removePlannerGroup", "addAdhoc", "modAdhoc", "delAdhoc" ),
+				"accounts" => array( "addMember", "modifyMember", "removeMember", "userStat", "findAccount", "addGroup", "modifyGroup", "removeGroup", "addPlannerGroup", "removePlannerGroup", "addAdhoc", "modAdhoc", "delAdhoc" ),
 				"client" => array( "create", "modify", "delete" )
 				);
 

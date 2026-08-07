@@ -505,6 +505,32 @@ function memberStatList( value ) {
 		});
 	}
 
+function findAccountList( term ) {
+	$.ajax	({
+		url:"engine/menuAjax.php?op=findAccount&value="+encodeURIComponent( term ),
+		type: "GET",
+		dataType: 'json',
+		success:function( data ) {
+			$( "#findAccountlist").html( data );
+			}
+		});
+	}
+
+function deleteFoundAccount( id, label ) {
+	var message = "Do you really want to delete account "+label+"? This cannot be undone.";
+	trkDialog2( message, function() {
+		$.ajax	({
+			url:"plugins/accountsApply.php?sub=removeMember",
+			type: "POST",
+			data: { account_remove: id },
+			dataType: 'json',
+			success:function( data ) {
+				findAccountList( $('#findAccount_term').val() );
+				}
+			});
+		}, function(){} );
+	}
+
 function memberList( value ) {
 	$("#user_mod_content").hide(200);
 	$( "#account_remove" ).prop( "disabled", true );

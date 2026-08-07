@@ -707,6 +707,60 @@ Hybrid-workflow/FlatplanStages handling, and duplicating rather than sharing it 
 the logic into a function both endpoints call — don't just copy-paste it into
 `flatplan_reloadbg.php`.
 
+## Phantom-account bug + admin self-service fix (2026-08-06 incident)
+
+A real *production* incident, not a dev-only bug: an employee's `accounts` row was deleted
+when she left the company; when she was later rehired as a freelancer, re-creating her
+account silently failed — the name/email fields just turned red, no explanation anywhere.
+Root cause: `client/plugins/accountsApply.php`'s `addMember` duplicate-check queries are
+**global** (search the whole `accounts` table across every publisher), while the
+admin-facing user list (`client/plugins/user/manage.php`) is **publisher-scoped**. A
+leftover row under a stale/different `publisher` value is invisible in the admin's own list
+but still blocks creation — a genuine "phantom" with no in-app way to find or remove it.
+Diagnosed and fixed *on production* via direct SQL (no other option existed at the time).
+What follows is the dev-side prevention fix — **done and verified only on trkdev2
+(`nyomadake_intra`) so far, not yet applied to production.**
+
+Three app-layer changes plus one schema addition:
+
+1. **Better error feedback**: `addMember`'s duplicate checks now return a real explanatory
+   message (the conflicting account's id + publisher name) via the `array(false, message)`
+   response shape already wired into `menuApply()`'s JS (`client/index2.php`), instead of
+   just reddening the field. New `error8`/`error9` keys in `client/lang/en.php` + `hu.php`
+   only — not `de.php`/`pl.php`, see [[lang_translation_status]]. Also fixed
+   `accountsApply.php` hardcoding `include_once('../lang/en.php')` regardless of the logged-in
+   admin's actual language — a latent bug that would've silently defeated the new Hungarian
+   strings; it now follows the same `$user[0][17]`-driven include `menuAjax.php`/`index2.php`
+   already used.
+2. **Global "Find Account" admin panel**: `client/plugins/accounts/findAccount.php` (new), a
+   `findAccount` op in `menuAjax.php`, `findAccountList()` in `engine/engine.js` — lets an
+   admin search `accounts` by name/email across *all* publishers, closing the exact gap that
+   forced the original incident into direct-SQL territory. Read-only for now; deletion of a
+   found row still goes through the existing `removeMember` flow using the id it surfaces.
+3. **Audit trail**: `addMember`/`removeMember` now both write an `action_log` row (actor,
+   action, and — for deletion specifically — the name+email as *text*, not just the id that's
+   about to stop existing). Neither wrote anything before, which is exactly why the original
+   incident needed DB forensics instead of just reading a log.
+
+**Schema delta**: `user_groups.accounts_findAccount` (`int(11) NOT NULL DEFAULT 0`), gating
+the new panel the same way every other `accounts_*` right already does. Added to
+`db/schema.sql` and applied live on trkdev2; `SuperUser` (group id 2) is the only group
+granted it so far (`UPDATE user_groups SET accounts_findAccount = 1 WHERE id = 2`). **This
+column does not exist on production** — it's now one more line item on the schema-delta
+checklist in "Deploying to production" below, not a special case to remember separately.
+
+Explicitly out of scope, by design (see conversation history for full reasoning): no
+referential-integrity sweep across the other tables that reference a deleted `accounts.id`
+(`publications.owner/user`, `flatplan_planner.*`, `comments.user`, etc.) — those are live
+historical data, not orphan garbage, same judgment call `cleanupPublicationRemnants()`
+already makes for audit-style data. No DB-level `UNIQUE` constraint on `accounts.name`/
+`email` yet either — the structurally correct long-term fix, but unsafe to add blind; run a
+dedup check first (`SELECT name, COUNT(*) c FROM accounts GROUP BY name HAVING c > 1` and
+the same for `email`) before ever adding one, on dev *and* separately on production — they
+are different databases with different accumulated data and either could have duplicates the
+other doesn't.
+
+
 ## Mail system cleanup (2026-08-07)
 
 The mail subsystem had drifted badly: two vendored libraries (only PHPMailer was ever

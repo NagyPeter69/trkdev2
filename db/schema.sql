@@ -866,6 +866,7 @@ CREATE TABLE `user_groups` (
   `task_lists` int(11) NOT NULL DEFAULT 0,
   `handouts` int(11) NOT NULL DEFAULT 0,
   `accounts_userStat` int(11) NOT NULL DEFAULT 0,
+  `accounts_findAccount` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
