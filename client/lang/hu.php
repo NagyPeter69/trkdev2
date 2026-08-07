@@ -369,7 +369,8 @@
 							"username" => 'Név',
 							"pass" => 'Jelszó',
 							"login" => 'Belépés',
-							"alreadyIn" => 'A felhasználó már be van lépve egy másik eszközről!'
+							"alreadyIn" => 'Egy másik számítógépen már be vagy jelentkezve.',
+							"alreadyInQuestion" => 'Kiléptessünk ott?'
 							),	
 			"publications" => array (
 							"release" => 'Megjelenés ideje',

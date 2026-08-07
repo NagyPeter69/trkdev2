@@ -369,7 +369,8 @@
 							"username" => 'User Name',
 							"pass" => 'Password',
 							"login" => 'Login',
-							"alreadyIn" => 'This user is already logged in on another device.'
+							"alreadyIn" => 'You\'re already logged in on a different computer.',
+							"alreadyInQuestion" => 'Would you like to log off on that machine?'
 							),	
 			"publications" => array (
 							"release" => 'Release Date',
