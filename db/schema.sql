@@ -56,6 +56,7 @@ CREATE TABLE `accounts` (
   `downloadsettings` varchar(255) DEFAULT NULL,
   `remember_token` varchar(255) DEFAULT NULL,
   `session_token` varchar(255) DEFAULT NULL,
+  `linked_account_id` int(11) NOT NULL DEFAULT 0,
   `mailOptOut` text NOT NULL DEFAULT '',
   `pwset_token` varchar(64) DEFAULT NULL,
   `pwset_expires` int(11) DEFAULT NULL,
