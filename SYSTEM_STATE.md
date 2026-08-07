@@ -430,10 +430,14 @@ The key lives in **three** separately-duplicated copies of `config.inc.php` (`en
 `client/engine/`, and the webroot root) — not one shared file, consistent with this app's
 general pattern of copy-pasted files rather than shared includes (see "Known architectural
 issues" below). All three needed updating together; a future key renewal must do the same
-or some code paths will silently keep using a stale key. All three are tracked in git
-(the key is committed in plaintext, same as the previous keys were) — worth reconsidering
-if this app ever gets a real secrets-management setup, but not changed here since it
-matches how every prior key in this repo's history was already handled.
+or some code paths will silently keep using a stale key.
+
+**2026-08-07 update**: all three now read the key via `getenv('TRKDEV_DYNAPDF_LICENSE_KEY')`
+instead of a hardcoded literal, ahead of this repo's first-ever push to `origin`. The real
+value lives in `env[TRKDEV_DYNAPDF_LICENSE_KEY]` in the FPM pool config
+(`/etc/php/8.4/fpm/pool.d/www.conf`), same mechanism as `TRKDEV_DB_PASSWORD` below. A future
+key renewal now only needs a value change in one place (the FPM pool env) plus a reload,
+not three file edits.
 
 ## R3 (PDF rendering / color management)
 
@@ -547,9 +551,15 @@ JSON response). This means the exact same PHP code path works unmodified on trkd
 the render-VM, and eventually in production — it self-detects which side it's on.
 
 The shared auth token lives in `engine/r3client_config.php` (trkdev2) and the matching
-`r3remote/config.php` (render-VM) — both files are untracked/gitignored, not committed,
-consistent with how the DB password above is kept out of the repo. Rotate by editing both
-sides together.
+`r3remote/config.php` (render-VM). Rotate by editing both sides together.
+
+**2026-08-07 correction + update**: `engine/r3client_config.php` was actually tracked in git
+this whole time despite the note above — confirmed via `git ls-files` during a pre-push
+secrets audit (this repo has never actually been pushed to `origin` yet, so the token never
+left this VM, but it would have on the first push). Fixed by switching the token to
+`define('R3_REMOTE_TOKEN', getenv('TRKDEV_R3_TOKEN'))`, value now in
+`env[TRKDEV_R3_TOKEN]` in the FPM pool config, same as the DB password. `r3remote/config.php`
+on the render-VM side is a separate machine and wasn't touched by this pass.
 
 Two small UX consequences of remote rendering being visibly slower (network round-trip on
 top of the render itself): the Pages-view spinner turns red instead of the default gray
@@ -714,6 +724,13 @@ or silent BCC across a dozen files. All of that was consolidated/removed - see
   signatures preserved. Two real SMTP accounts still exist on purpose (`MAIL_*` /
   `MAIL_WF_*` in `engine/constans.php`, currently identical credentials but kept as separate
   named accounts) - that's a mailbox choice, not the library duplication that was cleaned up.
+  **2026-08-07**: `MAIL_PASS`/`MAIL_WF_PASS` switched from hardcoded literals to
+  `getenv('TRKDEV_MAIL_PASSWORD')`/`getenv('TRKDEV_MAIL_WF_PASSWORD')` (values in the FPM pool
+  env, same mechanism as `TRKDEV_DB_PASSWORD`), so the two accounts can still diverge
+  independently later — same intent as before, just no longer plaintext in the repo. The
+  Switch API login password (`switchAPI.php`, `client/engine/switchAPI.php`) was migrated the
+  same way, to `getenv('TRKDEV_SWITCH_PASSWORD')` — done together as part of a pre-push
+  secrets audit (see the DynaPDF and R3 sections above for the other two).
 - **Two independent mail gates**, where there used to be one flag two UIs raced over:
   - **Gate A** (admin, unchanged): the "M" checkbox in a publication's Users dialog
     (`client/plugins/user/manage.php`, applied by `userApply.php?sub=manage`) controls PMD XML
