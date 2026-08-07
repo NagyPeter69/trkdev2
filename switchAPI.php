@@ -5,7 +5,7 @@ function SwitchLogin() {
 	global $token;
 	
 	$username = "web_user_1";
-	$password = "!@\$RtLIMoUOyszdyw8aT7zx5sPfZcy69ZnM0JWGELe65B4N6KztFBFawQZ4Gs7t8eWakPeW/z+wLCc0mgtsFCbaCgRirK6sqTh4ajsTGCINHIvbnfJ/RMry4BPeE1xadU5I0KV6Yi1LLSWFN9FDbYoA3eeOpPMAvQ/pf4ha0j50cnk=";
+	$password = getenv('TRKDEV_SWITCH_PASSWORD');
 	
 	$headers = array(
 		"Content-Type: application/x-www-form-urlencoded; charset=UTF-8",

@@ -6,6 +6,7 @@
 define( "IS_DEV_ENVIRONMENT", getenv( "TRKDEV_ENVIRONMENT" ) === "dev" );
 
 define( "FPUPLOAD_PATH", "/var/www/html/client/flatplan_uploads" );
+define( "ARCHIVE_PATH", "/var/www/html/archives" );
 define( "PENZUGY", "ugyvitel@colorcom.hu" );
 define( "TRKPATH", "/var/www/html/client" );
 define( "XMLPATH", "/var/www/html/client/xml" );
@@ -24,12 +25,12 @@ define( "PROTOCOL", "https://" );
 define( "MAIL_HOST", "mail.colorcom.hu" );
 define( "MAIL_PORT", "465" );
 define( "MAIL_USERNAME", "produkcio" );
-define( "MAIL_PASS", "oickudorp" );
+define( "MAIL_PASS", getenv('TRKDEV_MAIL_PASSWORD') );
 define( "MAIL_EMAIL", "produkcio@colorcom.hu" );
 define( "MAIL_NAME", "Colorcom Workflow" );
 
 define( "MAIL_WF_USERNAME", "produkcio" );
-define( "MAIL_WF_PASS", "oickudorp" );
+define( "MAIL_WF_PASS", getenv('TRKDEV_MAIL_WF_PASSWORD') );
 define( "MAIL_WF_EMAIL", "produkcio@colorcom.hu" );
 define( "MAIL_WF_NAME", "Colorcom Workflow" );
 define( "HAVE_PARTS", array( "Full", "Hybrid" ) );

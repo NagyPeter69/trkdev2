@@ -45,4 +45,4 @@ function r3_running_on_kvm64() {
 define('R3_REMOTE_MODE', !r3_running_on_kvm64());
 
 define('R3_REMOTE_URL', 'http://10.10.30.22/r3remote/run.php');
-define('R3_REMOTE_TOKEN', 'b2384865b02a684f601654eddb2dfffad8588499305bdc9f5094ac74bc30574a');
+define('R3_REMOTE_TOKEN', getenv('TRKDEV_R3_TOKEN'));

@@ -1,5 +1,5 @@
 <?php
 define('FILES_ROOT', realpath('../'));
 // Set your license key here if you have one
-$pdf->SetLicenseKey('1490754-13072029-2-0-65535-F90880C064568749BCE2B968E51A6253-FED4A967F63207EF5D89AFF18EA2CCA7');
+$pdf->SetLicenseKey(getenv('TRKDEV_DYNAPDF_LICENSE_KEY'));
 ?>
