@@ -168,6 +168,25 @@ generated locally and added as a deploy key. If a push ever fails with
 `Permission denied (publickey)` or `Repository not found`, check `~/.ssh/` has a key and
 that `git remote -v` still points at `NagyPeter69/trkdev2`, not the old `colorcom` one.
 
+### Git hooks — keep the hamburger menu's version display in sync automatically
+
+`engine/build_info.php` (defines `APP_VERSION`/`APP_BUILD`/`APP_BUILD_DATE`, shown at the
+bottom of the hamburger menu, admin-only — `client/engine/menuAjax.php`) is generated
+output, not hand-edited — `bin/update-build-info.sh` derives it from the `VERSION` file plus
+the current git HEAD hash/date. It was found stale 2026-08-09 (`VERSION` had been bumped to
+`3.0.0` but the generated file still said `1.0.0` from a month-old commit) because nothing
+re-ran the generator after the bump.
+
+Fixed by wiring `bin/update-build-info.sh` into git hooks (`bin/git-hooks/post-commit`,
+`post-merge`, `post-checkout` — all three just call the one script, no duplicated logic) so
+the display self-updates after every commit, pull/merge, and branch switch, with no manual
+step. **This is a `core.hooksPath` local git config, not something that travels with a
+clone** — run `bin/install-git-hooks.sh` once on any fresh clone (including the eventual
+production box, post-cutover) to activate it there too; already active on trkdev2 as of
+2026-08-09. Production deploys aren't affected by any of this either way —
+`bin/deploy-to-prod.sh` already regenerates `build_info.php` itself from the target ref as
+part of every deploy, independent of these hooks.
+
 ## What was migrated, and what was deliberately left behind
 
 The original dev box's `/var/www/html` was ~336GB, of which ~332GB was `client/` — almost

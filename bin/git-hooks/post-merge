@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Keeps engine/build_info.php (APP_VERSION/APP_BUILD/APP_BUILD_DATE) in sync
+# with VERSION + git HEAD after every merge/pull. Installed via
+# bin/install-git-hooks.sh - see that file for how these hooks get wired up.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+bin/update-build-info.sh
