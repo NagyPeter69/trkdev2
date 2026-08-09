@@ -158,6 +158,16 @@ history). `.gitignore` excludes the disposable media/job directories (see below)
 `git log --oneline` for the real changelog; don't rely on this document's summary below
 being kept in sync with every commit.
 
+`origin` is `git@github.com:NagyPeter69/trkdev2.git` — confirmed 2026-08-09. The repo's
+`.git/config` previously pointed `origin` at `git@github.com:colorcom/trkdev2.git`, which
+doesn't exist (`github.com/colorcom` isn't a real org/user) — stale/wrong from whenever
+this VM's git config was first set up, never actually reachable. Push access needs an SSH
+key on this machine authorized on `NagyPeter69/trkdev2` (as a deploy key with write access,
+or a key added to that account); there was none present as of 2026-08-09 until one was
+generated locally and added as a deploy key. If a push ever fails with
+`Permission denied (publickey)` or `Repository not found`, check `~/.ssh/` has a key and
+that `git remote -v` still points at `NagyPeter69/trkdev2`, not the old `colorcom` one.
+
 ## What was migrated, and what was deliberately left behind
 
 The original dev box's `/var/www/html` was ~336GB, of which ~332GB was `client/` — almost
@@ -760,7 +770,6 @@ the same for `email`) before ever adding one, on dev *and* separately on product
 are different databases with different accumulated data and either could have duplicates the
 other doesn't.
 
-
 ## Mail system cleanup (2026-08-07)
 
 The mail subsystem had drifted badly: two vendored libraries (only PHPMailer was ever
@@ -814,7 +823,6 @@ or silent BCC across a dozen files. All of that was consolidated/removed - see
 - `securityAlert()` (failed-login mailer) no longer includes the attempted password in the
   alert body - username, IP, user-agent, and match/no-match result only.
 
-
 ## Deploying to production
 
 See `bin/deploy-to-prod.sh` (and its `--help`) for the actual mechanism. In short: this
@@ -859,6 +867,39 @@ this was verified on trkdev2 (2026-08-07, using real `test1user@colorcom.hu`/
 `test2user@colorcom.hu` mailboxes via IMAP against `mail.colorcom.hu`) — don't just trust the
 config file was edited correctly.
 
+### Known schema deltas vs. production — non-exhaustive, a real diff is still required
+
+Per [[production_release_plan]] (stated by the project owner 2026-08-02): copying prod's
+database into the cutover clone is explicitly **not** a straight dump/restore — step B of
+that plan requires (1) excluding abandoned/orphaned tables and rows accumulated over
+production's 15+ year life (never audited — only dev has been), and (2) adding whatever new
+tables/columns the rebuilt codebase now needs that prod's old schema doesn't have. That
+schema diff **has not been run yet, against either database** — the list below is only what
+various unrelated bug fixes happened to surface along the way, not the output of any
+systematic comparison. Treat it as a sanity check, never as sufficient by itself:
+
+- `accounts.pass` widened `varchar(50)` → `varchar(255)` — bcrypt hashes (60 chars) don't fit
+  the original column (see "Security fixes applied" above).
+- `accounts.remember_token`, `accounts.session_token` — new columns backing the rewritten
+  persistent-login mechanism (same section).
+- `switch_sync_queue` — new table, the durable-retry queue for Switch sync (see "The Enfocus
+  Switch integration" above).
+- `user_groups.accounts_findAccount` — new column, gates the Find Account admin panel (see
+  "Phantom-account bug" above, 2026-08-06).
+- `accounts.mailOptOut`, `accounts.pwset_token`, `accounts.pwset_expires` — new columns,
+  2026-08-07 mail-system cleanup: `mailOptOut` backs the user's personal per-magazine
+  unsubscribe preference (Gate B, independent from the admin's PMD-Mails "M" checkbox — see
+  the mail gating section below); `pwset_token`/`pwset_expires` back the secure
+  set-your-own-password link that replaced emailing plaintext passwords.
+
+Before cutover: run an actual schema diff (`mariadb-dump --no-data` from production vs. this
+repo's `db/schema.sql`, or equivalent) and reconcile every difference deliberately — don't
+assume this list is complete just because it's the only one written down. And per the
+project owner's explicit instruction: whatever the diff produces must be **very thoroughly
+tested** on the staging clone before anyone calls the cutover ready — this matches
+[[production_release_plan]]'s own step D expectation that untested code paths (most of them,
+since dev's DB has been near-empty for months) likely still hide the same class of bug the
+PHP 7→8 migration kept finding.
 
 ## Full database schema
 
