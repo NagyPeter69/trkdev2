@@ -81,7 +81,7 @@
 			@unlink( $strayAdFiles[$y] );
 			}
 
-		sql_delete( 'parts', "pub_id='".$pubId."'" );
+		deletePublicationParts( $pubId );
 
 		// flatplan_articletypes was never wired into this cleanup at all -
 		// confirmed 28 orphaned rows via the 2026-08-02 audit (publications
@@ -112,6 +112,16 @@
 		$issueSegment = ( $magazineCode == $issueCode ) ? '' : '/'.$issueCode;
 		if( is_dir( '/var/www/html/switchReports/'.$magazineCode.$issueSegment ) ) {
 			delTree( '/var/www/html/switchReports/'.$magazineCode.$issueSegment );
+			}
+
+		// Archived package Switch FTPs flat into ARCHIVE_PATH (see
+		// findArchivePath()) - not a deterministic path, so this has to look
+		// it up. Same is_dir() guard as switchReports above so this stays a
+		// no-op on the second+ call in the Adhoc whole-magazine delete loop
+		// (delete_publication_results-handler.php).
+		$archivePath = findArchivePath( $magazineCode, $issueCode );
+		if( $archivePath !== null && is_dir( $archivePath ) ) {
+			delTree( $archivePath );
 			}
 
 		sql_delete( 'pageinfo', 'issue="'.$issueCode.'" AND code="'.$magazineCode.'"' );
@@ -205,28 +215,46 @@
 			// on a missing file returns false with a warning, and false->
 			// status = $value is a hard PHP 8 fatal, not a warning -
 			// confirmed via the test protocol, not hypothetical.
-			if( !is_file( "../xml/".$file ) ) {
-				error_log( "changeIssueStatus: missing snapshot ../xml/".$file." - status change to '".$value."' not synced to Switch" );
+			//
+			// Uses XMLPATH (an absolute path) rather than the old
+			// "../xml/" relative one - that broke for any caller one
+			// directory deeper than client/engine/ or client/cron/, which
+			// is exactly where client/engine/switch/*-handler.php lives.
+			// Confirmed live: archive_results-handler.php's "archived"
+			// transition logged this as "missing" for a snapshot file that
+			// demonstrably existed the whole time, because "../xml/" from
+			// client/engine/switch/ resolves to client/engine/xml/ (never
+			// existed) instead of client/xml/.
+			if( !is_file( XMLPATH.'/'.$file ) ) {
+				error_log( "changeIssueStatus: missing snapshot ".XMLPATH.'/'.$file." - status change to '".$value."' not synced to Switch" );
 				return false;
 				}
 
-			$xml = simplexml_load_file(  "../xml/".$file );
+			$xml = simplexml_load_file( XMLPATH.'/'.$file );
 			$xml->status = $value;
 
 			$dom = new DOMDocument();
 			$dom->preserveWhiteSpace = false;
 			$dom->loadXML($xml->asXML());
 			$dom->formatOutput = true;
-		
+
 			$newFile = $file;
-			file_put_contents(  "../xml/".$newFile, $dom->saveXML() );
-			
+			file_put_contents( XMLPATH.'/'.$newFile, $dom->saveXML() );
+
 			toSwitch( 'new_publication' , 'publications|'.$data, 'C_database/'.substr( $file, 0, -4 ), 'issueData' );
-			
-			if( file_get_contents( $newFile ) == "" )
+
+			// This used to read back $newFile with no directory at all (not
+			// even the relative prefix used for the write above) - a bare
+			// filename almost never resolves against a random caller's cwd,
+			// so file_get_contents() on it fails (returns false), and in
+			// PHP false == "" is true - meaning this silently took the
+			// "empty file" branch below on every single call, for every
+			// caller, independent of the directory-depth bug above. Same
+			// XMLPATH fix applies here.
+			if( file_get_contents( XMLPATH.'/'.$newFile ) == "" )
 				return false;
-				
-			if( file_get_contents( $newFile ) != "" ) {
+
+			if( file_get_contents( XMLPATH.'/'.$newFile ) != "" ) {
 				$array = array(
 					"event" => "xml_data",
 					);
@@ -675,7 +703,7 @@
 				$temp = sql_get( 'publications', 'magazine_id="'.$magazine[0][0].'"', '*' );
 				for( $i = 0; $i < count( $temp ); $i++ ) {
 					sql_delete( 'ads', 'pub_id="'.$temp[$i][0].'"' );
-					sql_delete( 'parts', 'pub_id="'.$temp[$i][0].'"' );
+					deletePublicationParts( $temp[$i][0] );
 					$packs = sql_get( 'packages', 'publication_id="'.$temp[$i][0].'"', '*' );
 					for( $y = 0; $y < count( $packs ); $y++ ) {
 						sql_delete( 'package_info', 'package_id="'.$packs[$y][0].'"' );
@@ -820,7 +848,7 @@
 				$temp = sql_get( 'publications', 'magazine_id="'.$magazine[0][0].'"', '*' );
 				for( $i = 0; $i < count( $temp ); $i++ ) {
 					sql_delete( 'ads', 'pub_id="'.$temp[$i][0].'"' );
-					sql_delete( 'parts', 'pub_id="'.$temp[$i][0].'"' );
+					deletePublicationParts( $temp[$i][0] );
 					$packs = sql_get( 'packages', 'publication_id="'.$temp[$i][0].'"', '*' );
 					for( $y = 0; $y < count( $packs ); $y++ ) {
 						sql_delete( 'package_info', 'package_id="'.$packs[$y][0].'"' );

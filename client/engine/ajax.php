@@ -107,7 +107,6 @@
 		
 		$subject = $magazin[0]["name"]." létrehozva a Colorcom Trackeren";
 		$to = $hotlink[0]["email"]."|".$hotlink[0]["email"];
-		//$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
 		$body = "Kedves Ügyfelünk!<br>
 		<br>
 		A Colorcom Tracker rendszerben létrehoztuk a ".$magazin[0]["name"]." munkát ".$magazin[0]["code"]." azonosítóval. Az alábbi linkre kattintva tudja feltölteni feldolgozásra váró anyagát, közvetlenül a Tracker rendszerbe.<br>
@@ -210,12 +209,30 @@
 		}
 
 	if( $_GET['op'] == 'uploadparamchange' ) {
-		if( !empty( $user[0][0] ) ) {	
+		if( !empty( $user[0][0] ) ) {
 			error_log( "DEBUG: ".$_GET["cb"] );
 			sql_update( "accounts", "uploadparams='".$_GET["cb"]."'", "id='".$user[0][0]."'" );
 			}
 		}
-		
+
+	// Called when the user hits Stop, or on pagehide (via sendBeacon) while a
+	// chunked upload is in flight, so an abandoned tempdir doesn't have to
+	// wait for blob_cleaner.php's daily sweep. tempdir is client Date.now(),
+	// which only has millisecond resolution and isn't otherwise namespaced -
+	// require the .owner marker written in fileupload_ajax.php to match the
+	// requesting account, so one user can't guess/collide another user's
+	// tempdir and delete their in-progress upload.
+	if( $_GET['op'] == 'cancelupload' ) {
+		$tempdir = preg_replace( '/[^0-9]/', '', $_GET['tempdir'] );
+		if( !empty( $tempdir ) && !empty( $_SESSION['intra_user'] ) ) {
+			$target = TRKPATH.'/uploads/blob/chunk/'.$tempdir;
+			$owner_file = $target.'/.owner';
+			if( is_dir( $target ) && file_exists( $owner_file ) && trim( file_get_contents( $owner_file ) ) === (string) $_SESSION['intra_user'] ) {
+				delTree( $target );
+				}
+			}
+		}
+
 	if( $_GET['op'] == 'checkFileuploadName' ) {
 		$text = "";
 		$valid = 1;
@@ -1835,17 +1852,14 @@
 		}
 	
 	if( $_GET['op'] == 'modify' ) {
-		$names = array( 'pages', 'deadline' );
-		$values = array( $_GET['page'], $_GET['dl'] );
-		$command = '';
-		for( $i = 0; $i < count( $names ); $i++ ) {
-			$command .= $names[$i].'=\''.$values[$i].'\'';
-			if( $i < count( $names )-1 ) {
-				$command .= ', ';
-				}
-			}		
-		sql_update( 'publications', $command, 'id=\''.$_GET['id'].'\'' );
-	
+		// 'pages' is no longer accepted from this form - it's derived from
+		// the Parts panel's place ranges (see syncPublicationPages()), so a
+		// manually typed value here would just drift out of sync with them
+		// again the way publications.pages did before. Only deadline is a
+		// real, independently-editable field.
+		sql_update( 'publications', 'deadline=\''.$_GET['dl'].'\'', 'id=\''.$_GET['id'].'\'' );
+		syncPublicationPages( $_GET['id'] );
+
 		$pub = sql_get( 'publications', 'id="'.$_GET['id'].'"', 'magazine_id' );
 		$pubs = sql_get( 'publications', 'magazine_id="'.$pub[0][0].'" ORDER BY `id` ASC', '*' );
 		
@@ -1860,7 +1874,7 @@
 		$txt .= "<tbody>";
 			$txt .= "<tr>";
 				$txt .= "<td style='padding-left: 10px;' class='two left bottom' align='left' align='left' width='50%' height='28px'>Terjedelem</td>";
-				$txt .= "<td class='two right bottom' align='left' style='padding-left: 2px;'><input onkeypress=\"return isNumberKey(event)\" type='text' id='pages' name='pages' value='".$pub[0][6]."'></td>";
+				$txt .= "<td class='two right bottom' align='left' style='padding-left: 2px;'><input readonly title='Az oldalszámot a Részek oldaltartományai határozzák meg' type='text' id='pages' name='pages' value='".$pub[0][6]."'></td>";
 			$txt .= "</tr>";
 			$txt .= "<tr>";
 				$txt .= "<td style='padding-left: 10px;' class='left bottom' align='left' align='left' width='50%' height='28px'>Határidő</td>";
@@ -1896,17 +1910,29 @@
 		$p_id = sql_get( 'magazines', 'id="'.$_POST['m_id'].'"', 'publisher_id' );
 		$p_id = $p_id[0][0];
 		
+		// 'pages' below is a placeholder, not the form's page_nr field - the
+		// Parts panel's own place ranges are the real source of truth for
+		// how many pages this issue has (they can be edited independently
+		// of page_nr, e.g. adding an extra Part), so publications.pages is
+		// derived from them via syncPublicationPages() right after the
+		// parts rows land, rather than trusted from the form directly.
 		$names = array( 'publisher_id', 'magazine_id', 'internal', 'upload', 'output', 'pages', 'uploadable', 'precounter', 'code', 'deadline' );
-		$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, $_POST['page_nr'], "false", 0, $_POST['job_code'], $_POST['dl'] );
+		$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, 0, "false", 0, $_POST['job_code'], $_POST['dl'] );
 		$id = sql_add( 'publications', $names, $values );
-		
-		$names = array( 'pub_id', 'name', 'place', 'color' );
+
+		// Same 7-column shape every other parts-writing flow uses
+		// (pubsApply.php) - this form never collects trim size or
+		// grayscale, so those default the same way a freshly-created
+		// Adhoc job's parts do (blank size, grayscale off) rather than
+		// leaving the columns NULL.
+		$names = array( 'pub_id', 'name', 'place', 'color', 'size', 'mag_id', 'grayscale' );
 		$counter = explode( ',', $_POST['counter'] );
 		for( $i = 0; $i < count( $counter ); $i++ ) {
-			$values = array( $id, $_POST['part'.$counter[$i].'_name'], $_POST['part'.$counter[$i].'_place'], $_POST['part'.$counter[$i].'_color'] );
+			$values = array( $id, $_POST['part'.$counter[$i].'_name'], $_POST['part'.$counter[$i].'_place'], $_POST['part'.$counter[$i].'_color'], "", $_POST['m_id'], "false" );
 			sql_add( 'parts', $names, $values );
 			}
-		
+		syncPublicationPages( $id );
+
 		$counter = get_counter('..');	
 		toSwitch( 'created' , 'publications|'.$id, 'C_Hotfolders/messages/message_'.$counter, 'eventComm' );
 		inc_counter('..');

@@ -52,17 +52,27 @@ if( $_GET["sub"] == "issueDefine" ) {
 	$output = $_POST['o_code'].'|'.$_POST['o_base'].'|'.$_POST['o_variable'].'|'.$_POST['o_padding'].'|'.$_POST['o_delimiter'].'|'.$_POST['o_var_del'].'|'.$_POST['o_aname'].'|'.$_POST['o_adelimiter'];
 	$p_id = $p_id[0][0];
 
+	// 'pages' below is a placeholder - publications.pages is derived from
+	// the Parts rows just below instead of trusted from page_nr directly,
+	// same as every other issue-creation flow (see syncPublicationPages()
+	// in engine/engine.php).
 	$names = array( 'publisher_id', 'magazine_id', 'internal', 'upload', 'output', 'pages', 'uploadable', 'precounter', 'code', 'deadline', 'specificName', 'created', 'enhance' );
-	$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, $_POST['page_nr'], "false", 0, $_POST['job_code'], $_POST['dl'], $_POST['customname'], time(), $_POST['enhance'] );
+	$values = array( $p_id, $_POST['m_id'], $internal, $upload, $output, 0, "false", 0, $_POST['job_code'], $_POST['dl'], $_POST['customname'], time(), $_POST['enhance'] );
 	$id = sql_add( 'publications', $names, $values );
 
-	$names = array( 'pub_id', 'name', 'place', 'color' );
+	// Same 7-column shape every other parts-writing flow uses
+	// (pubsApply.php) - this calendar-driven form never collects trim size
+	// or grayscale, so those default the same way a freshly-created Adhoc
+	// job's parts do (blank size, grayscale off) rather than leaving the
+	// columns NULL.
+	$names = array( 'pub_id', 'name', 'place', 'color', 'size', 'mag_id', 'grayscale' );
 	$counter = explode( ',', $_POST['counter'] );
 	for( $i = 0; $i < count( $counter ); $i++ ) {
-		$values = array( $id, $_POST['part'.$counter[$i].'_name'], $_POST['part'.$counter[$i].'_place'], $_POST['part'.$counter[$i].'_color'] );
+		$values = array( $id, $_POST['part'.$counter[$i].'_name'], $_POST['part'.$counter[$i].'_place'], $_POST['part'.$counter[$i].'_color'], "", $_POST['m_id'], "false" );
 		sql_add( 'parts', $names, $values );
 		}
-		
+	syncPublicationPages( $id );
+
 		$array["client"] = $publisher[0][0];
 		$array["jobCode"] = $magazine[0][0];
 		$array["issue"] = $job[0][10];
@@ -79,7 +89,7 @@ if( $_GET["sub"] == "issueDefine" ) {
 		"issue" => $job[0][10],
 		);
 
-	$mag = sql_get( 'magazines', 'id="'.$_POST['m_id'].'"', 'code, name' );
+	$mag = sql_get( 'magazines', 'id="'.$_POST['m_id'].'"', 'code, name, type' );
 	toSwitch( 'new_publication' , 'publications|'.$id, 'C_database/'.$mag[0][0].'_'.$_POST['job_code'], 'issueData' );
 
 	$pubs = sql_get( 'publications', 'magazine_id="'.$_POST['m_id'].'" ORDER BY `id` ASC', '*' );
@@ -99,8 +109,8 @@ if( $_GET["sub"] == "issueDefine" ) {
 		}
 	
 	$error = SwitchSend( $array );
-		
-	$mails = explode( ";", $xml->Item[$x]->Mails );
+
+	$mails = gatedMailRecipients( $_POST['m_id'], $mag[0][2], (string) $xml->Item[$x]->Mails );
 	for( $i = 0; $i < count( $mails ); $i++ ) {
 		if( !empty( $mails[$i] ) ) {
 			$subject = $mag[0][0]."_".$_POST['job_code']." létrehozva a Trackeren";
@@ -192,32 +202,14 @@ if( $_GET["sub"] == "modify" ) {
 	$check = issueChecker( $c[0]["magCode"], $c[0]["code"], "pubs" );
 
 	if( !empty( $check[0]["id"] ) ) {
+		// publications.pages is deliberately left alone here - calendar's
+		// numofpages is that module's own display field (calendar_post,
+		// updated above), not a substitute for the Parts-derived value
+		// (see syncPublicationPages() in engine/engine.php).
 		$dl = $_POST['printorder']."T16:00";
-		sql_update( "publications", "deadline='".$dl."', pages='".$_POST['numofpages']."'", "id='".$check[0]["id"]."'" );
-		
-		if( ( $temp[0]["printDay"] != $_POST['printorder'] ) or ( $temp[0]["numofpages"] != $_POST['numofpages'] ) ) {		
-			$subject = "Változás a következő kiadványban: ".$c[0]["magCode"]."_".$c[0]["code"]."";
-			$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
-			$body = "
-Változás a következő kiadványban: ".$c[0]["magCode"]."_".$c[0]["code"]." <br>
-<br>";
-if( $temp[0]["printDay"] != $_POST['printorder'] ) {
-	$body .= "Módosított megjelenési dátum: ".$_POST['printorder']." (előtte: ".$temp[0]["printDay"].")<br>";
-	}
-
-if( $temp[0]["numofpages"] != $_POST['numofpages'] ) {
-	$body .= "Kiadvány új oldalszáma: ".$_POST['numofpages']." (előtte ".$temp[0]["numofpages"]." volt)<br>";
-	}
-	
-$body .= "<br>
-Üdvözlettel:<br>
-<br>
-Tracker<br>";
-
-			sendMail( $subject, $body, $to, "" );
-			}
+		sql_update( "publications", "deadline='".$dl."'", "id='".$check[0]["id"]."'" );
 		}
-	
+
 	$order = sql_aget( "calendar_post", "id='".$_POST['pid']."'", "*" );
 	$counter = sql_aget( "calendar_counters", "publisher_id='".$order[0]["publisher_id"]."'", "*" );
 	sql_update( "calendar_counters", "counter='".( intval( $counter[0]["counter"] ) + 1 )."'", "id='".$counter[0]["id"]."'" );

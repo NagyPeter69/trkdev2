@@ -1,4 +1,5 @@
 <?
+include_once( 'partsRow.php' );
 $magazine = sql_get( "magazines", "id='".$_GET['data']."'", "*" );
 $softproofpubs = array( "iPixel" );
 $publisher = sql_get( "publishers", "id='".$user[0][4]."'", "name" );
@@ -205,38 +206,21 @@ if( $magazine[0][10] == "Regular" ) {
 	<table cellspacing="0" cellpadding="0" id="pub_parts">
 		<?php
 		$types = PARTTYPES;
-		$posname = "Position";
-		if( $xml->Item[$x]->PageNumbering == "American" ) {
-			$posname = "Pages";
-			}
-					
-		if( $magazine[0][10] == "Adhoc" ) {					
+		$pageNumbering = (string) $xml->Item[$i]->PageNumbering;
+		$workflow = (string) $xml->Item[$i]->Workflow;
+		$pdfStandard = (string) $xml->Item[$i]->PDFstandard;
+
+		if( $magazine[0][10] == "Adhoc" ) {
 			$pub = sql_aget( "publications", "magazine_id='".$magazine[0][0]."' AND code='".$magazine[0][3]."'", "*" );
 			$parts = sql_aget( "parts", "pub_id='".$pub[0]["id"]."' order by id ASC", "*" );
 			}
-						
+
 		if( $magazine[0][10] == "Regular" ) {
 			$parts = sql_aget( "parts", "pub_id='0' AND mag_id='".$magazine[0][0]."' order by id ASC", "*" );
 			}
-						
-		for( $i = 0; $i < count( $parts ); $i++ ) {
-			$type = substr( $parts[$i]["name"], 0, 3 );
-			$size = explode("x", $parts[$i]["size"] );
-			echo '<tr><td style="white-space: nowrap;">';
-				echo '<span style="display: inline-block; width: 105px; min-width: 105px;"><select name="type[]">';
-					for( $y = 0; $y < count( $types ); $y++ ) {
-						$temp = array_search( $types[$y], PARTS );
-						echo '<option '.( $type == $types[$y] ? "selected" : "" ).' value="'.$types[$y].'">'.$temp.'</option>';
-						}
-					echo '</select></span>';
-					echo '<span style="padding-left: 5px;">'.$posname.': <input type="text" class="pos_'.$i.'" name="position[]" value="'.$parts[$i]["place"].'" style="width: 100px;"></span>';
-					echo '<span class="trimsize" style="padding-left: 10px;">Trimmed size: <input type="text" class="trim_x_'.$i.'" name="trim_x[]" value="'.$size[0].'" style="width: 25px;"> x <input type="text" class="trim_y_'.$i.'" name="trim_y[]" value="'.$size[1].'" style="width: 25px;"> mm</span>';
-					echo '<span style="padding-left: 10px;">Color standard: <select name="color[]">'
-						.colorStandardOptions( $parts[$i]["color"] ).
-						'<option '.( $parts[$i]["color"] == "RGB" ? "selected" : "" ).' value="RGB">RGB</option></select></span>';
-					echo grayscaleCheckbox( $parts[$i]["grayscale"] == "true" );
-					echo '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span>';
-					echo "</td></tr>";
+
+		for( $p = 0; $p < count( $parts ); $p++ ) {
+			echo partsRowHtml( $parts[$p], $pageNumbering, $workflow, $pdfStandard );
 			}
 		?>
 	</table>
@@ -284,6 +268,19 @@ function addEmail() {
 	}
 
 function setParts() {
+	// jobsettings.php already owns the name setParts() for the workflow-
+	// category toggle below, unlike the other Parts dialogs (whose
+	// same-named function only hides the American-only Selfcover option) -
+	// so that rule is folded in here directly instead of via
+	// partsSelfcoverJs(), rather than risk one setParts() silently
+	// overwriting the other.
+	if( $("#PageNumbering").val() == "American" ) {
+		$("select option[value='Selfcover']").hide();
+		}
+	else {
+		$("select option[value='Selfcover']").show();
+		}
+
 	var temp = $("#Workflow option:selected").val();
 	if( jQuery.inArray( temp, miniParts ) !== -1 ) {
 		type2 = "mini";
@@ -298,13 +295,16 @@ function setParts() {
 	if( type2 != type ) {
 		saveParts = true;
 		$("#pub_parts").show(0);
-		
+
+		// Trim-size visibility for each row is now decided server-side per
+		// row (partsRowHtml()/partsRowJs() in partsRow.php - real hidden
+		// inputs for Resize/Auto, not a CSS class toggle), so there's no
+		// more live .trimsize element to show/hide here when Workflow
+		// changes without a reload - only the panel width still needs it.
 		if( temp != "Full" && temp != "Hybrid" ) {
-			$(".trimsize").hide(0);
 			$(".panelControl").css("width", "610px");
 			}
 		else {
-			$(".trimsize").show(0);
 			$(".panelControl").css("width", "800px");
 			}
 		}
@@ -322,11 +322,11 @@ setParts();
 
 function newLine() {
 	var have = new Array();
-	$("select[name='parttype[]']").each(function(){
+	$("select[name='type[]']").each(function(){
 		have.push( $(this).val() );
 		});
-	
-	var text = '<tr><td style="white-space: nowrap;"><span><select name="parttype[]">';
+
+	var text = '<tr><td style="white-space: nowrap;"><span><select name="type[]">';
 	<?php
 		for( $i = 0; $i < count( $types ); $i++ ) {
 			$temp = array_search( $types[$i], PARTS );
@@ -336,14 +336,10 @@ function newLine() {
 					}
 				';
 			}
+		echo partsRowJs( $pageNumbering, $workflow, $pdfStandard );
 	?>
-	text += '</select></span>';
-	text += '<span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span>';
-	text += '<span class="trimsize" style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span>';
-	text += '<span style="padding-left: 10px;">Color standard: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option value="RGB">RGB</option></select></span>';
-	text += '<?= grayscaleCheckbox() ?>';
-	text += '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
 	$("#partContent").append(text);
+	<?= partsTrimPrefillJs() ?>
 	setParts();
 	}
 

@@ -45,14 +45,18 @@
 	function addingNumber( $szamok ) {
 		$szamok = str_split( $szamok );
 		$osszeg = 0;
-		
+
 		foreach( $szamok as $szam ) {
 			$osszeg += intval( $szam );
 			}
-		
+
 		return $osszeg;
 		}
-		
+
+	// getPartsMaxPage() now lives in engine/engine.php (shared with
+	// ajax.php and manageFP.php, which also need it to keep
+	// publications.pages in sync - see syncPublicationPages() there).
+
 	function calculateSize( $pageInfo, $magazine, $issue ) {
 		//error_log( "CALCSIZE DEBUG" );
 		$dir = sql_get( 'packages', 'id="'.$pageInfo[1].'"', 'name, directory, id' );
@@ -499,18 +503,18 @@
 			}
 		
 		if( $fPage[0][9] > 1 ) {
-			if( $page > $issue[0][6] ) {}
+			if( $page > $length ) {}
 			else {
 				$w2 = $fPage[0][9] * 84;
 				$w = $w2;
 				}
 			}
-		
+
 		$scale = "width: ".$w."px; height: ".$h."px;";
-		
+
 		$page_thumb = "cursor: pointer; background-repeat:no-repeat;";
 		if( is_file( "../packages/".$magazine[0][3]."/".$issue[0][10]."/".$file ) ) {
-			if( $page > $issue[0][6] ) {
+			if( $page > $length ) {
 				if( $w > $h ) {
 					$page_thumb .= " background-size:".$w."px; background-image: url(packages/".$magazine[0][3]."/".$issue[0][10]."/".$file."?".$imghash." ); background-position: center; ";
 					}
@@ -854,7 +858,7 @@
 		}
 
 	function drawAmericanPage( $id, $page, $class, $i, $pageType = 'normal' ) {
-		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $fpStages, $lang;
+		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $fpStages, $lang, $length;
 		
 		list( $w, $h ) = $sizes;
 
@@ -986,19 +990,19 @@
 			}
 		
 		if( $fPage[0][9] > 1 ) {
-			if( $page > $issue[0][6] ) {}
+			if( $page > $length ) {}
 			else {
 				$w2 = $fPage[0][9] * 84;
 				$w = $w2;
 				}
 			}
-		
+
 		$scale = "width: ".$w."px; height: ".$h."px;";
-		
+
 		$page_thumb = "cursor: pointer; background-repeat:no-repeat;";
 		//error_log("../packages/".$magazine[0][3]."/".$issue[0][10]."/".$file);
 		if( is_file( "../packages/".$magazine[0][3]."/".$issue[0][10]."/".$file ) ) {
-			if( $page > $issue[0][6] ) {
+			if( $page > $length ) {
 				if( $w > $h ) {
 					$page_thumb .= " background-size:".$w."px; background-image: url(packages/".$magazine[0][3]."/".$issue[0][10]."/".$file."?".$imghash." ); background-position: center; ";
 					}
@@ -1516,8 +1520,8 @@
 				$currentArticle = "";
 				$colors = sql_aget( 'article_colors', '1', '*' );
 				$articleCounter = 1;
-				
-				$length = intval( $issue[0][6] );
+
+				$length = getPartsMaxPage( $issue[0][0] );
 				$counter = 1;
 				$i = 0;
 				while( $i <= $length ) {
@@ -1537,17 +1541,19 @@
 				}
 				
 			elseif( $_GET['opt'] == '' or $_GET['opt'] == 'FIN' ) {
-				$length = intval( $issue[0][6] );
+				$length = getPartsMaxPage( $issue[0][0] );
 				if( $length == 0 ) {
 					// Adhoc jobs never get a fixed page count - by design their
-					// Parts are defined up front but the page count is meant to
-					// grow freely as pages are uploaded (unlike Regular jobs,
-					// where the page sequence per Part is fixed at creation and
-					// publications.pages is always set). Dropping the part=''
-					// restriction here matters because Adhoc jobs using
-					// American part numbering (e.g. BEL/BOR) never have an
-					// empty part on their pageinfo rows, so that condition
-					// excluded exactly the jobs this fallback exists for.
+					// Parts are defined up front but their place ranges are
+					// left open-ended and the page count is meant to grow
+					// freely as pages are uploaded (unlike Regular jobs, where
+					// every Part's place range is fixed at creation, so
+					// getPartsMaxPage() above resolves to a real number).
+					// Dropping the part='' restriction here matters because
+					// Adhoc jobs using American part numbering (e.g. BEL/BOR)
+					// never have an empty part on their pageinfo rows, so that
+					// condition excluded exactly the jobs this fallback exists
+					// for.
 					$moreQuery = "";
 					if( $_GET["opt"] == "FIN" ) {
 						$moreQuery .= " AND fin='1'";

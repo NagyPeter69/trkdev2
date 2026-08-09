@@ -62,6 +62,21 @@ function partDetect( $pubid, $page, $return = "color", $part = "" ) {
 
 	$xml = simplexml_load_file( $xml_path );
 
+	// Callers that don't already know the part name (render_page_worker.php,
+	// thumbcreate.php) used to fall straight through to the <place> range-
+	// match below - but American-numbered parts never populate <place> (see
+	// the comment on that branch), so those callers always fell through to
+	// the FOGRA_39 default regardless of the page's real part/color. The
+	// page's own pageinfo.part is already recorded at upload time
+	// independently of place/pages, so look it up here whenever the caller
+	// didn't supply $part directly.
+	if( $part == "" && $page > 0 ) {
+		$pageRow = sql_aget( "pageinfo", "code='".$mag[0]["code"]."' AND issue='".$pub[0]["code"]."' AND page='".$page."' ORDER BY `id` DESC LIMIT 1", "part" );
+		if( !empty( $pageRow[0]["part"] ) ) {
+			$part = $pageRow[0]["part"];
+			}
+		}
+
 	// Prefer matching by the DB part name directly when the caller
 	// knows it. Some issue XMLs export a <part><pages> element (a plain
 	// page COUNT) instead of the <place> page-RANGE the loop below
@@ -5223,9 +5238,71 @@ function sql_delete( $table, $where, $db = "" ) {
 		return $command;
 		}
 		
+// publications.pages used to be a free-text field typed independently of
+// the Parts panel's own page ranges (parts.place, e.g. "1-2, 3-18") -
+// nothing kept the two in sync, so it silently drifted from what the job's
+// Parts actually define (confirmed live on PRFU_2650: pages=16 while the
+// Inside part's range ran to 18, truncating the flatplan grid and
+// mis-styling the one page that slipped past the declared length anyway).
+// This derives the true extent from parts.place instead, and
+// syncPublicationPages() persists it back to publications.pages so
+// features that need a plain "how many pages" number (e.g. the Switch
+// handout command) still have one to read without recomputing it
+// themselves.
+function getPartsMaxPage( $pub_id ) {
+	$parts = sql_aget( 'parts', 'pub_id="'.$pub_id.'"', 'place' );
+	$max = 0;
+	foreach( $parts as $part ) {
+		foreach( explode( ',', $part['place'] ) as $range ) {
+			foreach( explode( '-', trim( $range ) ) as $bound ) {
+				$max = max( $max, intval( $bound ) );
+				}
+			}
+		}
+	return $max;
+	}
+
+function syncPublicationPages( $pub_id ) {
+	$pages = getPartsMaxPage( $pub_id );
+	sql_update( 'publications', 'pages="'.$pages.'"', 'id="'.$pub_id.'"' );
+	return $pages;
+	}
+
+// Shared rules for which Parts-editor fields apply to a given Part, so the
+// five separate render files (jobsettings/newIssue/color/modIssue/create)
+// stop re-deriving these independently - that's exactly how they drifted
+// (jobsettings.php only CSS-hid trim instead of really disabling it,
+// newIssue.php never hid the American-only Selfcover option, color.php was
+// the only one of the five that already dropped the position field for
+// American parts).
+//
+// European numbering has a real page sequence per Part; American doesn't -
+// each American Part's own page count is tracked live from delivered
+// pageinfo rows instead (see GetHighestPageNumber(), and
+// flatplan_ajax.php's zero-length fallback), so there's nothing for a
+// position/pages field to edit.
+function partsShowPosition( $pageNumbering ) {
+	return $pageNumbering != "American";
+	}
+
+// Only Full/Hybrid workflows deal in real PDFs with a real trim box; Resize
+// and Auto workflows use a fixed placeholder size, so there's nothing for a
+// trim size field to edit. HAVE_PARTS (engine/constans.php) already
+// documents exactly this workflow list - reuse it instead of yet another
+// hardcoded "!= Full && != Hybrid" copy.
+function partsShowTrim( $workflow ) {
+	return in_array( $workflow, HAVE_PARTS );
+	}
+
+// Shared by every "delete this publication" cleanup path (xml_handler.php
+// used to have three separate copies of this one DELETE).
+function deletePublicationParts( $pub_id ) {
+	sql_delete( 'parts', "pub_id='".$pub_id."'" );
+	}
+
 function sql_update( $table, $condition, $where, $db = "" ) {
 		global $con;
-		
+
 		$db = ( $db != "" ) ? $db : $con;
 		
 		$command = "UPDATE ".$table." SET ".$condition." WHERE ".$where."";

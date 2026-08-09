@@ -246,12 +246,10 @@
 		$magazine = sql_aget( "magazines", "id='".$publication["magazine_id"]."'", "code" );
 		$magazine = $magazine[0]["code"];
 		
-		$newPages = ( intval( $publication["pages"] ) - intval( $_POST["slotnumber"] ) );
-		if( $newPages < 0 ) $newPages == 0;
-		$log .= "Issue terjedelme: ".$publication["pages"].", módosítás után: ".$newPages;
-		sql_update( "publications", "pages='".$newPages."'", "id='".$publication["id"]."'" );
-		
-		//kiválasztott blokkok eltávolítása
+		// publications.pages gets recomputed from parts.place further down,
+		// after the PARTS ELLENŐRZÉS block below has shifted each part's
+		// own range - it's no longer set here by hand, since doing both in
+		// parallel is exactly how it drifted out of sync with parts before.
 		$log .= "\n";
 		switch(  $_POST['orient'] ) {
 			case 'after':
@@ -333,11 +331,15 @@
 			$log .= " módostás utáni oldalszámmódostás: ".$newPages;
 			sql_update( "parts", "place='".$newPages."'", "id='".$parts[$i]["id"]."'" );
 			}
+
+		$newPages = syncPublicationPages( $publication["id"] );
+		$log .= "\nIssue terjedelme: ".$publication["pages"].", módosítás után: ".$newPages;
+
 		// COMMENTEK ELLENŐRZÉSE, ELTOLÁSA
 		$log .= "\n";
 		if( $_POST["movecomment"] == "true" ) {
 			$log .= "\nCommentek eltolása";
-			
+
 			$command = "pub_id='".$publication['id']."' AND page".( $_POST['orient'] == "after" ? ">" : ">=" )."'".$_POST["target"]."'";
 			$comments = sql_aget( "comments", $command, "id, page" );
 			for( $y = 0; $y < count( $comments ); $y++ ) {
@@ -593,10 +595,12 @@
 		$magazine = sql_aget( "magazines", "id='".$publication["magazine_id"]."'", "code" );
 		$magazine = $magazine[0]["code"];
 		
-		$log .= "Issue terjedelme: ".$publication["pages"].", módosítás után: ".( intval( $publication["pages"] ) + intval( $_POST["slotnumber"] ) );
-		sql_update( "publications", "pages='".( intval( $publication["pages"] ) + intval( $_POST["slotnumber"] ) )."'", "id='".$publication["id"]."'" );
-		
-		// PARTS ELLENÖRZÉS, JAVÍTÁS
+		// publications.pages gets recomputed from parts.place further down,
+		// after the PARTS ELLENŐRZÉS block below has shifted each part's
+		// own range - it's no longer set here by hand, since doing both in
+		// parallel is exactly how it drifted out of sync with parts before.
+
+		// PARTS ELLENŐRZÉS, JAVÍTÁS
 		$log .= "\n";
 		$parts = sql_aget( "parts", "pub_id='".$publication['id']."'", "id, name, place" );
 		for( $i = 0; $i < count( $parts ); $i++ ) {
@@ -623,7 +627,10 @@
 			$log .= " módostás utáni oldalszámmódostás: ".$newPages;
 			sql_update( "parts", "place='".$newPages."'", "id='".$parts[$i]["id"]."'" );
 			}
-		
+
+		$newPages = syncPublicationPages( $publication["id"] );
+		$log .= "\nIssue terjedelme: ".$publication["pages"].", módosítás után: ".$newPages;
+
 		// COMMENTEK ELLENŐRZÉSE, ELTOLÁSA
 		$log .= "\n";
 		if( $_POST["movecomment"] == "true" ) {

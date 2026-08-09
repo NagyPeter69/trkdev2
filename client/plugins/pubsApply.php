@@ -81,43 +81,34 @@
 			$mag = sql_get( 'magazines', 'id="'.$pub[0][2].'"', 'code, id' );
 			
 			$_POST['settings']['dl'] = str_replace( " ", "T", $_POST['settings']['dl'] );
-			sql_update( 'publications', "pages='".$_POST['page_nr']."', deadline='".$_POST['dl']."', enhance='".$_POST["enhance"]."', specificName='".$_POST["customname"]."'", 'id="'.$_POST['pub'].'"' );
+			// pages is deliberately left out of this update - it's derived
+			// from the Parts list right below instead of taken from the
+			// page_nr field, which is what let the two drift apart before
+			// (confirmed live on PRFU_2650: page_nr said 16 while the Parts
+			// positions summed to 20).
+			sql_update( 'publications', "deadline='".$_POST['dl']."', enhance='".$_POST["enhance"]."', specificName='".$_POST["customname"]."'", 'id="'.$_POST['pub'].'"' );
 
-			$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
-			sql_delete( "parts", "pub_id='".$pub[0][0]."'" );
-			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-				$values = array( $pub[0][0], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'], $_POST["grayscale"][$i] );
-				sql_add( "parts", $names, $values );
+			// Only touch parts if the form actually submitted any - Adhoc
+			// jobs never render a Parts table in Modify Issue at all (see
+			// modIssue.php's $showParts), so type[] is legitimately absent
+			// for them; deleting unconditionally used to wipe their Parts
+			// on every single save with nothing submitted to replace them.
+			if( !empty( $_POST["type"] ) ) {
+				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
+				sql_delete( "parts", "pub_id='".$pub[0][0]."'" );
+				for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+					$values = array( $pub[0][0], $_POST["type"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'], $_POST["grayscale"][$i] );
+					sql_add( "parts", $names, $values );
+					}
 				}
-		
+			$syncedPages = syncPublicationPages( $pub[0][0] );
+
 			toSwitch( 'new_publication' , 'publications|'.$pub[0][0], 'C_database/'.$mag[0][0].'_'.$pub[0][10].''.ISSUEPOSTFIX.'', 'issueData' );
-			
+
 			$check = issueChecker( $mag[0][0], $pub[0][10], "calendar" );
 			if( !empty( $check[0]["id"] ) ) {
 				$dl = explode( "T", $_POST['settings']['dl'] );
-				sql_update( "calendar_post", "printDay='".$dl[0]."', numofpages='".$_POST['settings']['page_nr']."'", "id='".$check[0]["id"]."'" );
-				
-				if( ( $p[0]["printDay"] != $_POST['printorder'] ) or ( $p[0]["numofpages"] != $_POST['settings']['page_nr'] ) ) {		
-					$subject = "Változás a következő kiadványban: ".$mag[0][0]."_".$pub[0][10]."";
-					$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
-					$body = "
-Változás a következő kiadványban: ".$mag[0][0]."_".$pub[0][10]." <br>
-<br>";
-if( $temp[0]["printDay"] != $_POST['printorder'] ) {
-	$body .= "Módosított megjelenési dátum: ".$dl[0]." (előtte: ".$pub[0][11].")<br>";
-	}
-
-if( $temp[0]["numofpages"] != $_POST['numofpages'] ) {
-	$body .= "Kiadvány új oldalszáma: ".$_POST['settings']['page_nr']." (előtte ".$pub[0][6]." volt)<br>";
-	}
-	
-$body .= "<br>
-Üdvözlettel:<br>
-<br>
-Tracker<br>";
-		
-					sendMail( $subject, $body, $to, "" );
-					}				
+				sql_update( "calendar_post", "printDay='".$dl[0]."', numofpages='".$syncedPages."'", "id='".$check[0]["id"]."'" );
 				}
 			
 			$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date' );
@@ -300,6 +291,7 @@ Tracker<br>";
 						$insideHeight = $_POST["trim_y"][$i];
 						}
 					}
+				syncPublicationPages( $id );
 
 				$link = "https://".URL."/index.php?hash=".$hash;
 				$subject = $_POST["Name"]." létrehozva a Colorcom Trackeren";
@@ -479,7 +471,7 @@ Tracker<br>";
 		
 		if( $_POST["pn"] == "European" ) {
 			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-				$pos = explode( ",", $_POST["position"][$i] );
+				$pos = explode( ",", $_POST["position"][$i] ?? "" );
 				for( $p = 0; $p < count( $pos ); $p++ ) {
 					$pages = explode( "-", $pos[$p] );
 					if( count($pages) != 2 ) {
@@ -526,32 +518,36 @@ Tracker<br>";
 			$wf = collectFromXml( TRKPATH.'/xml/'.PMD.'.xml', $_POST["code"], 'Workflow' );
 			$workflow = (string) $wf['Workflow'];
 
-			if( $mag[0]["type"] == "Adhoc" ) {
+			if( $mag[0]["type"] == "Adhoc" && !empty( $_POST["type"] ) ) {
 				$pub = sql_aget( "publications", "magazine_id='".$_POST["magazine"]."' AND code='".$_POST["code"]."'", "*" );
 				sql_delete( "parts", "pub_id='".$pub[0]["id"]."'" );
 				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 
-				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-					$values = array( $pub[0]["id"], $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
+				for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+					$values = array( $pub[0]["id"], $_POST["type"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
 					if( $_POST["type"][$i] == "BEL" ) {
 						syncInsidePartAdSize( $mag[0]["id"], $_POST["code"], $workflow, $_POST["trim_x"][$i], $_POST["trim_y"][$i] );
 						}
 					}
 
-				sql_update( "publications", "pages='".$_POST["numOfPages"]."'", "id='".$pub[0]["id"]."'" );
+				// publications.pages is derived from the Parts rows just
+				// written (syncPublicationPages()), not the standalone
+				// "issueLength" field this dialog used to write directly -
+				// that field is display-only now (see color.php).
+				syncPublicationPages( $pub[0]["id"] );
 
 				if( $pub[0]["publisher_id"] == "0" ) {
 					toSwitch( 'new_publication' , 'publications|'.$pub[0]["id"], 'C_database/'.$_POST["code"].''.ISSUEPOSTFIX.'', 'issueData' );
 					}
 				}
 
-			if( $mag[0]["type"] == "Regular" ) {
+			if( $mag[0]["type"] == "Regular" && !empty( $_POST["type"] ) ) {
 				sql_delete( "parts", "pub_id='0' AND mag_id='".$mag[0]["id"]."'" );
 
 				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
-				for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-					$values = array( "0", $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
+				for( $i = 0; $i < count( $_POST["type"] ); $i++ ) {
+					$values = array( "0", $_POST["type"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST["magazine"], $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
 					if( $_POST["type"][$i] == "BEL" ) {
 						syncInsidePartAdSize( $mag[0]["id"], $_POST["code"], $workflow, $_POST["trim_x"][$i], $_POST["trim_y"][$i] );
@@ -609,29 +605,10 @@ Tracker<br>";
 				}
 			}
 			
-		if( $_POST["pn"] == "American" && in_array( $_POST["Workflow"], HAVE_PARTS) ) {
-			for( $i = 0; $i < count( $parts["type"] ); $i++ ) {
-				$pos = explode( ",", $parts["position"][$i] );
-				for( $p = 0; $p < count( $pos ); $p++ ) {
-					$pages = explode( "-", $pos[$p] );
-					if( count($pages) != 1 ) {
-						$error[] = "position_".$i;
-						break;
-						}
+		// American Parts no longer carry a position/pages value at all (rule
+		// B - colorStandard only, page count is tracked live instead), so
+		// there's nothing left to format-validate here.
 
-					if( !preg_match("/^[0-9]+$/", $pos[$p] ) ) {
-						$error[] = "position_".$i;
-						}
-					else{
-						if ( $pos[$p] > 0 && $pos[$p] <= 9999 ) {}
-						else {
-							$error[] = "position_".$i;
-							}
-						}
-					}
-				}			
-			}
-				
 		if( count( $error ) == 0 ) {
 			$_POST['Mails'] = explode( "\r\n", $_POST['Mails'] );
 			$_POST['Mails'] = trim( implode( ";", $_POST['Mails'] ) );	
@@ -673,10 +650,12 @@ Tracker<br>";
 								$error[] = "trim_y_".$p;
 								}
 							}
-							
-						if( empty( $parts["position"][$p] ) ) {
+
+						// American Parts don't submit a position field at all
+						// (rule B), so there's nothing to require here for them.
+						if( $_POST["pn"] != "American" && empty( $parts["position"][$p] ) ) {
 							$error[] = "pos_".$p;
-							}							
+							}
 						}
 						
 					if( empty( $error ) ) {
@@ -685,30 +664,33 @@ Tracker<br>";
 						if( $mag[0]["type"] == "Adhoc" ) {
 							error_log( "magazine_id='".$mag[0]["id"]."' AND code='".$magazine."'" );
 							$pub2 = sql_aget( "publications", "magazine_id='".$mag[0]["id"]."' AND code='".$magazine."'", "*" );
-							sql_delete( "parts", "pub_id='".$pub2[0]["id"]."'" );
-							$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
+							if( !empty( $parts["type"] ) ) {
+								sql_delete( "parts", "pub_id='".$pub2[0]["id"]."'" );
+								$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 
-							for( $p = 0; $p < count( $parts["type"] ); $p++ ) {
-								$values = array( $pub2[0]["id"], $parts["type"][$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
-								sql_add( "parts", $names, $values );
+								for( $p = 0; $p < count( $parts["type"] ); $p++ ) {
+									$values = array( $pub2[0]["id"], $parts["type"][$p], $parts["position"][$p] ?? "", $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
+									sql_add( "parts", $names, $values );
+									}
+								syncPublicationPages( $pub2[0]["id"] );
 								}
-														
+
 							if( $pub2[0]["publisher_id"] == "0" ) {
 								toSwitch( 'new_publication' , 'publications|'.$pub2[0]["id"], 'C_database/'.$_POST["code"].''.ISSUEPOSTFIX.'', 'issueData' );
 								}
 							}
-						
-						if( $mag[0]["type"] == "Regular" ) {
+
+						if( $mag[0]["type"] == "Regular" && !empty( $parts["type"] ) ) {
 							sql_delete( "parts", "pub_id='0' AND mag_id='".$mag[0]["id"]."'" );
 
 							$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 							for( $p = 0; $p < count( $parts["type"] ); $p++ ) {
-								$values = array( "0", $parts["type"][$p], $parts["position"][$p], $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
+								$values = array( "0", $parts["type"][$p], $parts["position"][$p] ?? "", $parts["color"][$p], $parts["trim_x"][$p]."x".$parts["trim_y"][$p], $mag[0]["id"], $parts["grayscale"][$p] );
 								sql_add( "parts", $names, $values );
 								}
-							
+
 							//toSwitch( 'new_publication' , 'publications|'.$pub2[0]["id"], 'C_database/'.$_POST["code"].''.ISSUEPOSTFIX.'', 'issueData' );
-							}						
+							}
 						}
 					}
 				
@@ -882,10 +864,17 @@ Tracker<br>";
 			$p_id = sql_get( "magazines", "id='".$_POST['magazine']."'", "publisher_id" );
 			$p_id = $p_id[0][0];
 			
+			// 'pages' below is a placeholder, not the form's page_nr field -
+			// like modIssue's Parts editor, this form lets page_nr and each
+			// Part's own position range be edited/submitted independently,
+			// so publications.pages is derived from the Parts rows via
+			// syncPublicationPages() right after they land, instead of
+			// trusted from page_nr directly (confirmed live on PRFU_2650:
+			// page_nr said 16 while the Parts positions summed to 20).
 			$names = array( "publisher_id", "magazine_id", "pages", "uploadable", "code", "deadline", "enhance", "specificName" );
-			$values = array( $p_id, $_POST['magazine'], $_POST['page_nr'], "false", $_POST['job_code'], $_POST['dl'], $_POST["enhance"], $_POST["customname"] );
-			$id = sql_add( "publications", $names, $values );			
-			
+			$values = array( $p_id, $_POST['magazine'], 0, "false", $_POST['job_code'], $_POST['dl'], $_POST["enhance"], $_POST["customname"] );
+			$id = sql_add( "publications", $names, $values );
+
 			$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
 			$wf = collectFromXml( TRKPATH.'/xml/'.PMD.'.xml', $_POST['mcode'], 'Workflow' );
 			$workflow = (string) $wf['Workflow'];
@@ -894,14 +883,15 @@ Tracker<br>";
 			// (via jobsettings.php) submits no type[] rows at all, not an
 			// empty array - count(null) is a PHP 8 TypeError.
 			for( $i = 0; $i < count( $_POST["type"] ?? array() ); $i++ ) {
-				$values = array( $id, $_POST["type"][$i], $_POST["position"][$i], $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'], $_POST["grayscale"][$i] );
+				$values = array( $id, $_POST["type"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $_POST['magazine'], $_POST["grayscale"][$i] );
 				sql_add( "parts", $names, $values );
 				if( $_POST["type"][$i] == "BEL" ) {
 					syncInsidePartAdSize( $_POST['magazine'], $_POST['mcode'], $workflow, $_POST["trim_x"][$i], $_POST["trim_y"][$i] );
 					}
 				}
+			syncPublicationPages( $id );
 
-			$mag = sql_get( 'magazines', 'id="'.$_POST['magazine'].'"', 'code, name' );
+			$mag = sql_get( 'magazines', 'id="'.$_POST['magazine'].'"', 'code, name, type' );
 			toSwitch( 'new_publication' , 'publications|'.$id, 'C_database/'.$mag[0][0].'_'.$_POST['job_code'].''.ISSUEPOSTFIX.'', 'issueData' );
 
 			$allowedMags = explode( ",", $user[0][21] );
@@ -949,7 +939,7 @@ Tracker<br>";
 					}
 				}
 							
-			$mails = explode( ";", $xml->Item[$x]->Mails );
+			$mails = gatedMailRecipients( $_POST['magazine'], $mag[0][2], (string) $xml->Item[$x]->Mails );
 			error_log( "New issue levelkuldes. Cimzettek: ".$xml->Item[$x]->Mails );
 			for( $i = 0; $i < count( $mails ); $i++ ) {
 				if( !empty( $mails[$i] ) ) {

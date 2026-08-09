@@ -1,4 +1,5 @@
 <?
+include_once( 'partsRow.php' );
 $magazine = sql_get( "magazines", "id='".$_GET['data']."'", "*" );
 $softproofpubs = array( "iPixel" );
 $publisher = sql_get( "publishers", "id='".$user[0][4]."'", "name" );
@@ -161,13 +162,19 @@ function removeRow( o ) {
 
 function setParts() {
 	var temp = $("#Workflow option:selected").val();
-	
+
+	// Resize/Auto don't need real trim data (rule C/D) - disabling the
+	// inputs (not just CSS-hiding them) is what actually keeps their stale/
+	// blank values out of the submitted form, on top of hiding them.
+	// Full/Hybrid re-enables so a value can be submitted again.
 	if( temp != "Full" && temp != "Hybrid" ) {
 		$(".trimsize").hide(0);
+		$(".trimsize input").prop( "disabled", true );
 		$(".panelControl").css("width", "600px");
 		}
 	else {
 		$(".trimsize").show(0);
+		$(".trimsize input").prop( "disabled", false );
 		$(".panelControl").css("width", "790px");
 		}
 	checkParts();
@@ -196,7 +203,10 @@ function newLine() {
 	// Adhoc jobs defer their page count/range to the later editing flow
 	// (jobsettings.php) - Regular jobs still define it per Part right here,
 	// same as before this field was (over-broadly) dropped for both types.
-	if( $("#Type").val() != "Adhoc" ) {
+	// American numbering never gets a position/pages field at all (rule
+	// A/B - American Parts track their own page count live instead), same
+	// as every other Parts dialog.
+	if( $("#Type").val() != "Adhoc" && $("#PageNumbering").val() != "American" ) {
 		text += '<span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span>';
 		}
 	text += '<span class="trimsize" style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span>';
@@ -204,6 +214,7 @@ function newLine() {
 	text += '<?= grayscaleCheckbox() ?>';
 	text += '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
 	$("#partContent").append(text);
+	<?= partsTrimPrefillJs() ?>
 	setParts();
 	}
 

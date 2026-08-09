@@ -1,4 +1,5 @@
 <?
+include_once( 'partsRow.php' );
 $magazine = sql_get( "magazines", "id='".$_GET['data']."'", "*" );
 
 $newxml = simplexml_load_file( '../xml/'.PMD.'.xml' );
@@ -104,45 +105,21 @@ else {
 			</tr>
 			<?php
 			$types = PARTTYPES;
-			$posname = "Position";
-			if( $newxml->Item[$x]->PageNumbering == "American" ) {
-				$posname = "Pages";
-				}
-			
+			$pageNumbering = (string) $newxml->Item[$x]->PageNumbering;
+			$workflow = (string) $newxml->Item[$x]->Workflow;
+			$pdfStandard = (string) $newxml->Item[$x]->PDFstandard;
+
 			if( $magazine[0][10] == "Adhoc" ) {
 				$pub = sql_aget( "publications", "magazine_id='".$_GET['data']."' AND code='".$magazine[0][3]."'", "*" );
 				$parts = sql_aget( "parts", "pub_id='".$pub[0]["id"]."' order by id ASC", "*" );
 				}
-			
+
 			if( $magazine[0][10] == "Regular" ) {
 				$parts = sql_aget( "parts", "pub_id='0' AND mag_id='".$magazine[0][0]."' order by id ASC", "*" );
 				}
-			
-			for( $i = 0; $i < count( $parts ); $i++ ) {
-				$type = $parts[$i]["name"];
-				$size = explode("x", $parts[$i]["size"] );
-				echo '<tr><td style="white-space: nowrap;">';
-					echo '<span><select name="type[]">';
-						for( $y = 0; $y < count( $types ); $y++ ) {
-							$temp = array_search( $types[$y], PARTS );
-							echo '<option '.( $type == $types[$y] ? "selected" : "" ).' value="'.$types[$y].'">'.$lang["parts"][$temp].'</option>';
-							}
-					echo '</select></span>';
-					echo '<span style="padding-left: 5px;">'.$posname.': <input type="text" onkeydown="numberCheck3(event)" name="position[]" value="'.$parts[$i]["place"].'" style="width: 100px;"></span>';
 
-					if( $newxml->Item[$x]->Workflow != "Full" and $newxml->Item[$x]->Workflow != "Hybrid" ) {
-						echo '<span><input type="hidden" name="trim_x[]" value="'.$size[0].'" style="width: 25px;"><input type="hidden" name="trim_y[]" value="'.$size[1].'" style="width: 25px;"></span>';
-						}
-					else {
-						echo '<span style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" value="'.$size[0].'" style="width: 25px;">x<input type="text" name="trim_y[]" value="'.$size[1].'" style="width: 25px;">mm</span>';
-						}
-					
-					echo '<span style="padding-left: 10px; '.( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ).'">Color standard: <select name="color[]">'
-					.colorStandardOptions( $parts[$i]["color"] ).
-					'<option '.( $parts[$i]["color"] == "RGB" ? "selected" : "" ).' value="RGB">RGB</option></select></span>';
-					echo grayscaleCheckbox( $parts[$i]["grayscale"] == "true" );
-					echo '<span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span>';
-				echo "</td></tr>";
+			for( $i = 0; $i < count( $parts ); $i++ ) {
+				echo partsRowHtml( $parts[$i], $pageNumbering, $workflow, $pdfStandard );
 				}
 			?>
 		</tbody>
@@ -171,7 +148,7 @@ else {
 </form>
 
 <script>
-var posname = "<?= $posname ?>";
+<?= partsSelfcoverJs( '"'.$pageNumbering.'"' ) ?>
 
 function removeRow( o ) {
 	var obj = $(o).parent().parent().parent();
@@ -183,40 +160,23 @@ function newLine() {
 	$("select[name='type[]']").each(function(){
 		have.push( $(this).val() );
 		});
-		
-	<?php if( $newxml->Item[$x]->Workflow != "Full" and $newxml->Item[$x]->Workflow != "Hybrid" ) { ?>
-		var text = '<tr><td style="white-space: nowrap;"><span><select name="type[]">';
-		
-		<?php
-		for( $i = 0; $i < count( $types ); $i++ ) {
-			$temp = array_search( $types[$i], PARTS );
-			echo '
-				if( jQuery.inArray( "'.$types[$i].'", have ) == -1 ) {
-					text += \'<option value="'.$types[$i].'">'.$lang["parts"][$temp].'</option>\';
-					}
-				';
-			}
-		?>
-		<?php if( $newxml->Item[$x]->PageNumbering == "European" ) { ?>
-		text += '</select></span><span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span><span><input type="hidden" name="trim_x[]" value="210" style="width: 35px;"><input type="hidden" name="trim_y[]" value="297"></span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ) ?>"><?= $lang["parts"]["Color"] ?>: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option></select></span><?= grayscaleCheckbox() ?><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
-		<?php } else { ?>
-		text += '</select></span><span><input type="hidden" name="trim_x[]" value="210" style="width: 35px;"><input type="hidden" name="trim_y[]" value="297"></span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display: none;" : "" ) ?>"><?= $lang["parts"]["Color"] ?>: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option></select></span><?= grayscaleCheckbox() ?><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';		
-		<?php } ?>
-	<?php } else { ?>
-		var text = '<tr><td style="white-space: nowrap;"><span><select name="type[]">';
-		<?php
-		for( $i = 0; $i < count( $types ); $i++ ) {
-			$temp = array_search( $types[$i], PARTS );
-			echo '
-				if( jQuery.inArray( "'.$types[$i].'", have ) == -1 ) {
-					text += \'<option  value="'.$types[$i].'">'.$lang["parts"][$temp].'</option>\';
-					}
-				';
-			}
-		?>
-		text += '</select></span><span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span><span style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span><span style="padding-left: 10px; <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "display:none;" : "" ) ?>">Color standard: <select name="color[]"><?= colorStandardOptions( "FOGRA_39" ) ?><option <?= ( $newxml->Item[$x]->PDFstandard == "Web" ? "selected" : "" ) ?> value="RGB">RGB</option></select></span><?= grayscaleCheckbox() ?><span style="padding-left: 5px;"><img onclick="removeRow( $(this) )" src="images/trash.png" style="cursor: pointer; height: 14px;"></span></td></tr>';
-	<? } ?>
+
+	var text = '<tr><td style="white-space: nowrap;"><span><select name="type[]">';
+
+	<?php
+	for( $i = 0; $i < count( $types ); $i++ ) {
+		$temp = array_search( $types[$i], PARTS );
+		echo '
+			if( jQuery.inArray( "'.$types[$i].'", have ) == -1 ) {
+				text += \'<option value="'.$types[$i].'">'.$lang["parts"][$temp].'</option>\';
+				}
+			';
+		}
+	echo partsRowJs( $pageNumbering, $workflow, $pdfStandard );
+	?>
 	$("#partContent").append(text);
+	<?= partsTrimPrefillJs() ?>
+	setParts();
 	}
 
 </script>
