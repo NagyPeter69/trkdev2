@@ -498,26 +498,39 @@
 							"deleteIssue" => 'Are you sure you want to delete the selected Issue?',
 							"mail_guide" => '
 								<br>
-								Colorcom Tracker – Upload Guide<br>
+								Colorcom Tracker ::: Upload Guide<br>
 								<br>
 								Prerequisites:<br>
-								<ul><li>The publications (or parts of the publication) should be defined and handled as individual layout documents in Adobe InDesign. Each part (cover, content pages, board cover etc.) should be in a separate .indd file. Large parts can be divided into smaller sub-parts for efficiency,</li>
-								<li>Layout documents should have file names with visible differences (a difference of one letter or number is not really helpful),</li>
-								<li>Images used in the publication should be linked (and not embedded),</li>
-								<li>All images linked into the publication should have an individual, different name. Generic image file names like "1.jpg", "a.jpg" etc. will cause trouble as packages can have different images with the same name.</li></ul>
+								<ul><li>The publications (or parts of the publication) should be defined and handled as individual layout documents in Adobe InDesign. Each part (cover, content pages, board cover etc.) should be in a separate .indd file. Large parts can be divided into smaller sub-parts for efficiency.</li>
+								<li>Layout documents should have file names with sensible differences (a difference of one letter or number is not really practical).</li>
+								<li>Images used in the publication should be linked (and not embedded).</li>
+								<li>All images linked into the publication should have an individual, different name. Generic image file names like "1.jpg", "a.tif" etc. will cause trouble as packages can have different images with the same name.</li></ul>
 								<br>
 								Preparation:<br>
-								<ul><li>Collect all the assets needed for a layout document, using the Package command (File menu / Package...),</li>
+								<ul><li>Collect all the assets needed for a layout document, using the Package command (File menu / Package...).</li>
 								<li>Make a ZIP archive from each packages. Please don\'t put two or more package directories into one archive. One ZIP package should produce one folder when unarchived.</li></ul>
 								<br>
 								Uploading:<br>
-								<ul><li>Please upload the ZIP archives using the web portal page on the link above,</li>
-								<li>Make sure you select the appropriate part of the publication using the "Part" dropdown menu,</li>
-								<li>You\'ll receive a mail about the upload and the results of the preprocessing, soon,</li>
-								<li>A similar link and portal page will be created for the downloading of the ready-made material.</li></ul><br>								
+								<ul><li>Please upload the ZIP archives using the web portal page on the link above.</li>
+								<li>Make sure you select the appropriate part of the publication using the "Part" dropdown menu.</li>
+								<li>You\'ll receive a mail about the upload and the results of the preprocessing.</li>
+								<li>A similar link and portal page will be created for the downloading of the ready-made material.</li></ul><br>
 								',
+							"adhoc_mail_subject" => '%s created on Colorcom Tracker',
+							"adhoc_mail_known" => 'Dear %s,<br>
+							<br>
+							We\'ve created the %s job (code: %s) on the Colorcom Tracker. You\'ve received a separate, job-scoped access link for this job (this is not your existing Tracker login - your permissions on this link only apply to this job). Click the link below to upload the material awaiting processing directly into the Tracker.<br>
+							<br>
+							%s<br>',
+							"adhoc_mail_unknown" => 'Dear Customer,<br>
+							<br>
+							We\'ve created the %s job (code: %s) on the Colorcom Tracker. Click the link below to upload your material awaiting processing directly into the Tracker.<br>
+							<br>
+							%s<br>',
+							"adhoc_mail_closing" => 'Regards,<br>
+							Colorcom Media',
 							),
-								
+
 			"settings" => array(
 							"upload_params" => "Display Upload Parameters",
 							"1" => "Yes",

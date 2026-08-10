@@ -294,35 +294,29 @@
 				syncPublicationPages( $id );
 
 				$link = "https://".URL."/index.php?hash=".$hash;
-				$subject = $_POST["Name"]." létrehozva a Colorcom Trackeren";
+				$subject = sprintf( $lang["publications"]["adhoc_mail_subject"], $_POST["Name"] );
 				$to = $_POST["Mails"]."|".$_POST["Mails"];
 				if( $_POST["ClientType"] == "known" && !empty( $u[0]["full_name"] ) ) {
 					// This is a separate, job-scoped access link for the elevated
 					// role - not the recipient's existing Tracker login - so say
 					// so explicitly and greet them by name instead of the generic
 					// "Dear Customer" used for a genuinely new/unknown contact.
-					$body = "Kedves ".$u[0]["full_name"].",<br>
-					<br>
-					A Colorcom Tracker rendszerben létrehoztuk a ".$_POST["Name"]." munkát ".$_POST["Code"]." azonosítóval. Ehhez a munkához az alábbi, elkülönített hozzáférési linket kaptad (ez nem a meglévő Tracker fiókod, a jogosultságaid ezen a linken csak erre a munkára vonatkoznak). A linkre kattintva tudod feltölteni a feldolgozásra váró anyagot, közvetlenül a Tracker rendszerbe.<br>
-					<br>
-					<a href='".$link."'>".$link."</a><br>
+					// Subject/greeting/closing come from $lang (loaded per
+					// $_POST["Language"] at the top of this file), same as
+					// $guide, so the whole mail is in one language instead of
+					// mixing a hardcoded-Hungarian wrapper around it.
+					$body = sprintf( $lang["publications"]["adhoc_mail_known"], $u[0]["full_name"], $_POST["Name"], $_POST["Code"], "<a href='".$link."'>".$link."</a>" )."
 					<br>
 					".$guide."
 					<br>
-					Üdvözlettel:<br>
-					Colorcom Media";
+					".$lang["publications"]["adhoc_mail_closing"];
 					}
 				else {
-					$body = "Kedves Ügyfelünk!<br>
-					<br>
-					A Colorcom Tracker rendszerben létrehoztuk a ".$_POST["Name"]." munkát ".$_POST["Code"]." azonosítóval. Az alábbi linkre kattintva tudja feltölteni feldolgozásra váró anyagát, közvetlenül a Tracker rendszerbe.<br>
-					<br>
-					<a href='".$link."'>".$link."</a><br>
+					$body = sprintf( $lang["publications"]["adhoc_mail_unknown"], $_POST["Name"], $_POST["Code"], "<a href='".$link."'>".$link."</a>" )."
 					<br>
 					".$guide."
 					<br>
-					Üdvözlettel:<br>
-					Colorcom Media";
+					".$lang["publications"]["adhoc_mail_closing"];
 					}
 				produkcioSendmail( $subject, $body, $to );
 				

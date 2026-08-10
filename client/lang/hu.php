@@ -498,24 +498,37 @@
 							"deleteIssue" => 'Biztos, hogy törölni akarod a kiválasztott megjelenést?',
 							"mail_guide" => '
 								<br>
+								Colorcom Tracker ::: feltöltési útmutató<br>
 								<br>
-								Colorcom Tracker – feltöltési útmutató<br>
 								Alapvetések:<br>
-								<ul><li>A kiadványok (vagy kiadvány részek) egy-egy külön InDesign dokumentumként legyenek kezelve. Külön a borító, külön a belív (esetleg több részre bontva), külön a mellékletek, előzék stb.</li>
-								<li>A dokumentumoknak jól érzékelhetően különböző nevük legyen (ne egy karakterben különbözzenek)</li>
-								<li>A kiadványban használt képek linkelve legyenek (és ne beágyazva)</li>
-								<li>A kiadványban használt képeknek egyedi neve legyen. Ha például az egyik pakkban van egy játszó kisfiú "1.jpg" néven, egy másik pakkban pedig egy erdőt ábrázoló kép neve "1.jpg", ez biztosan gondot fog okozni a mi oldalunkon.</li></ul>
+								<ul><li>A kiadványok (vagy kiadvány részek) külön InDesign dokumentumként legyenek kezelve. Külön a borító, külön a belív (esetleg több részre bontva), külön a mellékletek, előzék stb.</li>
+								<li>A dokumentumoknak jól érzékelhetően különböző nevük legyen (ne egy karakterben különbözzenek).</li>
+								<li>A kiadványban használt képek linkelve legyenek (és ne beágyazva).</li>
+								<li>A kiadványban használt képeknek egyedi neve legyen. Ha például az egyik pakkban van egy kutya "1.jpg" néven, egy másik pakkban pedig egy macska "1.tif" névvel, ez biztosan gondot fog okozni a mi oldalunkon.</li></ul>
 								<br>
 								Előkészületek:<br>
-								<ul><li>A layout dokumentumok mindegyikéből készíts pakkot az InDesign alkalmazással (File menü, Package parancs),</li>
+								<ul><li>A layout dokumentumok mindegyikéből készíts pakkot az InDesign alkalmazással (File menü, Package parancs).</li>
 								<li>A pakkokat egyenként kell ZIP-be tömöríteni. (Egy ZIP kitömörítése csak egy pakkot szabad, hogy produkáljon.)</li></ul>
 								<br>
 								Feltöltés:<br>
-								<ul><li>A tömörített pakkokat töltsd fel a fenti linken megjelenő felületen,</li>
-								<li>Ügyelj a megfelelő kiadvány rész kiválasztására ("Rész" lehulló menü),</li>
-								<li>A feltöltésről és az előfeldolgozás eredményéről rövidesen értesítést kapsz,</li>
+								<ul><li>A tömörített pakkokat töltsd fel a fenti linken megjelenő felületen.</li>
+								<li>Ügyelj a megfelelő kiadvány rész kiválasztására ("Rész" lehulló menü).</li>
+								<li>A feltöltésről és az előfeldolgozás eredményéről rövidesen értesítést kapsz.</li>
 								<li>Hasonló link és felület keletkezik majd a kész anyagok letöltéséhez.</li></ul><br>
 								',
+							"adhoc_mail_subject" => '%s létrehozva a Colorcom Trackeren',
+							"adhoc_mail_known" => 'Kedves %s,<br>
+							<br>
+							A Colorcom Tracker rendszerben létrehoztuk a %s munkát %s azonosítóval. Ehhez a munkához az alábbi, elkülönített hozzáférési linket kaptad (ez nem a meglévő Tracker fiókod, a jogosultságaid ezen a linken csak erre a munkára vonatkoznak). A linkre kattintva tudod feltölteni a feldolgozásra váró anyagot, közvetlenül a Tracker rendszerbe.<br>
+							<br>
+							%s<br>',
+							"adhoc_mail_unknown" => 'Kedves Ügyfelünk!<br>
+							<br>
+							A Colorcom Tracker rendszerben létrehoztuk a %s munkát %s azonosítóval. Az alábbi linkre kattintva tudja feltölteni feldolgozásra váró anyagát, közvetlenül a Tracker rendszerbe.<br>
+							<br>
+							%s<br>',
+							"adhoc_mail_closing" => 'Üdvözlettel:<br>
+							Colorcom Media',
 							),
 								
 			"settings" => array(
