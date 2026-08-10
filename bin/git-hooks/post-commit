@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Keeps engine/build_info.php (APP_VERSION/APP_BUILD/APP_BUILD_DATE) in sync
-# with VERSION + git HEAD after every commit. Installed via
-# bin/install-git-hooks.sh - see that file for how these hooks get wired up.
+# Bumps VERSION per the commit that was just made, then keeps
+# engine/build_info.php (APP_VERSION/APP_BUILD/APP_BUILD_DATE) in sync with
+# it. Installed via bin/install-git-hooks.sh - see that file for how these
+# hooks get wired up. See VERSIONING.md for the bump policy.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+bin/bump-version.sh
 bin/update-build-info.sh

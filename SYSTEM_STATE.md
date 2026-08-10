@@ -177,13 +177,15 @@ the current git HEAD hash/date. It was found stale 2026-08-09 (`VERSION` had bee
 `3.0.0` but the generated file still said `1.0.0` from a month-old commit) because nothing
 re-ran the generator after the bump.
 
-Fixed by wiring `bin/update-build-info.sh` into git hooks (`bin/git-hooks/post-commit`,
-`post-merge`, `post-checkout` — all three just call the one script, no duplicated logic) so
-the display self-updates after every commit, pull/merge, and branch switch, with no manual
-step. **This is a `core.hooksPath` local git config, not something that travels with a
-clone** — run `bin/install-git-hooks.sh` once on any fresh clone (including the eventual
+Fixed by wiring `bin/update-build-info.sh` into git hooks (`bin/git-hooks/post-merge`,
+`post-checkout` call it directly; `post-commit` calls `bin/bump-version.sh` first, then it)
+so the display self-updates after every commit, pull/merge, and branch switch, with no
+manual step. **This is a `core.hooksPath` local git config, not something that travels with
+a clone** — run `bin/install-git-hooks.sh` once on any fresh clone (including the eventual
 production box, post-cutover) to activate it there too; already active on trkdev2 as of
-2026-08-09. Production deploys aren't affected by any of this either way —
+2026-08-09. See [VERSIONING.md](VERSIONING.md) for what `bin/bump-version.sh` does and the
+MAJOR/MINOR/PATCH policy behind it (added 2026-08-10). Production deploys aren't affected by
+any of this either way —
 `bin/deploy-to-prod.sh` already regenerates `build_info.php` itself from the target ref as
 part of every deploy, independent of these hooks.
 
