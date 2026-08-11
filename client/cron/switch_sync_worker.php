@@ -10,7 +10,44 @@ include_once( '../engine/switchAPI.php' );
 
 // Retries jobs that a user-facing request couldn't deliver to Switch
 // synchronously (see SendPmdXmlToSwitch / XMLUpload2 in xml_handler.php).
-// Runs from cron every minute, same as the other client/cron/*.php jobs.
+// Runs from cron every minute, same as the other client/cron/*.php jobs -
+// and also gets kicked directly by download_ajax.php's bulk approve
+// handler right after it queues jobs, so a delivery doesn't have to wait
+// out the next cron tick.
+//
+// Because of that second trigger, two instances of this script can now
+// legitimately start within moments of each other (the kick landing in
+// the same second as a scheduled cron tick isn't rare - a bulk approve
+// just has to finish queuing near a minute boundary). Nothing below
+// claims a row before working on it (SELECT then, later, UPDATE), so two
+// concurrent instances would both select the same pending rows and both
+// call SwitchSend_Rename() for the same file at the same time. Confirmed
+// live 2026-08-11: a 79-page bulk approve's kick coincided with the
+// standing cron tick, both instances raced to upload the same page, and
+// whichever of the two uploads lost the race (hit SwitchSend_Rename()'s
+// curl timeout mid-transfer) left a truncated file that Switch had
+// already picked up before the winning upload's clean copy replaced it -
+// the page came out corrupt in Switch even though our own retry
+// bookkeeping showed a clean eventual success. A single flock below
+// makes any second instance exit immediately instead of racing.
+// The cron trigger and the download_ajax.php kick run as different OS
+// users (this script's crontab entry is root's; the kick runs inside
+// php-fpm as www-data), so whichever of them creates this lock file
+// first would otherwise own it at the default 644 and lock the other
+// user out permanently (open-for-write would just fail for them every
+// time, silently defeating the lock for one side). Force it world-
+// writable right after creating/opening it so both users can always
+// acquire it.
+$lockPath = __DIR__.'/switch_sync_worker.lock';
+if( !is_file( $lockPath ) ) {
+	touch( $lockPath );
+	chmod( $lockPath, 0666 );
+	}
+$lockHandle = fopen( $lockPath, 'c' );
+if( !$lockHandle || !flock( $lockHandle, LOCK_EX | LOCK_NB ) ) {
+	exit;
+	}
+
 // Backoff: 1m, 5m, 15m, 1h, then hourly, giving up (status=failed) after
 // MAX_ATTEMPTS so a permanently-broken job doesn't retry forever.
 
@@ -46,11 +83,18 @@ for( $i = 0; $i < count( $jobs ); $i++ ) {
 
 		case 'switch_send_rename':
 			// Queued by download_ajax.php's "accept" (page approve) handler
-			// - see the comment there. SwitchSend_Rename() itself still
-			// carries its own fixed 5s/15s curl timeouts; that's fine here
-			// since nobody's waiting on this request.
+			// - see the comment there. Pages can run tens of MB (a bulk
+			// approve of 80+ pages here has run ~1GB total); the 5s/15s
+			// defaults SwitchSend_Rename() otherwise uses are sized for an
+			// interactive fast-fail, not a real transfer of that size, and a
+			// timeout mid-transfer isn't a safe no-op - Switch can pick up
+			// whatever truncated bytes it already received as if it were
+			// the finished file (confirmed live 2026-08-11: exactly this
+			// truncated a page and it came out corrupt in Switch even
+			// though our own retry bookkeeping showed an eventual clean
+			// success). Nobody's waiting on this request, so give it room.
 			if( !empty( $payload["datas"] ) && !empty( $payload["file"] ) && !empty( $payload["newname"] ) ) {
-				$response = SwitchSend_Rename( $payload["datas"], $payload["file"], $payload["newname"] );
+				$response = SwitchSend_Rename( $payload["datas"], $payload["file"], $payload["newname"], 10, 90 );
 				// SwitchSend_Rename() returns array($response["status"], ...)
 				// on a completed call, or array("blocked", ...) if the DEV
 				// TestCo-only gate refused it outright - either way that's

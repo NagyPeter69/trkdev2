@@ -517,7 +517,15 @@ function SwitchSend_TESZT( $datas, $file = "" ) {
 	return array( $response["status"], "Error. Please try later." );	
 	}
 
-function SwitchSend_Rename( $datas, $file, $newname ) {
+// $connectTimeout/$totalTimeout default to the original fixed 5s/15s so
+// the two interactive callers (download_ajax.php's "light" path,
+// flatplan_ajax.php) keep their existing fast-fail behavior unchanged.
+// client/cron/switch_sync_worker.php's background path passes much more
+// generous values (same reasoning already applied to SendPmdXmlToSwitch()
+// in xml_handler.php: nobody's waiting on that request) - see the
+// switch_send_rename case there for why: a 15s cap truncated a page
+// upload mid-transfer during a large bulk approve.
+function SwitchSend_Rename( $datas, $file, $newname, $connectTimeout = 5, $totalTimeout = 15 ) {
 	global $token;
 
 	if( !switchClientAllowed( $datas ) ) {
@@ -644,10 +652,10 @@ function SwitchSend_Rename( $datas, $file, $newname ) {
 	$data["file[0][path]"] = "";
 	//$data["file[0][file]"] = "@".realpath( $file ).";filename=".$doc_name.";type=".$mime."";
 	$data["file[0][file]"] = new CurlFile( realpath( $newpath ), $mime, $newname );
-		
+
 	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $connectTimeout);
+	curl_setopt($ch, CURLOPT_TIMEOUT, $totalTimeout);
 	curl_setopt($ch, CURLOPT_URL, SWITCHURL );
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
