@@ -173,11 +173,6 @@
 				$names = array( 'job_id', 'action', 'info', 'time', 'hotlink_id', 'version' );
 				$values = array( $pub[0][0], 'reject', $pages[$i], time(), $hotlink[0][0], $pageinfo[0][3] );
 				sql_add( 'hotlinks_log', $names, $values );
-			
-				/*$names = array( "type", "data1", "data2", "data3", "data4", "date" );
-				$values = array( "sendmail", "lightreject", $hotlink[0][13], $job[0][0], $pages[$i], time() );
-				sql_add( 'shell_commands', $names, $values );
-				shell_exec('php /var/www/standalone/cron/sendmail.php > /dev/null &');*/
 				}
 			} 
 		
@@ -239,11 +234,6 @@
 				$names = array( 'job_id', 'action', 'info', 'time', 'hotlink_id', 'version' );
 				$values = array( $pub[0][0], 'accept', $pages[$i], time(), $hotlink[0][0], $pageinfo[0][3] );
 				sql_add( 'hotlinks_log', $names, $values );
-				
-				/*$names = array( "type", "data1", "data2", "data3", "data4", "date" );
-				$values = array( "sendmail", "lightaccept", $hotlink[0][13], $job[0][0], $pages[$i], time() );
-				sql_add( 'shell_commands', $names, $values );
-				shell_exec('php /var/www/standalone/cron/sendmail.php > /dev/null &');*/		
 				}
 			} 
 		
