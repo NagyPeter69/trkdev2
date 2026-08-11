@@ -320,6 +320,7 @@
 				// the stored JSON (confirmed live: a real queued job had
 				// "címlap" stored as "cu00edmlap").
 				QueueSwitchRetry( 'switch_send_rename', array( 'datas' => $array, 'file' => $file, 'newname' => $newname ) );
+				$switchQueued = true;
 				
 				/*$array["client"] = $publisher[0][0];
 				$array["jobCode"] = $check[0][7];
@@ -362,8 +363,19 @@
 				$values = array( $user[0][0], 'approvePage', $pub[0][1], $pub[0][2], $pub[0][10], intval( $pages[$i] ), time(), $_GET['alter'], $states[$i] );
 				sql_add( 'action_log', $names, $values );
 				}
-			} 
-		
+			}
+
+		// Don't make the approving user wait out the next cron tick (up to
+		// 60s) for pages queued above to actually reach Switch - kick the
+		// worker in the background right away so the common (success) case
+		// is near-instant. Fire-and-forget, same pattern as the sendmail
+		// kick in vflatplan_ajax.php: if this fails to spawn or the worker
+		// is slow, the cron schedule is still the safety net that
+		// eventually delivers it.
+		if( !empty( $switchQueued ) ) {
+			shell_exec( 'php '.__DIR__.'/../cron/switch_sync_worker.php > /dev/null 2>&1 &' );
+			}
+
 		$result = $saveTo;
 		}
 	

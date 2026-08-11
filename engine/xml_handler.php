@@ -574,15 +574,24 @@
 	// Durable fallback for when the synchronous attempt above fails or times
 	// out. The cron worker (client/cron/switch_sync_worker.php) retries
 	// queued jobs with a more generous timeout until they succeed.
+	//
+	// next_attempt_at is left unset (NULL, per switch_sync_queue's DEFAULT)
+	// so the job is eligible immediately - the worker's own WHERE clause
+	// already treats NULL as "ready now" and only stamps a future
+	// next_attempt_at once a real delivery attempt has failed (that's the
+	// 1m/5m/15m/1h backoff). Callers that want faster-than-the-next-cron-
+	// tick delivery (e.g. download_ajax.php's bulk approve) kick the
+	// worker directly after enqueueing; this NULL default is what makes
+	// that kick actually find the job eligible instead of still waiting
+	// out a redundant pre-delay.
 	function QueueSwitchRetry( $jobType, $payload ) {
 		global $con;
 		sql_add(
 			'switch_sync_queue',
-			array( 'job_type', 'payload', 'next_attempt_at' ),
+			array( 'job_type', 'payload' ),
 			array(
 				mysqli_real_escape_string( $con, $jobType ),
 				mysqli_real_escape_string( $con, json_encode( $payload ) ),
-				date( 'Y-m-d H:i:s', time() + 60 ),
 				)
 			);
 		}
