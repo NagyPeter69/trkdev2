@@ -5249,8 +5249,11 @@ function sql_delete( $table, $where, $db = "" ) {
 // features that need a plain "how many pages" number (e.g. the Switch
 // handout command) still have one to read without recomputing it
 // themselves.
-function getPartsMaxPage( $pub_id ) {
-	$parts = sql_aget( 'parts', 'pub_id="'.$pub_id.'"', 'place' );
+// Shared by getPartsMaxPage() (Parts already saved under a pub_id) and
+// newIssue.php (Parts staged in-memory before the publication row - and
+// therefore the pub_id - exists yet), so both read the same page range
+// parsing instead of newIssue.php growing its own copy.
+function maxPageFromParts( $parts ) {
 	$max = 0;
 	foreach( $parts as $part ) {
 		foreach( explode( ',', $part['place'] ) as $range ) {
@@ -5260,6 +5263,11 @@ function getPartsMaxPage( $pub_id ) {
 			}
 		}
 	return $max;
+	}
+
+function getPartsMaxPage( $pub_id ) {
+	$parts = sql_aget( 'parts', 'pub_id="'.$pub_id.'"', 'place' );
+	return maxPageFromParts( $parts );
 	}
 
 function syncPublicationPages( $pub_id ) {

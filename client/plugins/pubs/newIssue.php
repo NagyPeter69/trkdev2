@@ -12,6 +12,17 @@ foreach($xpath as $temp) {
 		}
 	}
 
+// Loaded here (rather than down by the Parts table markup) so the
+// read-only "Number of Pages" field above it can show the value derived
+// from these same rows.
+if( $magazine[0][10] == "Adhoc" ) {
+	$pub = sql_aget( "publications", "magazine_id='".$_GET['data']."' AND code='".$magazine[0][3]."'", "*" );
+	$parts = sql_aget( "parts", "pub_id='".$pub[0]["id"]."' order by id ASC", "*" );
+	}
+
+if( $magazine[0][10] == "Regular" ) {
+	$parts = sql_aget( "parts", "pub_id='0' AND mag_id='".$magazine[0][0]."' order by id ASC", "*" );
+	}
 ?>
 <form id='subForm' method='post' action=''>
 <input type="hidden" id="publisher" name="publisher" value="<?= $user[0][4]; ?>">
@@ -66,7 +77,7 @@ else {
 		<?php if( $newxml->Item[$x]->PageNumbering != "American" ) { ?>
 			<tr>
 				<td align='left' width='50%' height='28px'><?= $lang["publications"]["length"] ?></td>
-				<td align='left'><input onkeypress="return isNumberKey(event)" type='text' id='page_nr' name='page_nr' style='width: 30px; margin-left: 2px;'></td>
+				<td align='left'><input readonly title="A Parts listában megadott oldaltartományok határozzák meg" type='text' id='page_nr' value="<?= maxPageFromParts( $parts ) ?>" name='page_nr' style='width: 30px; margin-left: 2px;'></td>
 			</tr>
 		<?php } ?>
 		
@@ -108,15 +119,6 @@ else {
 			$pageNumbering = (string) $newxml->Item[$x]->PageNumbering;
 			$workflow = (string) $newxml->Item[$x]->Workflow;
 			$pdfStandard = (string) $newxml->Item[$x]->PDFstandard;
-
-			if( $magazine[0][10] == "Adhoc" ) {
-				$pub = sql_aget( "publications", "magazine_id='".$_GET['data']."' AND code='".$magazine[0][3]."'", "*" );
-				$parts = sql_aget( "parts", "pub_id='".$pub[0]["id"]."' order by id ASC", "*" );
-				}
-
-			if( $magazine[0][10] == "Regular" ) {
-				$parts = sql_aget( "parts", "pub_id='0' AND mag_id='".$magazine[0][0]."' order by id ASC", "*" );
-				}
 
 			for( $i = 0; $i < count( $parts ); $i++ ) {
 				echo partsRowHtml( $parts[$i], $pageNumbering, $workflow, $pdfStandard );
