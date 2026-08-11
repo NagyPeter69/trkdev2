@@ -659,12 +659,20 @@ if( process == "Full" ) {
 	// so leaving unchanged elements alone avoids that entirely.
 	var lastHandoutIconHTML = null;
 	var lastHandoutMenuHTML = null;
+	var handoutPollFailures = 0;
+	// 5s between retries, so 60 misses in a row is ~5 minutes of nothing
+	// but failures - past that it's not a blip anymore, it's genuinely
+	// down (or the job's been abandoned), and retrying forever just adds
+	// load for no benefit. generateHandout() resets this back to 0 since
+	// a freshly requested handout deserves its own full budget.
+	var HANDOUT_POLL_FAILURE_LIMIT = 60;
 	function loadhandoutmenu() {
 		$.ajax	({
 			url:"engine/flatplan_ajax.php?op=loadhandoutmenu&id=<?= $pub[0][0] ?>&opt=<?= $_GET['opt'] ?>",
 			type: "GET",
 			dataType: 'json',
 			success:function( data ) {
+				handoutPollFailures = 0;
 				if( data[0] !== lastHandoutIconHTML ) {
 					$("#handoutmenubox").html( data[0] );
 					lastHandoutIconHTML = data[0];
@@ -695,6 +703,24 @@ if( process == "Full" ) {
 				if( data[3] ) {
 					setTimeout(function(){ loadhandoutmenu(); }, 5000);
 					}
+				},
+			// A failed request (timeout, transient network blip, tab
+			// throttled in the background) otherwise breaks the poll chain
+			// silently forever, since only the success handler ever
+			// reschedules the next check - nothing here to notice
+			// completion happened while the tab was open, leaving the icon
+			// missing until a manual page reload. Retry on the same 5s
+			// cadence instead of giving up.
+			error:function() {
+				handoutPollFailures++;
+				if( handoutPollFailures < HANDOUT_POLL_FAILURE_LIMIT ) {
+					setTimeout(function(){ loadhandoutmenu(); }, 5000);
+					}
+				else {
+					// Give up rather than poll forever - stop the spinner so it
+					// doesn't look like it's still waiting.
+					$("#handoutLoading").hide( 0 );
+					}
 				}
 			});
 		}
@@ -716,9 +742,11 @@ if( process == "Full" ) {
 			dataType: 'json',
 			success:function( data ) {
 				// The polling loop may have already stopped (settled state,
-				// nothing left to wait for) by the time this new handout was
-				// requested - kick it off again to pick up the now-pending
+				// nothing left to wait for, or the failure cap above) by the
+				// time this new handout was requested - reset the failure
+				// budget and kick it off again to pick up the now-pending
 				// state and resume watching for it to arrive.
+				handoutPollFailures = 0;
 				loadhandoutmenu();
 				}
 			});
