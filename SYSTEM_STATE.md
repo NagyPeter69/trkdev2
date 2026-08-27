@@ -922,6 +922,70 @@ tested** on the staging clone before anyone calls the cutover ready — this mat
 since dev's DB has been near-empty for months) likely still hide the same class of bug the
 PHP 7→8 migration kept finding.
 
+**2026-08-26: the real diff was finally run**, `mariadb-dump --no-data` from trk-source
+(10.10.30.64, the untouched-old-stack production clone) against trk-stage's live schema.
+Full per-table diff saved at `bin/migrate-prod-data.sh`'s companion notes below; the delta
+list above was **not complete** - these were also found, none previously documented:
+
+- `accounts.linked_account_id` (`int(11) NOT NULL DEFAULT 0`) — for `usertype=Temp` job-scoped
+  accounts, points back to the real `accounts.id` if the invited email matched an existing
+  registered user; 0 means genuinely new/unregistered.
+- `ads.booked_page` (`int(11) DEFAULT 0`), `ads.booked_part` (`varchar(255) DEFAULT ''`) — new
+  columns, purpose not yet investigated this pass.
+- `pageinfo.preflight_error` (`tinyint(1) DEFAULT 0`), `pageinfo.preflight_report`,
+  `pageinfo.preflight_origname` (both `varchar(255) DEFAULT ''`) — a preflight-check feature
+  added since prod's schema forked; migrated legacy pages will correctly read as "no preflight
+  run yet" via the defaults.
+- `parts.grayscale` (`varchar(5) DEFAULT 'false'`) — new column.
+- `comments`: gained a real primary/secondary index pair (`idx_pub_parent_page`,
+  `idx_parent_id`) and switched `MyISAM` → `InnoDB`; `comment_log` also switched to `InnoDB`
+  from `MyISAM`.
+- Three genuinely new tables with no production equivalent, all self-contained
+  reference/config data (not sourced from live jobs, so a data migration should leave them
+  alone rather than truncate+reload): `color_standards` (the FOGRA/IFRA ICC-profile registry
+  `partDetect()` now reads from), `calendar_holidays`, and `ad_sizes` (**not** a new table —
+  a renamed/re-keyed successor to prod's `ad_sizes_old`, same 7 columns, needs a mapped copy
+  keyed by `magazine_id`, not a plain skip).
+- Everything else in the diff was noise: `utf8` → `utf8mb3` (MariaDB 11's own alias rename,
+  not a real difference) and `AUTO_INCREMENT` values (expected, live counters).
+
+**`bin/migrate-prod-data.sh`** (added this session) is the resulting migration script — full
+per-table data copy (skipping any table that's empty on the source rather than blindly
+truncating a stage table that might hold real config, e.g. `switch_flows`), the `ad_sizes_old`
+→ `ad_sizes` mapped copy, a `user_groups.accounts_findAccount` re-grant to `SuperUser` (a data
+copy would otherwise silently reset it to the column default and disable the Find Account
+panel), and an orphan-cleanup pass grounded in `cleanupPublicationRemnants()`'s own known-
+garbage chains (ads/partial_ads, flatplan_articletypes, comments, flatplan_files,
+flatplan_planner, flatplan_handout/hotlink, packages/package_info, parts — all keyed back to
+`publications`). Does **not** touch `pageinfo`'s orphans — its FK shape (an `issue`+`code`
+string pair, not a numeric id) doesn't fit that pattern, deliberately left as report-only.
+**Run to completion 2026-08-26/27, on a disposable clone pair (trk-stage/trk-source), and fully
+verified working** — login, real publisher/magazine/publication listings, Flatplan/Pages
+rendering (Full workflow, multiple proofing stages), and Resize-workflow image-pack downloads all
+confirmed against real migrated production data. **See
+[PRODUCTION_MIGRATION_RUNBOOK.md](PRODUCTION_MIGRATION_RUNBOOK.md) for the full distilled
+procedure, gotchas, and verification steps** — that document supersedes this section and the
+older `production_release_plan` memory as the authoritative migration reference; the two
+highlights worth knowing even if you never open that file:
+
+1. **`pub_id=0`/`publication_id=0` is a deliberate sentinel** (magazine-level Parts templates,
+   unassigned packages — same convention as `magazines.publisher_id=0` for Adhoc), **not an
+   orphan**. The script above already excludes it from every cleanup check, but this is a
+   codebase-wide convention worth knowing before writing *any* new query against these tables.
+2. **`client/xml/` (per-issue PMD XML + master `pmd.xml`) must be migrated too, in full** — it's
+   only ~3.4MB, but the Parts & Color panel and Workflow/PageNumbering resolution read from it,
+   not reliably from the DB. A DB-only migration looks complete and isn't.
+
+**Job file simulation, not a full copy**: trk-source's `client/` media directory is ~356GB
+(confirmed 2026-08-26: 201G packages, 112G assets, 18G uploads, 15G temp, 5.6G advertisements,
+4.3G handout, 594M labor); trk-stage has only ~36G free. A real cutover needs its own plan for
+this (this document's original "what was left behind" section already flagged that full
+production media migration "cannot skip" the exclusions the dev rebuild took for granted) - for
+this preflight, only a representative sample of real jobs' files (spanning Full-workflow
+finished/live/archived-with-ads and Resize-workflow image packs) was copied for real; the runbook
+above documents the on-disk path conventions discovered for each, so a future full migration
+knows what it's actually copying rather than rediscovering the directory layout from scratch.
+
 ## Full database schema
 
 See `db/schema.sql` in this repo — a `mariadb-dump --no-data` snapshot taken directly from
