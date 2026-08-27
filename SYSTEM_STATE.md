@@ -573,13 +573,15 @@ trkdev2 stays on Broadwell so Claude Code's own tooling keeps working, and every
 routes through `engine/r3client.php`'s single `r3run($mode, $params, $inputPath, ...)`
 entry point, which replaced ~29 inline `shell_exec('cd .../r3; ./r3 ...')` call sites
 across `r3API/*.php`, `engine/engine.php`, and `client/*.php`. `r3run()` picks local vs.
-remote automatically via the `R3_REMOTE_MODE` constant in `engine/r3client_config.php`,
-which parses `/proc/cpuinfo` (`vendor_id`/`cpu family`/`model`) at request time — a
-genuine kvm64 signature (`GenuineIntel`, family 15, model 6) runs R3 locally; anything
-else (trkdev2's own Broadwell included) sends the job to the render-VM's
-`r3remote/run.php` over HTTP (multipart file upload + shared-token auth, base64-encoded
-JSON response). This means the exact same PHP code path works unmodified on trkdev2, on
-the render-VM, and eventually in production — it self-detects which side it's on.
+remote automatically via the `R3_REMOTE_MODE` constant in `engine/r3client_config.php` —
+a genuine kvm64 signature (`GenuineIntel`, family 15, model 6, per `/proc/cpuinfo`) runs
+R3 locally; anything else (trkdev2's own Broadwell included) sends the job to the
+render-VM's `r3remote/run.php` over HTTP (multipart file upload + shared-token auth,
+base64-encoded JSON response). This means the exact same PHP code path works unmodified
+on trkdev2, on the render-VM, and eventually in production — it self-detects which side
+it's on. **See "Boot-time render-mode detection" below for how that self-detection
+actually happens as of 2026-08-27** — the mechanism changed; the constant and its
+downstream behavior didn't.
 
 The shared auth token lives in `engine/r3client_config.php` (trkdev2) and the matching
 `r3remote/config.php` (render-VM). Rotate by editing both sides together.
@@ -604,6 +606,46 @@ lost response.
 **Moot in production**: production's own hardware is genuine kvm64, so none of this detour
 applies there — `r3run()` will simply always take the local path once this ships. See
 "Deploying to production" below.
+
+### Boot-time render-mode detection (2026-08-27)
+
+Before this date, `R3_REMOTE_MODE` was computed live on every single PHP request — each
+FPM worker re-read and re-parsed `/proc/cpuinfo` from scratch every time `r3client_config.php`
+was included. That was fine when this box's CPU model was expected to be stable for a whole
+dev session, but the project owner flagged an upcoming shift: extended stretches of this box
+staying on a modern CPU (Broadwell or similar) continuously, specifically so Claude Code can
+keep working uninterrupted while handling a steady stream of small production-hotfix-style
+corrections, rather than only briefly during isolated dev sessions. A CPU model can't change
+without an actual reboot, so re-deriving it on every request was always redundant work — it
+just hadn't mattered enough to fix until continuous-uptime dev became the expected mode.
+
+**What changed**: the CPU fingerprint check itself (`r3_running_on_kvm64()`) moved out of
+request-time PHP entirely, into `engine/cpu_detect.php` (unchanged logic, just relocated).
+`bin/detect-render-mode.php` calls it exactly once, at boot, via a new systemd oneshot unit
+(`bin/trkdev-detect-render-mode.service`, ordered `Before=php8.4-fpm.service` so the decision
+exists before the app can serve a single request) and writes the single word `local` or
+`remote` to `/etc/trkdev-render-mode` (root-owned, world-readable, not in git — same
+"per-machine state, not code" category as `/var/www/server_constans.php`). `r3client_config.php`
+now just reads that file on every request instead of re-detecting — same constant name
+(`R3_REMOTE_MODE`), same downstream behavior, every call site listed above is unchanged.
+Falls back to `remote` (the safe default — see the file's own comment) if the state file is
+ever missing or unreadable, e.g. before the installer has been run on a fresh clone.
+
+**Install once per machine** (idempotent, safe to re-run): `sudo bin/install-render-mode-detector.sh`
+— symlinks the unit into `/etc/systemd/system/`, enables it, and runs it immediately so the
+effect is live without waiting for a reboot. `bin/preflight-prod-check.sh`'s "R3 renderer"
+section checks both that the service is enabled and that the state file's contents still
+match what the CPU fingerprint says *right now* (catches a machine that was rebooted before
+the service was ever installed, or a hypervisor-level CPU-model change that hasn't been
+re-detected yet).
+
+**DynaPDF was deliberately left out of this switch.** The project owner's original request
+raised it as a possible second candidate, but DynaPDF has no CPU-identity binding in this
+codebase — it's a licensed PHP extension keyed off `config.inc.php`'s license string (see the
+DynaPDF section above), already confirmed working locally on this box's own Broadwell CPU, and
+there is no remote-DynaPDF code path anywhere to fall back to even if it did need one. Revisit
+only if DynaPDF is ever actually observed failing on a non-kvm64 CPU — nothing in this session
+found evidence that it does.
 
 ## dynAPI/tracker/, client/temp/, and filedownload.php's zip library
 

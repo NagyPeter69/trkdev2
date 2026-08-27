@@ -123,6 +123,24 @@ else
 	fail "www-data is NOT in the kmem group - /dev/mem is crw-r-----root:kmem by stock udev rule, R3 will fail with EACCES before even reaching the capability check. Fix: usermod -aG kmem www-data, then restart php-fpm (running workers keep their original groups until restart)"
 fi
 
+if systemctl is-enabled trkdev-detect-render-mode.service >/dev/null 2>&1; then
+	pass "trkdev-detect-render-mode.service is enabled (will re-detect render mode on every boot)"
+else
+	fail "trkdev-detect-render-mode.service is not enabled - run: sudo bin/install-render-mode-detector.sh (without it, /etc/trkdev-render-mode goes stale after any CPU-model change, e.g. a hypervisor migration)"
+fi
+
+if [ -f /etc/trkdev-render-mode ]; then
+	RENDER_MODE=$(tr -d '[:space:]' < /etc/trkdev-render-mode)
+	CPU_SAYS_KVM64=$(php -r 'require "'"$WEBROOT"'/engine/cpu_detect.php"; echo r3_running_on_kvm64() ? "local" : "remote";' 2>/dev/null || true)
+	if [ "$RENDER_MODE" = "$CPU_SAYS_KVM64" ]; then
+		pass "/etc/trkdev-render-mode ('$RENDER_MODE') matches this boot's actual CPU fingerprint"
+	else
+		fail "/etc/trkdev-render-mode says '$RENDER_MODE' but the CPU fingerprint says '$CPU_SAYS_KVM64' right now - stale (rebooted without the service running? re-run bin/detect-render-mode.php or reboot)"
+	fi
+else
+	fail "/etc/trkdev-render-mode does not exist - run: sudo bin/install-render-mode-detector.sh"
+fi
+
 # ---------------------------------------------------------------------------
 section "Switch connectivity"
 

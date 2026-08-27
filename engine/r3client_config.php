@@ -1,48 +1,43 @@
 <?php
-// Local vs remote r3 execution toggle - auto-detected from the CPU this
-// code is actually running on, rather than a flag someone has to remember
-// to flip when deploying.
+// Local vs remote r3 execution toggle.
 //
 // r3's license only validates against a genuine kvm64-configured VM (see
-// the project history around 2026-07 for why: this dev VM instead runs
-// Broadwell so Claude Code can function, and the two can't coexist on one
-// machine). So: running on kvm64 -> r3 locally, exactly as it always did.
-// Running on anything else (Broadwell here in dev) -> forward every r3
-// call to the dedicated render-VM over HTTP.
+// SYSTEM_STATE.md's "R3's CPU/license conflict" section for the full
+// history of why this box instead runs Broadwell, and why that means r3
+// can't run locally here). Running on kvm64 -> r3 locally, exactly as it
+// always did. Running on anything else (Broadwell etc.) -> forward every
+// r3 call to the dedicated render-VM over HTTP.
 //
-// Detection reads /proc/cpuinfo directly rather than shelling out to
-// lscpu/dmidecode, since it's a single cheap file read and the exact
-// three fields identifying kvm64 (vendor/family/model) are already
-// plain text there.
-function r3_running_on_kvm64() {
-	$cpuinfo = @file_get_contents('/proc/cpuinfo');
-	if ($cpuinfo === false) {
-		// Can't tell - fail toward remote, since that's safe to attempt
-		// from anywhere (local execution on a non-kvm64 box is the one
-		// that silently produces license failures, not the other way
-		// around).
-		return false;
+// 2026-08-27: the CPU check itself moved out of request-time PHP. It used
+// to call r3_running_on_kvm64() (parsing /proc/cpuinfo) fresh on every
+// single request; now bin/detect-render-mode.php makes that same decision
+// once, at boot (via the trkdev-detect-render-mode systemd unit), and
+// writes the result to /etc/trkdev-render-mode - this file just reads
+// that decision. The CPU a machine boots with can't change without an
+// actual reboot, so there was never a reason to re-derive it per request;
+// this also means a request can never observe a "torn" mid-flip state
+// (every request in a given boot sees the same answer, by construction -
+// per-request detection couldn't guarantee that if the CPU identity check
+// itself ever raced anything).
+define('TRKDEV_RENDER_MODE_FILE', '/etc/trkdev-render-mode');
+
+function trkdev_render_mode() {
+	$raw = @file_get_contents(TRKDEV_RENDER_MODE_FILE);
+	if ($raw === false) {
+		error_log('trkdev_render_mode: '.TRKDEV_RENDER_MODE_FILE.' unreadable - has bin/install-render-mode-detector.sh been run on this machine? Defaulting to remote (safe to attempt from any host; local execution on a non-kvm64 box is what silently produces r3 license failures, not the other way around).');
+		return 'remote';
 	}
 
-	if (!preg_match('/^vendor_id\s*:\s*(.+)$/m', $cpuinfo, $vendorMatch)) {
-		return false;
-	}
-	if (!preg_match('/^cpu family\s*:\s*(\d+)$/m', $cpuinfo, $familyMatch)) {
-		return false;
-	}
-	// Anchored so this doesn't also match the unrelated "model name" line.
-	if (!preg_match('/^model\s*:\s*(\d+)$/m', $cpuinfo, $modelMatch)) {
-		return false;
+	$mode = trim($raw);
+	if ($mode !== 'local' && $mode !== 'remote') {
+		error_log('trkdev_render_mode: unexpected content in '.TRKDEV_RENDER_MODE_FILE.': "'.$mode.'" - defaulting to remote until this is fixed (re-run bin/detect-render-mode.php).');
+		return 'remote';
 	}
 
-	$vendor = trim($vendorMatch[1]);
-	$family = (int)$familyMatch[1];
-	$model = (int)$modelMatch[1];
-
-	return ($vendor === 'GenuineIntel' && $family === 15 && $model === 6);
+	return $mode;
 }
 
-define('R3_REMOTE_MODE', !r3_running_on_kvm64());
+define('R3_REMOTE_MODE', trkdev_render_mode() === 'remote');
 
 define('R3_REMOTE_URL', 'http://10.10.30.22/r3remote/run.php');
 define('R3_REMOTE_TOKEN', getenv('TRKDEV_R3_TOKEN'));

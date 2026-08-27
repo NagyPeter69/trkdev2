@@ -1,0 +1,14 @@
+[Unit]
+Description=Detect trkdev CPU model and set R3 render mode (local vs render-VM)
+DefaultDependencies=no
+After=local-fs.target
+Before=php8.4-fpm.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/php /var/www/html/bin/detect-render-mode.php
+RemainAfterExit=yes
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
