@@ -202,6 +202,16 @@
 		$publisher = sql_get( 'publishers', 'id="'.$issue[0][1].'"', '*' );
 		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'"', '*' );
 
+		// No per-job directory to pre-create here: Switch names and creates
+		// its own flat archive folder directly under ARCHIVE_PATH (e.g.
+		// "PRFU_2633__Palaye_Royale_archived" - see findArchivePath() in
+		// engine/engine.php for the exact naming rule), rather than writing
+		// into a path Tracker precomputes. ARCHIVE_PATH itself already
+		// carries the setgid bit (set up once, alongside the switch-archiver
+		// SFTP account), so whatever Switch creates inside it inherits group
+		// www-data regardless of which uid wrote it - no chown needed and
+		// nothing for Tracker to prepare per-job.
+
 		$array = array(
 			"event" => "archive",
 			"client" => $publisher[0][1],
@@ -209,7 +219,7 @@
 			"issue" => $issue[0][10],
 			"description" => $magazine[0][3].'_'.$issue[0][10],
 			);
-		
+
 		$error = SwitchSend_TESZT( $array );
 		/*
 		$array = array();

@@ -15,6 +15,18 @@ $pub = sql_get( 'publications', 'publisher_id="'.$publisher[0][0].'" AND magazin
 if( $status == "success" ) {
 	if( $pub[0][0] != "" ) {
 		sql_update( 'publications', 'status="archived"', 'id="'.$pub[0][0].'"' );
+
+		// Switch says the upload succeeded, so the package should already be
+		// sitting in its landing directory by now (step 3 of the archiving
+		// workflow completes before step 4's success callback). If it isn't,
+		// that's exactly the kind of silent-drift bug the PMD ownership
+		// incident taught this codebase to log loudly instead of letting
+		// slide - status would say "archived" while Download View has
+		// nothing to show.
+		if( findArchivePath( $magazine[0][3], $issue ) === null ) {
+			error_log( "CRITICAL: archive_results-handler received success for ".$magazine[0][3]."/".$issue." but no matching folder was found under ".ARCHIVE_PATH."." );
+			}
+
 		$result = changeIssueStatus( $magazine[0][3]."_".$issue.".xml", "archived", $pub[0][0] );
 		
 		if( $result ) {

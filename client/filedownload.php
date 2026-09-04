@@ -120,6 +120,39 @@ if( $_GET["type"] == "asset" ) {
 		}
 	}
 
+if( $_GET["type"] == "archive" ) {
+	// Only client input is the publication id - the on-disk path is always
+	// resolved server-side via getArchivePath(), and the whole directory is
+	// zipped as one unit with no per-file selection, so there's no way to
+	// reach an individual file inside an archived package through this
+	// endpoint.
+	$single = false;
+	$entries = array();
+
+	$pub = sql_aget( "publications", "id='".$_GET["pub"]."'", "*" );
+
+	if( !empty( $pub[0]["id"] ) && $pub[0]["status"] == "archived" ) {
+		$magazine = sql_aget( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
+		$archivePath = findArchivePath( $magazine[0]["code"], $pub[0]["code"] );
+
+		if( $archivePath !== null ) {
+			$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $archivePath, FilesystemIterator::SKIP_DOTS ) );
+			foreach( $iterator as $fileInfo ) {
+				if( $fileInfo->isFile() ) {
+					$relativePath = substr( $fileInfo->getPathname(), strlen( $archivePath )+1 );
+					$entries[ $relativePath ] = $fileInfo->getPathname();
+					}
+				}
+
+			$zipName = basename( $archivePath ).'.zip';
+			}
+		}
+
+	if( $zipName === null ) {
+		$zipName = "Archive.zip";
+		}
+	}
+
 if( $_GET["type"] == "multi" ) {
 	$pages = json_decode( $_GET['pageselector'] );
 	$states = json_decode( $_GET['state'] );

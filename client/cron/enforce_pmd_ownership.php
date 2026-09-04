@@ -38,3 +38,47 @@ foreach( $targets as $path ) {
 		chgrp( $path, 'www-data' );
 		}
 	}
+
+function enforceTreeOwnership( $root ) {
+	if( !is_dir( $root ) ) {
+		return;
+		}
+
+	$iterator = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS ),
+		RecursiveIteratorIterator::SELF_FIRST
+		);
+
+	foreach( $iterator as $fileInfo ) {
+		$path = $fileInfo->getPathname();
+		$stat = stat( $path );
+		$owner = posix_getpwuid( $stat['uid'] )['name'] ?? (string) $stat['uid'];
+		$group = posix_getgrgid( $stat['gid'] )['name'] ?? (string) $stat['gid'];
+
+		if( $owner != 'www-data' || $group != 'www-data' ) {
+			error_log( "enforce_pmd_ownership: '".$path."' was owned by ".$owner.":".$group." (expected www-data:www-data) - correcting." );
+			chown( $path, 'www-data' );
+			chgrp( $path, 'www-data' );
+			}
+		}
+	}
+
+// Backstop for archived packages Switch FTPs into ARCHIVE_PATH (see
+// getArchivePath() in engine/engine.php). The primary fix is that Switch's
+// upload account is a member of group www-data, landing in a setgid
+// directory Tracker pre-creates (client/engine/issueManagementAjax.php's
+// archiveIssue op) so files are readable/deletable by www-data without ever
+// needing a chown - this sweep only matters if that account setup is wrong,
+// missing, or a stray upload lands with different permissions.
+enforceTreeOwnership( '/var/www/html/archives' );
+
+// Same problem, no equivalent account fix in place: switchReports/ (Switch's
+// preflight report delivery) has no documented www-data-group/setgid setup
+// like archives got, so it keeps landing root-owned with nothing to correct
+// it. Confirmed live 2026-08-05 - cleanupPublicationRemnants()'s switchReports
+// delTree() silently failed on a root-owned PRFU/2633 report folder because
+// www-data had no write access to delete it, and nothing logged the failure
+// (see delTree()'s own fix in engine/engine.php for the logging half of
+// this). This sweep is the same stopgap as archives' until switchReports'
+// delivery account gets the real fix.
+enforceTreeOwnership( '/var/www/html/switchReports' );

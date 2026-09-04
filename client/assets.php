@@ -95,7 +95,7 @@ if( !empty( $_SESSION["visitor_pub"] ) ) {
 			<td id="fp_content" align="right" valign="top" style="background: rgb(128, 128, 128); margin-right: 10px; overflow-x: hidden; overflow-y: auto; width: 100%; display: block;">
 				<div id="pack_inside" style="display: none; color: #FFF; padding: 11px 15px; text-align: left;">
 				</div>
-				
+
 				<div id="assets">
 					<table id="assets_table" cellpadding="0" cellspacing="0">
 						<thead>
@@ -428,6 +428,13 @@ function downloadAsset( id ) {
 	multiID = new Array();
 	}
 
+function downloadArchive( pubId ) {
+	var link = "filedownload.php?type=archive&pub="+pubId;
+
+	if ($idown) { $idown.attr('src',link); }
+	else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
+	}
+
 function loadTypes() {
 	$.ajax	({
 		url:"engine/assets_ajax.php?op=loadTypes&pub="+pub,
@@ -462,21 +469,21 @@ function loadAssets() {
 			if( data != loadedasset ) {
 				loadedasset = data;
 				$("#assets_body").html(data);
-				
+
 				$("#assets_body td").off();
 				$("#assets_body td").click(function(e){
 					rowSelector(e);
 					});
-				
+
 				$(".circle-color").off();
 				$(".circle-color-box").click(function(e){
 					colorMenu( e, $(this).attr("data") );
-					});	
+					});
 				}
-			
+
 			setTimeout(function(){ loadAssets(); }, 1000 );
 			}
-		});		
+		});
 	}
 loadAssets();
 

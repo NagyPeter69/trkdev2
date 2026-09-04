@@ -68,6 +68,37 @@ function getPackSize( $pubId, $packId, $childs ) {
 	return $size;
 	}
 
+// Same reasoning as getPackSize() above (archive packages can be many GB,
+// loadAssets() polls every second), but there's no DB row count to key the
+// cache on here - archives aren't DB-backed. Directory mtime instead: Switch
+// writes the whole package in one upload session and the archive is
+// immutable afterward, so the top-level dir's mtime stops changing once
+// that's done and every poll after that is a free cache hit.
+function getArchiveSize( $pubId, $archivePath ) {
+	$mtime = @filemtime( $archivePath );
+	$cacheFile = TRKPATH."/temp/asset_size_cache/archive_".$pubId.".json";
+
+	$cached = is_file( $cacheFile ) ? json_decode( file_get_contents( $cacheFile ), true ) : null;
+	if( is_array( $cached ) && ( $cached["mtime"] ?? null ) === $mtime ) {
+		return $cached["size"];
+		}
+
+	$size = 0;
+	$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $archivePath, FilesystemIterator::SKIP_DOTS ) );
+	foreach( $iterator as $fileInfo ) {
+		if( $fileInfo->isFile() ) {
+			$size += $fileInfo->getSize();
+			}
+		}
+
+	if( !is_dir( TRKPATH."/temp/asset_size_cache" ) ) {
+		mkdir( TRKPATH."/temp/asset_size_cache", 0777, true );
+		}
+	file_put_contents( $cacheFile, json_encode( array( "mtime" => $mtime, "size" => $size ) ), LOCK_EX );
+
+	return $size;
+	}
+
 if( $_GET["op"] == "removeAsset") {
 	$asset = sql_aget( "assets", "id='".$_GET["id"]."'", "*" );
 	
@@ -351,7 +382,55 @@ if( $_GET["op"] == "loadAssets" ) {
 			$txt .= "</tr>";			
 			}
 		}
-	
+
+	// Archived package - not a DB row (see cleanupPublicationRemnants()'s
+	// on-disk-only handling of it), so it isn't covered by the query above
+	// at all. Appended once regardless of the PRE/BASIC/FIN alter tab, since
+	// none of those apply to a finished archive. status=="archived" is set
+	// by archive_results-handler.php once Switch's upload succeeds; the
+	// is_dir() check guards the (should be rare, logged elsewhere) case
+	// where that flipped before the directory actually showed up.
+	$pub = sql_aget( "publications", "id='".$_GET["pub"]."'", "*" );
+	if( !empty( $pub[0]["id"] ) && $pub[0]["status"] == "archived" ) {
+		$magazine = sql_aget( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
+		$archivePath = findArchivePath( $magazine[0]["code"], $pub[0]["code"] );
+
+		if( $archivePath !== null ) {
+			$archiveName = basename( $archivePath );
+
+			$archiveTime = @filemtime( $archivePath );
+			$archiveDate = date( "d F Y, H:i", $archiveTime );
+			if( date( "Y-m-d" ) == date( "Y-m-d", $archiveTime ) ) {
+				$archiveDate = "Today, ".date( "H:i", $archiveTime );
+				}
+			if( date( "Y-m-d", strtotime( "-1 day" ) ) == date( "Y-m-d", $archiveTime ) ) {
+				$archiveDate = "Yesterday, ".date( "H:i", $archiveTime );
+				}
+
+			$decimalSep = ( $lng == "en" ) ? "." : ",";
+			$sizeLabel = formatAssetSize( getArchiveSize( $pub[0]["id"], $archivePath ), $decimalSep );
+
+			$txt .= "<tr data='".$pub[0]["id"]."'>";
+				$txt .= "<td>".$archiveName."</td>";
+				$txt .= "<td>Archive</td>";
+				$txt .= "<td>".$archiveDate."</td>";
+				$txt .= "<td align='right'>".$sizeLabel."</td>";
+				$txt .= "<td align='center' data='".$pub[0]["id"]."' class='noselect circle-color-box'><span class='circle-color'></span></td>";
+				$txt .= "<td class='noselect' align='right'><span class='assetUtils'>";
+					$txt .= "<i onclick='downloadArchive( \"".$pub[0]["id"]."\" )' class='fas fa-cloud-download-alt'></i>";
+					// No delete icon for archives - unlike a stray uploaded
+					// asset, there's nothing here to accidentally clean up
+					// one-off; the whole package is only ever removed as
+					// part of the job/publication delete flow
+					// (cleanupPublicationRemnants()).
+					if( $user[0][4] == "6" ) {
+						$txt .= "<img onclick='resendAsset( \"".$pub[0]["id"]."\" )' src='images/share-arrow.png' style='float:right; height: 17px; padding-left: 5px; cursor: pointer;'>";
+						}
+				$txt .= "</span></td>";
+			$txt .= "</tr>";
+			}
+		}
+
 	//$txt = "pub_id='".$_GET["pub"]."' ".( $_GET["alter"] != "ALL" ? "AND fp='".$_GET["alter"]."'" : "" )." AND parent='0'";
 	$result = $txt;
 	}
