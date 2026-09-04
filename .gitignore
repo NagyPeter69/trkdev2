@@ -59,3 +59,37 @@ client/xml/*
 r3API/r3/
 rendertest.pdf
 rendertest.jpg
+
+# Switch webhook debug dump (handler.php's per-request var_dump log, named
+# logs/<fileName>_<event>-<time>.txt) and two append-only per-request debug
+# logs page_pdf-handler.php writes via fopen(..., 'a+') in its own cwd -
+# pure runtime debug output, not application state.
+client/engine/switch/logs/
+client/engine/switch/pagestate.txt
+client/engine/switch/pageversion.txt
+
+# r3 command/output debug logs (the shell command + args logged before each
+# r3remote call) - not the same as client/engine/r3/'s cached render output
+# above, which is the actual render result these just precede.
+client/engine/switch/r3Thumb.txt
+client/r3Thumb.txt
+
+# Cron mutex lock (empty when idle, touched by
+# client/cron/switch_sync_worker.php) and a simple runtime message counter -
+# state, not code.
+client/cron/switch_sync_worker.lock
+client/message.counter
+
+# AUTOCOMPARE's literal, hardcoded output path (page_pdf-handler.php) -
+# whatever the last comparison run happened to conclude, not a fixture.
+client/tests/B-E.out
+
+# One-off manual test uploads, not the established client/engine/dyna/
+# fixture set (after.jpg/before.jpg/ajaxteszt_*.jpg/right319.jpg, which ARE
+# tracked) - inconsistent with that set's naming/sizing.
+client/engine/dyna/right7.jpg
+client/engine/dyna/test.pdf
+
+# Scratch output from a manual r3API/getpdfbox.php test run (timestamp-
+# prefixed filename) - not source despite the directory name.
+r3API/source/
