@@ -1,3 +1,13 @@
+<?php
+// This is an include-fragment of index2.php's login flow, not a standalone
+// entry point - it relies on session/HOST/$lang/$login_error already being
+// set up there. A direct request skips all of that, so redirect to the real
+// entry point instead of fataling on the undefined HOST constant.
+if( !defined( 'HOST' ) ) {
+	header( 'Location: index.php' );
+	exit;
+	}
+?>
 <?php $_SESSION['csrf_token'] = bin2hex( random_bytes( 32 ) ); ?>
 <form id='creator' method='post' action='?page='>
 
