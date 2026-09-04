@@ -13,9 +13,7 @@ foreach($xpath as $temp) {
 		}
 	}
 
-$mails = (string) $xml->Item[$i]->Mails;
-$cimzettek = $mails;
-$mails = explode( ";", $mails );
+$mails = gatedMailRecipients( $mag[0]["id"], $mag[0]["type"], (string) $xml->Item[$i]->Mails );
 
 for( $i = 0; $i < count( $mails ); $i++ ) {
 	$hash = md5( "adhocuserdownload-".time()."-".$mails[$i] );
