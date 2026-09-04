@@ -833,14 +833,33 @@ function ensurePreflightTooltip() {
 	return $preflightTooltip;
 	}
 
+// Flips the tooltip above the marker instead of below it when there isn't
+// enough room left in the viewport - re-run after every content change (not
+// just once on hover) since the tooltip's height grows/shrinks with the
+// number of issues, and that's only known once the ajax response is in.
+function positionPreflightTooltip( $marker, $tip ) {
+	var off = $marker.offset();
+	var margin = 16;
+	var viewportBottom = $(window).scrollTop() + $(window).height();
+	var tipHeight = $tip.outerHeight();
+
+	if( off.top + margin + tipHeight > viewportBottom ) {
+		$tip.css({ top: off.top - tipHeight - margin, left: off.left + margin });
+		}
+	else {
+		$tip.css({ top: off.top + margin, left: off.left + margin });
+		}
+	}
+
 $(document).on( 'mouseenter', '.preflightError', function( e ) {
 	var pageId = $(this).attr( 'data-pageid' );
 	if( !pageId ) return;
 
 	var myToken = ++preflightHoverToken;
+	var $marker = $(this);
 	var $tip = ensurePreflightTooltip();
-	var off = $(this).offset();
-	$tip.css({ top: off.top + 16, left: off.left + 16 }).text( 'Loading…' ).show();
+	$tip.text( 'Loading…' ).show();
+	positionPreflightTooltip( $marker, $tip );
 
 	$.getJSON( 'engine/preflight_issues_ajax.php', { pageid: pageId }, function( issues ) {
 		if( myToken !== preflightHoverToken ) return;
@@ -848,6 +867,7 @@ $(document).on( 'mouseenter', '.preflightError', function( e ) {
 
 		if( !issues || !issues.length ) {
 			$tip.text( 'Preflight failed - click to download the report' );
+			positionPreflightTooltip( $marker, $tip );
 			return;
 			}
 
@@ -861,6 +881,7 @@ $(document).on( 'mouseenter', '.preflightError', function( e ) {
 				.text( issues[i].message )
 				.appendTo( $tip );
 			}
+		positionPreflightTooltip( $marker, $tip );
 		});
 	});
 
@@ -896,7 +917,7 @@ function currentFile() {
 		}
 	}
 
-if( window.parent.frames[0].activeFUpload ) {
+if( window.parent.frames[0] && window.parent.frames[0].activeFUpload ) {
 	$("#select-file").hide(0);
 	
 	$("#selected-file").html( "Uploading file: "+window.parent.frames[0].fileVal );
@@ -1454,6 +1475,12 @@ if( hybridFP ) {
 // with the 3-digit slot position, same {position}_{code}_{issue}_...
 // convention Switch jobs already use elsewhere in this app (see
 // client/filedownload.php, flatplan_ajax.php's drawPage/drawAmericanPage).
+// American-numbering (multi-Part) jobs use {position}_{code}_{part}_...
+// instead - Issue means nothing extra there (an Adhoc job's issue code is
+// just its own Code again, and American pages are scoped by Part, not by
+// a document-wide Issue position), while Part (the same raw abbreviation
+// the #part dropdown already carries, e.g. "BEL") is what actually
+// disambiguates the file for Switch/the render pipeline.
 //
 // Sent as real chunks (same tempdir/num/num_chunks protocol
 // fileupload_ajax.php already expects from filetransfer.php/blob.php) rather
@@ -1473,9 +1500,15 @@ var dropUploadActive = false;
 function uploadPdfToSlot( file, position ) {
 	var finalName = file.name;
 	var upperName = file.name.toUpperCase();
+	var part = $('#part').length ? $('#part').val() : '';
+	var pos3 = ( '00' + position ).slice( -3 );
 
-	if( upperName.indexOf( pubCode.toUpperCase() ) === -1 || upperName.indexOf( String( issueCode ) ) === -1 ) {
-		var pos3 = ( '00' + position ).slice( -3 );
+	if( part ) {
+		if( upperName.indexOf( pubCode.toUpperCase() ) === -1 || upperName.indexOf( part.toUpperCase() ) === -1 ) {
+			finalName = pos3 + '_' + pubCode + '_' + part + '_' + file.name;
+			}
+		}
+	else if( upperName.indexOf( pubCode.toUpperCase() ) === -1 || upperName.indexOf( String( issueCode ) ) === -1 ) {
 		finalName = pos3 + '_' + pubCode + '_' + issueCode + '_' + file.name;
 		}
 
@@ -1560,11 +1593,11 @@ function plannerContextMenu( info, menu ) {
 		cbox.push( $(this).val() );
 		}); 
 	
-	if( window.parent.frames[0].activeFUpload ) {
+	if( window.parent.frames[0] && window.parent.frames[0].activeFUpload ) {
 		pubID = window.parent.frames[0].currentPlannerPubID;
 		}
-		
-	else {
+
+	else if( window.parent.frames[0] ) {
 		window.parent.frames[0].currentPlannerPubID = pubID;
 		}
 	

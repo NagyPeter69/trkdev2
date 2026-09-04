@@ -297,6 +297,7 @@
 						"Current" => 'Aktuális megjelenés',
 						"AdAutoProof" => 'Feltöltött hirdetések prúfolása',
 						"Workflow" => 'Munkafolyamat típusa',
+						"Preflight" => 'Preflight',
 						"FlatplanStages" => 'Oldalsor állomások',
 						"Enhance" => 'Képfeldolgozás',
 						"PDFstandard" => 'PDF szabvány',

@@ -216,11 +216,12 @@
 				}
 			}
 
-		// Adhoc's part rows no longer collect a page count/range at creation
-		// time (the "Pages" field was removed from create.php's newLine() -
-		// parts.place is left blank here and filled in later, same as it
-		// already is for Regular jobs via jobsettings.php), so there's
-		// nothing left to validate here.
+		// European-numbering Parts (Adhoc or Regular) submit a position/
+		// page-range here via create.php's newLine(); American-numbering
+		// Parts never do, so $_POST["position"] is legitimately absent for
+		// them - no format validation is done here either way, matching
+		// the Regular branch below (format validation only happens later,
+		// in jobsettings.php).
 
 		if( count( $error ) == 0 ) {
 			$guide = $lang["publications"]["mail_guide"];
@@ -284,7 +285,7 @@
 						$_POST["trim_y"][$i] = "";
 						}
 
-					$values = array( $id, $_POST["parttype"][$i], "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
+					$values = array( $id, $_POST["parttype"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
 					sql_add( "parts", $names, $values );
 					if( $_POST["parttype"][$i] == "BEL" ) {
 						$insideWidth = $_POST["trim_x"][$i];

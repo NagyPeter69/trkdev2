@@ -1445,6 +1445,19 @@
 			$first = !empty( $allPartPages ) ? $allPartPages[0][1] : 0;
 			$last = !empty( $allPartPages ) ? $allPartPages[count($allPartPages)-1][1] : 0;
 			$length = $last;
+			// A brand-new Part with zero uploaded pages yet still needs at
+			// least one empty slot in the Flatplan grid (not the Pages/
+			// fpPreview view, same distinction the European branch below
+			// already makes) - it's the user's drag-and-drop target for the
+			// Part's first page, not a "nothing to show" state. Bootstrapping
+			// first/last to 1 reuses drawAmericanPage()'s existing
+			// empty-slot rendering unchanged, rather than duplicating it.
+			$bootstrapEmptyPart = ( count( $allPartPages ) == 0 && $_GET["type"] != "fpPreview" );
+			if( $bootstrapEmptyPart ) {
+				$first = 1;
+				$last = 1;
+				$length = 1;
+				}
 			$ptype = $_GET["opt"];
 			if( empty( $ptype ) ) {
 				$ptype = "normal";
@@ -1462,7 +1475,7 @@
 			$divWidth = $row*229;
 				
 			//$text = $_GET["opt"];
-			if( count($allPartPages) > 0 ) {
+			if( count($allPartPages) > 0 || $bootstrapEmptyPart ) {
 				if( $_GET["part"] == "MELL" or $_GET["part"] == "BEL" ) {
 					for( $i = 0; $i <= $last; $i++ ) {
 						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px; height: ".($sizes[1]+28)."px; width: ".(2*$sizes[0])."px;'>";
@@ -1510,7 +1523,17 @@
 			}
 		else {
 			$sizes = sql_get( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND width="1" AND issue="'.$issue[0][10].'" AND state="" AND fin="'.$fin.'" ORDER BY page ASC LIMIT 2', '*' );
-			$sizes = calculateSize( $sizes[1], $magazine[0][3], $issue[0][10] );
+			// A brand-new issue has no pageinfo rows at all yet - same
+			// empty-result case as $allPartPages in the American branch
+			// above, fixed the same way: calculateSize() indexes into
+			// whatever row it's given with no existence check, so
+			// $sizes[1] being undefined threw a cascade of PHP warnings
+			// that (display_errors is on) got printed straight into this
+			// endpoint's JSON response, corrupting it before the
+			// box-drawing loop below ever got a chance to run - the
+			// caller's ajax success handler (dataType:'json') never fired,
+			// so the Flatplan looked empty even with a real page count.
+			$sizes = !empty( $sizes[1] ) ? calculateSize( $sizes[1], $magazine[0][3], $issue[0][10] ) : array( 81, 97 );
 			$row = intval( intval($_GET['maxWidth'] )/229 );
 			$divWidth = $row*229;
 						
@@ -1991,8 +2014,16 @@
 				$type = 'P';
 				break;
 			}
-		
-		$file_name = strtoupper( $preview[0][2] ).'_'.$magazine[0][3].'_'.$pub[0][10].'_'.$type;
+
+		// Adhoc jobs have publications.code == magazines.code (there's no
+		// separate issue), so their checked-ad files are named
+		// NAME_CODE_TYPE, not NAME_CODE_CODE_TYPE - same distinction already
+		// applied in engine/xml_handler.php and client/engine/ajax.php's
+		// load_adverts, just missing here. Without it, is_file() below never
+		// finds an Adhoc ad's real PDF, so $file[0] never gets populated and
+		// the high-res preview's render spinner never resolves.
+		$issueSegment = ( $magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];
+		$file_name = strtoupper( $preview[0][2] ).'_'.$magazine[0][3].$issueSegment.'_'.$type;
 		$path = "advertisements/".$file_name.".pdf";
 
 		$user = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', '*' );	

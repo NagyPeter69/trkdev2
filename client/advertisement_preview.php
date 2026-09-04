@@ -31,7 +31,16 @@ switch( $preview[0][3] ) {
 		break;
 	}
 
-$file_name = strtoupper( $preview[0][2] ).'_'.$magazine[0][3].'_'.$pub[0][10].'_'.$type;
+// Adhoc jobs have publications.code == magazines.code (there's no separate
+// issue), so their checked-ad files are named NAME_CODE_TYPE, not
+// NAME_CODE_CODE_TYPE - same distinction already applied consistently in
+// engine/xml_handler.php and client/engine/ajax.php's load_adverts, just
+// missing here. Without it, this page's simplexml_load_file()/is_file()
+// calls below never find an Adhoc job's real files (they look for
+// NAME_CODE_CODE_TYPE, which doesn't exist), so preflight status and the
+// high-res preview both silently fail for every Adhoc ad.
+$issueSegment = ( $magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];
+$file_name = strtoupper( $preview[0][2] ).'_'.$magazine[0][3].$issueSegment.'_'.$type;
 $file_path = "advertisements/".$file_name.".pdf";
 
 ?>
@@ -81,8 +90,11 @@ jQuery(document).ready(function(){
 					$type = 'P';
 					break;
 				}
-			$path = 'advertisements/'.strtoupper( $ad[0][2].'_'.strtoupper( $magazine[0][3] ).'_'.$pub[0][10].'_'.$type );
-			$outer_path = 'advertisements/'.strtoupper( $ad[0][2].'_'.strtoupper( $magazine[0][3] ).'_'.$pub[0][10].'_'.$type );
+			// Same Adhoc-vs-Regular single/double segment distinction as
+			// $file_name above.
+			$issueSegment = ( $magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];
+			$path = 'advertisements/'.strtoupper( $ad[0][2].'_'.strtoupper( $magazine[0][3] ).$issueSegment.'_'.$type );
+			$outer_path = 'advertisements/'.strtoupper( $ad[0][2].'_'.strtoupper( $magazine[0][3] ).$issueSegment.'_'.$type );
 			if( $type == 'D' ) {
 				$xml = simplexml_load_file( $path.'L.xml' );
 				$xml2 = simplexml_load_file( $path.'R.xml' );

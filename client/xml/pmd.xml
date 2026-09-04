@@ -31,16 +31,16 @@
     </AdSizes>
   </Item>
   <Item>
-    <Name>Kertvilág</Name>
-    <Code>ADJ74</Code>
+    <Name>ELLE könyv eleje</Name>
+    <Code>KMV76</Code>
     <Publisher>TestCo</Publisher>
-    <Language>HU</Language>
+    <Language>EN</Language>
     <Workflow>Hybrid</Workflow>
-    <Preflight>Yes</Preflight>
+    <Preflight>No</Preflight>
     <FlatplanStages>1</FlatplanStages>
-    <PageNumbering>European</PageNumbering>
+    <PageNumbering>American</PageNumbering>
     <Resolution>300</Resolution>
-    <Enhance>Minimal</Enhance>
+    <Enhance>Skintone</Enhance>
     <PDFstandard>PDFX1A</PDFstandard>
     <ArchiveStorage/>
     <OutputFormat>TIFF</OutputFormat>

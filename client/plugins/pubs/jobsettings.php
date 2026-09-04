@@ -50,7 +50,7 @@ if( $magazine[0][10] == "Regular" ) {
 					}
 
 
-			$avaiable = array( 'Type', 'Name', 'Client', 'Code', 'Mails', 'Workflow', 'Enhance', 'PageNumbering', 'Deadline', 'Language', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'OutputFormat', 'WebImages' );
+			$avaiable = array( 'Type', 'Name', 'Client', 'Code', 'Mails', 'Workflow', 'Preflight', 'Enhance', 'PageNumbering', 'Deadline', 'Language', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'OutputFormat', 'WebImages' );
 			// E-mail only applies to Adhoc publications (Regular pubs have
 			// no client mailing list here).
 			if( $magazine[0][10] != "Adhoc" ) {
@@ -70,6 +70,9 @@ if( $magazine[0][10] == "Regular" ) {
 						break;
 					case 'Workflow':
 						$temp = array( 'Full', 'Hybrid', 'Resize', 'Auto' );
+						break;
+					case 'Preflight':
+						$temp = array( 'Yes', 'No' );
 						break;
 					case 'FlatplanStages':
 						$temp = array( '1', '2', '3' );

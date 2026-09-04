@@ -202,13 +202,14 @@ function newLine() {
 			}
 	?>
 	text += '</select></span>';
-	// Adhoc jobs defer their page count/range to the later editing flow
-	// (jobsettings.php) - Regular jobs still define it per Part right here,
-	// same as before this field was (over-broadly) dropped for both types.
-	// American numbering never gets a position/pages field at all (rule
-	// A/B - American Parts track their own page count live instead), same
-	// as every other Parts dialog.
-	if( $("#Type").val() != "Adhoc" && $("#PageNumbering").val() != "American" ) {
+	// Position/page-range gates on PageNumbering (axis B), not Type (axis A)
+	// - European numbering always needs an absolute page-range per Part,
+	// whether the job is Regular or Adhoc (a Regular vs Adhoc, European
+	// job was previously getting no field at all here, so its Parts kept
+	// place="" and the Flatplan had nothing to render). American numbering
+	// never gets a position/pages field at all (Parts track their own page
+	// count live instead), same as every other Parts dialog.
+	if( $("#PageNumbering").val() != "American" ) {
 		text += '<span style="padding-left: 5px;">'+posname+': <input type="text" onkeydown="numberCheck3(event)" name="position[]" style="width: 100px;"></span>';
 		}
 	text += '<span class="trimsize" style="padding-left: 10px;">Trimmed size: <input type="text" name="trim_x[]" style="width: 25px;">x<input type="text" name="trim_y[]" style="width: 25px;">mm</span>';

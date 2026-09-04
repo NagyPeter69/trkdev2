@@ -30,10 +30,17 @@ Three independent axes combine to describe any given job:
 - **Regular** publications are recurring/periodical — they must have **Issues**
   (`publications` rows), and an Issue can override some of the parent publication's
   parameters slightly (its own per-issue XML, `client/xml/{MAGCODE}_{ISSUECODE}.xml` — see
-  `partDetect()` below).
+  `partDetect()` below). The magazine-level `parts` template (`pub_id='0'`) carries the
+  *default* color-standard and page-range definitions; each Issue actualizes its own `parts`
+  rows from that template (via `newIssue`/`jobsettings.php`). **The "prepress job" is always
+  an Issue of an already-defined publication** for this type — there's no such thing as a
+  standalone Regular prepress job.
 - **Adhoc** publications are one-time jobs. They can relate to an already-defined **Client**
   (a known publisher/account), or be genuinely "cold" — a walk-in job under a generic
-  `Adhoc` client with no prior relationship.
+  `Adhoc` client with no prior relationship. Unlike Regular, an Adhoc job **is** the prepress
+  job — its own `parts` rows (not a `pub_id='0'` template) carry its one-time color-standard
+  and page-range definitions directly, defined once at creation (or later via
+  Job Settings) with no separate Issue layer above it.
 - **This field is a business classification, not a page-numbering signal** — don't conflate
   it with axis B below. A real bug this session (`client/flatplan_preview.php`) checked
   `magazine.type == "Regular"` to decide whether to clear the selected Part, when it should
@@ -102,6 +109,238 @@ session before touching this area again):
   path and a couple of low-traffic/test scripts don't have easy access to it).
 - Several `fin`/stage-descriptor mismatches (FlatplanStages==1 handling) - see the dedicated
   memory file, not repeated here.
+
+### Publication-creation Position field gated on the wrong axis (found/fixed 2026-09-04)
+
+Same conflation as the `flatplan_preview.php` bug above, one layer earlier — this time at
+**publication-creation time**, not render time. Symptom: a newly-created publication (found
+via `ADJ74`, `Type=Adhoc`/`Workflow=Hybrid`/`PageNumbering=European`) had a completely empty
+Flatplan even before any content was uploaded, when it should show empty placeholder pages
+for its configured page count.
+
+- `client/plugins/pubs/create.php`'s `newLine()` only showed the position/page-range input
+  (needed for European numbering's absolute per-Part page ranges) when
+  `Type != "Adhoc" && PageNumbering != "American"` — i.e. it also silently hid the field for
+  any **Adhoc + European** job, even though European numbering needs that range regardless of
+  Type (axis B, not axis A, same distinction as above). Fixed by dropping the `Type` check
+  entirely — gate is now just `PageNumbering != "American"`.
+- Even had the field been shown, `client/plugins/pubsApply.php`'s `sub=create` Adhoc branch
+  (~line 288) hardcoded `parts.place=""` rather than reading `$_POST["position"][$i]` — the
+  Regular branch a few dozen lines below it did this correctly already. Fixed to match.
+- Net effect before the fix: an Adhoc+European job's `parts.place` stayed blank →
+  `syncPublicationPages()` (`engine/engine.php`) computed `publications.pages=0` →
+  `client/engine/flatplan_ajax.php`'s Adhoc page-count fallback (which derives a count from
+  already-*uploaded* `pageinfo` rows instead) also found nothing yet uploaded → the Flatplan's
+  box-drawing loop had no page count to iterate over → completely empty grid.
+- **Any Adhoc+European publication created before this fix** (check `magazines.type='Adhoc'`
+  joined to a `pmd.xml`/PMD `PageNumbering=European` entry) will still have `place=''` parts
+  rows and needs a one-time manual backfill via Job Settings (enter each Part's real page
+  range there) to populate `publications.pages` and get a working Flatplan — this fix only
+  prevents the gap for jobs created from now on.
+
+### Second, independent bug on the same path: uncaught-warning JSON corruption (found/fixed 2026-09-04)
+
+Re-tested the fix above end-to-end (recreated the test pub as `PQA56` after backfilling
+`ADJ74` via Job Settings) and the Flatplan was *still* empty, even though `publications.pages`
+was now correctly `216` and `parts.place` was `1-216`. Root cause was a second bug on the same
+`client/engine/flatplan_ajax.php` `op=loadPagePair` path, unrelated to the axis-conflation
+fix above:
+
+- The European-numbering branch (the `else` around line 1511, i.e. non-`fpPreview`/non-American)
+  computes a default page size via `calculateSize( $sizes[1], ... )`, where `$sizes` comes from
+  a `pageinfo` query with no rows yet (nothing uploaded to a brand-new issue). `$sizes[1]` is
+  therefore `null`, and `calculateSize()` (same file, ~line 60) indexes into it
+  (`$pageInfo[1]`, `$pageInfo[11]`, etc.) with no existence check — this is the exact same bug
+  class as the already-documented `$allPartPages`/American-branch fix above (see its own
+  comment, ~line 1439), just never applied to this second call site.
+- With `display_errors` On (see "PHP config" below — deliberately on for this bring-up
+  phase), each of those null-array-access warnings gets printed as literal HTML straight into
+  the AJAX response body, *before* the real JSON payload. The client (`client/flatplan.php`'s
+  `loadPages()`) calls this endpoint with `dataType:'json'` and no `error:` handler, so a
+  corrupted (HTML-prefixed) response fails to parse and the `success` callback silently never
+  fires — `#fp_holder` just stays empty. Confirmed directly (not just read) by extracting
+  `calculateSize()` into a standalone harness against the real DB with `error_reporting(E_ALL)`
+  and reproducing the exact warning cascade for `PQA56`'s empty `pageinfo` result.
+- **Fixed** the same way the American branch already was: `$sizes = !empty($sizes[1]) ?
+  calculateSize(...) : array(81, 97)` — skip the call entirely when there's no row to feed it,
+  matching `calculateSize()`'s own fallback default size.
+- **Worth internalizing**: this is now the *second* time this exact bug shape (an unguarded
+  array index into a possibly-empty query result, silently corrupting a `dataType:'json'`
+  response under `display_errors=On`) has been found on this one AJAX endpoint. Any other
+  `calculateSize(...)`/similar-pattern call site fed directly from a `sql_get(...)[N]` result
+  elsewhere in this codebase should be treated as suspect until checked — this is exactly the
+  kind of bug that only surfaces on a brand-new issue/publication with zero uploaded pages,
+  a state most manual testing skips past quickly.
+
+### Third bug on the same investigation: pre-existing frontend crash blocking ALL Flatplan loads (found/fixed 2026-09-04)
+
+After fixing both bugs above, the Flatplan for `PQA56` was *still* completely empty. Verified
+with a real browser session (Claude in Chrome) this time rather than more static reading:
+`read_console_messages` showed an uncaught `TypeError: Cannot read properties of undefined
+(reading 'activeFUpload')` firing at page load, and `read_network_requests` confirmed **zero**
+`flatplan_ajax.php?op=loadPagePair` requests were even being sent — the page's own bootstrap
+script was crashing before it ever got that far, independent of anything server-side.
+
+- Cause: `client/flatplan.php` line ~899 (a top-level statement, not inside a function) runs
+  `if( window.parent.frames[0].activeFUpload )` unconditionally as soon as its `<script>` block
+  (a single block spanning lines 680-1717) is parsed. Nothing in this app's current
+  architecture (confirmed: no `<frameset>`/`<frame>` anywhere in the codebase, no persistent
+  `<iframe>` present at page load) ever populates `window.frames[0]` — it's simply always
+  `undefined` on a normal page load, so this line throws immediately, killing the rest of the
+  single shared `<script>` block **including the `loadPages()` bootstrap call** that would
+  otherwise fire the AJAX request that draws the grid.
+- **This blocked the Flatplan for every publication, not just Adhoc/European ones** — confirmed
+  by reproducing the identical crash on `TRHE 2601` (a pre-existing Regular publication with 84
+  real uploaded pages, nothing to do with the Bug 1/Bug 2 fixes above). `git blame` traces this
+  line back to the original migration commit (`5a25e5f`, 2026-07-03) — pre-existing, dead
+  code from whatever older (possibly frameset-based) architecture this app evolved from, never
+  actually exercised/noticed before because nobody had previously watched the browser console
+  while loading Flatplan with a completely fresh (zero-page) publication - a normal load with
+  pages already showing the "stale success" from a working session before this bug started
+  mattering wouldn't necessarily re-trigger a fresh look either.
+- Two more call sites of the exact same unguarded pattern found and fixed alongside it (same
+  fix, `window.parent.frames[0] && ...`): `client/flatplan.php` ~line 1563 and
+  `client/design.php` ~line 1400, both inside `plannerContextMenu()` (Planner right-click menu)
+  - these don't block page load (they're inside a function, only called on user interaction)
+  but would throw the same way whenever that feature is actually used.
+- **Fixed**: guarded all three with `window.parent.frames[0] &&` before reading
+  `.activeFUpload`/`.currentPlannerPubID` — matches how "brand-new state, no data yet" gaps
+  are already guarded everywhere else in this codebase (see `$allPartPages`/`$sizes` above).
+- **Verified end-to-end** via Chrome: `PQA56`'s Flatplan now renders all 216 empty page slots
+  (001-216), zero console errors, `loadPagePair` returns 200 with real content.
+
+### American-numbering Parts: no empty placeholder page before first upload (found/fixed 2026-09-04)
+
+Tested via a fresh Adhoc+American publication (`KMV76`, 2 Parts: `BEL`/Inside and `TAB`/Board
+Cover, both with zero uploaded pages). The part-selector dropdown itself already worked
+correctly in both Flatplan and Pages View (populated from `parts` for the pub, no code change
+needed there) - the actual gap was that a Part with zero `pageinfo` rows showed literal
+"There are no pages to show yet" instead of an empty page 1 the user could drag a PDF onto.
+
+- `client/engine/flatplan_ajax.php`'s American-numbering branch (`op=loadPagePair`, ~line
+  1438) derives `$first`/`$last` from `$allPartPages` (the Part's actual `pageinfo` rows) and
+  only calls `drawAmericanPage()` at all when `count($allPartPages) > 0` - a brand-new Part
+  fell straight into the `else` "nopage" text branch instead, matching the same
+  content-derived-count trap already documented for the European/Adhoc bug above, just on the
+  American side.
+- `drawAmericanPage()` itself already handles "page number has no `pageinfo` row yet" cleanly
+  (the `empty_slot.png` tiled placeholder background, confirmed by reading the rest of the
+  function) and already emits a real `.thumb`/`page='N'` drop target that the existing
+  Hybrid drag-and-drop-PDF handler (`client/flatplan.php`'s `dragover`/`drop` delegation) picks
+  up unmodified - so no change was needed there, only to how many pages get looped over.
+- **Fixed**: when `count($allPartPages) == 0` and the request isn't `type=fpPreview` (same
+  Flatplan-vs-Pages-preview split the European branch already uses two sections up),
+  bootstrap `$first`/`$last`/`$length` to `1` instead of `0` so the existing
+  `count($allPartPages) > 0` rendering path runs once for page 1, reusing
+  `drawAmericanPage()` unchanged rather than duplicating its empty-slot logic.
+- **Verified live** via Chrome for both of `KMV76`'s Parts: `BEL` (Inside) shows a real empty
+  page-1 slot in the pair layout; switching the part dropdown to `TAB` (Board Cover) shows its
+  own empty page-1 slot in the single-page layout. Both are genuine `.thumb` elements (checked
+  by direct JS inspection, not just visually), so drag-and-drop upload works on them.
+- **Deliberately not extended to Pages View** (`type=fpPreview`) - that view already
+  short-circuits to a "no pages" state for an empty Part/issue on the European side too (see
+  the `fpPreview`-only `$nopages=1` special-case, same section), so this fix only touches the
+  Flatplan grid, matching what was actually asked for. Revisit if Pages View is ever expected
+  to show the same bootstrap slot.
+
+### Flatplan drag-drop upload naming ignored Part for American-numbering jobs (found/fixed 2026-09-04)
+
+`client/flatplan.php`'s `uploadPdfToSlot()` (the Hybrid-workflow drag-and-drop-PDF-onto-a-slot
+feature) always built the Switch-facing filename as `{slot}_{Code}_{Issue}_{original name}` -
+correct for European-numbering jobs, but meaningless for American-numbering (multi-Part) jobs:
+an Adhoc job's Issue code is just its own Code again (no extra information), while Part is what
+actually disambiguates the file (which Part's page 1 is this?) and was missing entirely.
+Reported live against `KMV76` (Adhoc/American, Parts `BEL`/Inside + `TAB`/Board Cover) -
+expected name for a drop on slot 1 of Inside: `001_KMV76_BEL_<original name>`.
+
+- **Fixed**: when `#part` (the same dropdown already covered above) has a value, the filename
+  is now `{slot}_{Code}_{Part}_{original name}` instead - `Part` is the dropdown's raw value
+  (e.g. `"BEL"`), already the exact abbreviation stored in `parts.name` and shown in the
+  dropdown, no separate lookup needed. The Issue segment is dropped entirely for this case
+  (not appended as a 4th segment) - it carries no extra information for Adhoc, and the user's
+  own worked example (`001_KMV76_BEL_abcde.pdf`) confirmed 3 segments, not 4.
+- European-numbering jobs (`#part` empty/hidden) are untouched - same `{slot}_{Code}_{Issue}_`
+  naming as before.
+- **Fixed only client-side** - confirmed by reading `client/engine/fileupload_ajax.php` (the
+  endpoint every chunk posts to) that it uses `$_FILES["file"]['name']` as-is for the
+  Switch-facing `file_name`, with no server-side renaming/reconstruction to also fix or that
+  could undo this - `part` is separately passed to Switch as its own `Part` field regardless
+  (`$_POST["part"]`), unrelated to the filename itself.
+- **Verified live** by calling `uploadPdfToSlot()` directly in a real browser console against
+  `KMV76` (not just reading the diff): slot 1/Inside → `001_KMV76_BEL_abcde.pdf`, slot 5/Board
+  Cover → `005_KMV76_TAB_abcde.pdf`, and a part-less (European-style) call still produces the
+  unchanged `{slot}_{Code}_{Code}_...` shape.
+
+### Preflight setting missing from Job Settings (found/fixed 2026-09-04)
+
+Reported as "disappeared" - `git log --all -p` for `client/plugins/pubs/jobsettings.php`
+confirms it was never actually present there in any commit (not a regression to bisect), only
+in the Create-publication dialog (`client/plugins/pubs/create.php`) and the corresponding
+`loadPub` panel builder (`client/plugins/pubsApply.php` ~980-995, ~1132-1142) - so a
+publication's Preflight setting could be chosen once at creation but never revisited
+afterward.
+
+- **Fixed**: added `'Preflight'` to `jobsettings.php`'s `$avaiable` field list (~line 53, right
+  after Workflow, matching the Create dialog's own field order) plus a matching
+  `case 'Preflight': $temp = array('Yes','No');` in the options switch (~line 74) - it falls
+  into the same generic `<select>` rendering path `WebImages` already uses, no special-casing
+  needed.
+- **No save-side change was needed** - `pubsApply.php`'s `sub=jobsettings` handler (~line 804)
+  already reads `$_POST["Preflight"]` (defaulting to `"Yes"` when absent, which is exactly how
+  it was silently defaulting before this fix) and both updates `magazines.preflight` and calls
+  `changeXmlDatabase('modify', $_POST)` to persist it to `pmd.xml` - it was just never being
+  submitted because the field didn't exist in the form. Also already handles turning Preflight
+  off mid-production by clearing existing red preflight markers (see its own comment).
+- Added the missing `"Preflight"` label to `client/lang/hu.php`'s xml-label array (already
+  present in `en.php`) - reused the existing bare "Preflight" loanword wording already used
+  elsewhere in that file (`fppreflight_tip`), consistent with how this codebase treats the
+  term as an English loanword in Hungarian prepress usage rather than translating it.
+- **Verified live** by fetching the actual panel endpoint (`engine/menuAjax.php?op=loadmenu&
+  menu=pubs_jobsettings&data=<magazine_id>`) against `KMV76` (Preflight=No in its PMD XML) and
+  injecting the real response into the DOM the same way the app's own `settingsPanel()` does -
+  confirmed both that the field renders and that it pre-selects "No", matching the job's actual
+  current setting.
+
+### Adverts high-res preview broken for Adhoc jobs: missing issueSegment guard (found/fixed 2026-09-04)
+
+Reported as: checked ads show correctly in the Adverts list, but clicking one for the high-res
+preview showed garbled text ("...preview imageSupported adverts:" - two unrelated lang strings
+concatenated with no separator), "Status: Preflight unsuccessful" contradicting the list's own
+"Preflight successful", and the render spinner never resolving. Reproduced live against
+`KMV76` (Adhoc) ad `EFG`.
+
+Root cause: **Adhoc jobs have `publications.code == magazines.code`** (no separate Issue), so
+the ad-preflight files Switch writes are named `NAME_CODE_TYPE` (e.g. `EFG_KMV76_F.xml`), not
+`NAME_CODE_CODE_TYPE`. This exact distinction was already fixed - with matching comments
+explaining it - in **`engine/xml_handler.php`** (`cleanupPublicationRemnants()`) and
+**`client/engine/ajax.php`** (`load_adverts`, 4 call sites) via an `$issueSegment = (
+$magazine[0][3] == $pub[0][10] ) ? '' : '_'.$pub[0][10];` guard - which is exactly why the
+*list* view (built by `ajax.php`) showed the correct "Preflight successful" status. Nobody had
+applied the same guard to the two files that build the *preview*:
+
+- `client/advertisement_preview.php` (3 sites: `$file_name`/`$file_path` ~line 34, and
+  `$path`/`$outer_path` ~line 93-94) - without it, `simplexml_load_file()` on the (wrong,
+  nonexistent) 4-segment XML path fails, `$errors['size']` etc. end up empty/falsy instead of
+  `'size_ok'`, which is exactly the condition (`$errors['size'] != 'size_ok'`) that both flips
+  the status to "unsuccessful" AND triggers the "Supported adverts:" format-list block right
+  after the bleed-check message with no separator between them - the "imageSupported adverts:"
+  the user saw.
+- `client/engine/flatplan_ajax.php`'s `op=advert_preview_reloadbg` handler (~line 2018) - same
+  missing guard on its own `$file_name`/`$path`; `is_file()` against the wrong path never finds
+  the real PDF, so `$file[0]` (including `.Bottom`) never gets populated and the JS-side render
+  spinner waits forever on a response with nothing to draw.
+- **Fixed** all 4 sites with the identical `$issueSegment` guard already used elsewhere -
+  verified live end-to-end against `KMV76`'s `EFG` ad: trimmed size now populates, status
+  correctly reads "Preflight successful" (matching the list), the "imageSupported adverts:"
+  text is gone, and the actual high-res PDF render now displays with trim/bleed guides instead
+  of spinning forever.
+- **Worth internalizing**: this Adhoc-vs-Regular single/double filename-segment distinction has
+  now been independently rediscovered and fixed in 3 different files across this project's
+  history (`xml_handler.php`, `ajax.php`, and now `advertisement_preview.php`/
+  `flatplan_ajax.php` together) - any *other* file that builds an
+  `advertisements/{AD}_{CODE}_{ISSUE}_{TYPE}` path from `$magazine[0][3]`/`code` and
+  `$pub[0][10]`/`issue` directly (grep for that shape) should be treated as suspect until
+  checked, the same way the `Type`-vs-`PageNumbering` conflation was earlier in this document.
 
 ## Machines involved
 
@@ -761,6 +1000,31 @@ migration, since they're a much larger, separate body of work:
 - These are real, valid concerns but scoped as "a quarter-scale rewrite project", not
   something to bundle into ongoing bug fixes. Revisit only if explicitly asked to scope
   that work.
+
+### No cache-busting on static CSS/JS - "fixed on the server, still broken in that browser" (found 2026-09-04)
+
+`nginx`'s static-file serving for `client/css/*.css` and `client/js/*.js` sends no
+`Cache-Control`/`Expires` header at all (confirmed via a raw `fetch()` from a real browser
+session, headers were just `etag`+`last-modified`, nothing else) — every `<link>`/`<script>`
+tag across ~14 files (`index2.php`, `flatplan.php`, `design.php`, etc. - grep
+`css/flatplan.css\|css/client.css` for the full list) references the bare filename with no
+version/cache-busting query string. Browsers fall back to **heuristic freshness** (roughly
+`(response-date - last-modified) / 10`) when no explicit caching header is present - a file
+that hadn't changed in a month (`last-modified` far in the past) gets treated as safe to serve
+from cache for a long time *without even revalidating*, so a same-day server-side fix can be
+invisible in an already-open browser tab/profile until a hard refresh, while a browser that
+loads fresh afterward sees it immediately. Confirmed exactly this shape live: a same-day CSS
+fix (the `.preflightTooltip` color override two sections up) was correctly on disk and served
+correctly to a fresh `fetch()`, yet a normal navigation in Chrome kept rendering the pre-fix
+(illegible) tooltip color until `Ctrl+Shift+R`.
+
+**Not fixed** (flagged, not touched, since it's a ~14-file change beyond what was asked) - the
+durable fix would be a version query string on every CSS/JS `<link>`/`<script>` src, e.g.
+`?v=<?= APP_BUILD ?>` (see "Git hooks" above - `engine/build_info.php`'s `APP_BUILD` already
+regenerates on every commit, so this would need no separate versioning step of its own).
+**Until that's done: assume any CSS/JS-only fix needs a hard refresh to actually verify** -
+a normal reload, or testing in a browser that hasn't loaded the page recently, can both
+silently mask a real, already-shipped fix as "still broken."
 
 ### Pages View footer: deferred perf optimization (small, not urgent)
 

@@ -1397,11 +1397,11 @@ function plannerContextMenu( info, menu ) {
 		cbox.push( $(this).val() );
 		}); 
 	
-	if( window.parent.frames[0].activeFUpload ) {
+	if( window.parent.frames[0] && window.parent.frames[0].activeFUpload ) {
 		pubID = window.parent.frames[0].currentPlannerPubID;
 		}
-		
-	else {
+
+	else if( window.parent.frames[0] ) {
 		window.parent.frames[0].currentPlannerPubID = pubID;
 		}
 
