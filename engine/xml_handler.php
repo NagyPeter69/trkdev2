@@ -908,6 +908,7 @@
 					$code->addChild( 'Publisher', $values['Client'] );
 					$code->addChild( 'Language', $values['Language'] );
 					$code->addChild( 'Workflow', $values['Workflow'] );
+					$code->addChild( 'Preflight', $values['Preflight'] ?? 'Yes' );
 					$code->addChild( 'FlatplanStages', $values['FlatplanStages'] );
 					$code->addChild( 'PageNumbering', $values['PageNumbering'] );
 					$code->addChild( 'Resolution', $values['Resolution'] );
@@ -947,10 +948,11 @@
 					$code->addChild( 'Publisher', $values['Client'] );
 					$code->addChild( 'Language', $values['Language'] );
 					$code->addChild( 'Workflow', $values['Workflow'] );
+					$code->addChild( 'Preflight', $values['Preflight'] ?? 'Yes' );
 					$code->addChild( 'FlatplanStages', $values['FlatplanStages'] );
 					$code->addChild( 'PageNumbering', $values['PageNumbering'] );
 					$code->addChild( 'Resolution', $values['Resolution'] );
-					$code->addChild( 'Enhance', $values['Enhance'] );	
+					$code->addChild( 'Enhance', $values['Enhance'] );
 					$code->addChild( 'PDFstandard', $values['PDFstandard'] );
 					$code->addChild( 'ArchiveStorage', $values['ArchiveStorage'] ?? '' );
 					$code->addChild( 'OutputFormat', $values['OutputFormat'] );

@@ -297,6 +297,7 @@
 						"Current" => 'Current Issue',
 						"AdAutoProof" => 'Proof Print Uploaded Ads',
 						"Workflow" => 'Workflow Type',
+						"Preflight" => 'Preflight',
 						"FlatplanStages" => 'Flatplan Stages',
 						"Enhance" => 'Image Enhancement',
 						"PDFstandard" => 'PDF Standard of Final Pages',
