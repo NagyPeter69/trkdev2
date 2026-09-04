@@ -226,8 +226,8 @@
 			$guide = $lang["publications"]["mail_guide"];
 			
 			if( $_POST["Type"] == "Adhoc" ) {
-				$names = array( "publisher_id", "name", "code", "calendarGroup", "type" );
-				$values = array( "0", $_POST["Name"], $_POST["Code"], "", $_POST["Type"] );
+				$names = array( "publisher_id", "name", "code", "calendarGroup", "type", "preflight" );
+				$values = array( "0", $_POST["Name"], $_POST["Code"], "", $_POST["Type"], $_POST["Preflight"] ?? "Yes" );
 				$mid = sql_add( "magazines", $names, $values );
 				
 				$name = array( "publisher_id", "magazine_id", "pages", "uploadable", "code", "deadline", "enhance" );
@@ -330,8 +330,8 @@
 				
 			if( $_POST["Type"] == "Regular" ) {
 				$publisher = sql_aget( "publishers", "name='".$_POST["Client"]."'", "*" );
-				$names = array( "publisher_id", "name", "code", "calendarGroup", "type" );
-				$values = array( $publisher[0]["id"], $_POST["Name"], $_POST["Code"], "", $_POST["Type"] );
+				$names = array( "publisher_id", "name", "code", "calendarGroup", "type", "preflight" );
+				$values = array( $publisher[0]["id"], $_POST["Name"], $_POST["Code"], "", $_POST["Type"], $_POST["Preflight"] ?? "Yes" );
 				$mid = sql_add( "magazines", $names, $values );
 
 				changeXmlDatabase( 'add', $_POST );
@@ -976,7 +976,7 @@
 	if( $_GET["sub"] == "loadPub" ) {
 		$txt = "";
 		if( $_GET["Type"] == "Adhoc" ) {
-			$avaiable = array( 'Name', 'Client', 'Code', 'Mails', 'Workflow', 'Enhance', 'PageNumbering', 'Deadline', 'Language' );
+			$avaiable = array( 'Name', 'Client', 'Code', 'Mails', 'Workflow', 'Preflight', 'Enhance', 'PageNumbering', 'Deadline', 'Language' );
 		
 			$default = array();
 			foreach( $avaiable as $key ) {
@@ -990,6 +990,10 @@
 					case 'Workflow':
 						$temp = array( 'Full', 'Hybrid', 'Resize', 'Auto' );
 						$default[$key] = "Resize";
+						break;
+					case 'Preflight':
+						$temp = array( 'Yes', 'No' );
+						$default[$key] = "Yes";
 						break;
 					case 'Enhance':
 						$temp = array( 'Skintone', 'Food', 'Jewellery', 'Vivid', 'Paintings', 'Minimal', 'General', 'Resize only', 'Null' );
@@ -1007,7 +1011,7 @@
 						break;
 					}
 
-				$txt .= "<tr>";
+				$txt .= "<tr class='".$key."'>";
 					if( $key == "Client" ) { $txt .= "<td valign='top' align='left'>".$lang['xml'][$key]."</td>"; }
 					elseif( $key == "Mails" ) {
 						$txt .= "<td align='left'><span class='mailBox' style='display: none;'>".$lang['xml'][$key]."</span><span class='userBox'>Art Director</span></td>";
@@ -1124,7 +1128,7 @@
 		if( $_GET["Type"] == "Regular" ) {
 			// LocalStorage left the UI entirely: every Regular publication
 			// stores PubFolder (hardwired via the hidden input below).
-			$avaiable = array( 'Client', 'Name', 'Code', 'Workflow', 'Enhance', 'PageNumbering', 'Language' );
+			$avaiable = array( 'Client', 'Name', 'Code', 'Workflow', 'Preflight', 'Enhance', 'PageNumbering', 'Language' );
 
 			foreach( $avaiable as $key ) {
 				$value = (string) $xml->Item[$i]->$key;
@@ -1133,6 +1137,10 @@
 					case 'Workflow':
 						$temp = array( 'Full', 'Hybrid', 'Resize', 'Auto' );
 						$default[$key] = "Resize";
+						break;
+					case 'Preflight':
+						$temp = array( 'Yes', 'No' );
+						$default[$key] = "Yes";
 						break;
 					case 'Enhance':
 						$temp = array( 'Skintone', 'Food', 'Jewellery', 'Vivid', 'Paintings', 'Minimal', 'General', 'Resize only', 'Null' );
@@ -1153,8 +1161,8 @@
 						$default[$key] = "European";
 						break;
 					}
-				
-				$txt .= "<tr>";
+
+				$txt .= "<tr class='".$key."'>";
 					$txt .= "<td align='left' style='width: 188px;'>".$lang['xml'][$key]."</td>";
 					$txt .= "<td align='left'>";
 						if( $key == 'Name' ) {

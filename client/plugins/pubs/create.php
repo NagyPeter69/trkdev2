@@ -177,6 +177,8 @@ function setParts() {
 		$(".trimsize input").prop( "disabled", false );
 		$(".panelControl").css("width", "790px");
 		}
+
+	$("tr[class='Preflight']").toggle( temp == "Hybrid" );
 	checkParts();
 	}
 	
@@ -236,7 +238,8 @@ function loadPub() {
 		dataType: 'json',
 		success:function( data ) {
 			$("#pubContent").html( data );
-			
+			setParts();
+
 			$('.datepicker').datetimepicker({
 				dateFormat: 'yy-mm-dd',
 				separator: ' ',

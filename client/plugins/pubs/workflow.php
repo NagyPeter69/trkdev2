@@ -37,7 +37,7 @@ if( $magazine[0][10] == "Regular" ) {
 					}
 			$xml = simplexml_load_file( '../xml/'.PMD.'.xml' );
 			
-			$avaiable = array( 'Type', 'Client', 'Name', 'Code', 'Mails', 'Workflow', 'Enhance', 'PageNumbering', 'CustomCode', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'OutputFormat', 'WebImages', 'Language', 'ApprovedComments' );
+			$avaiable = array( 'Type', 'Client', 'Name', 'Code', 'Mails', 'Workflow', 'Preflight', 'Enhance', 'PageNumbering', 'CustomCode', 'Resolution', 'FlatplanStages', 'PDFstandard', 'ArchiveStorage', 'OutputFormat', 'WebImages', 'Language', 'ApprovedComments' );
 			// E-mail only applies to Adhoc publications (Regular pubs have
 			// no client mailing list here).
 			if( $magazine[0][10] != "Adhoc" ) {
@@ -68,6 +68,10 @@ if( $magazine[0][10] == "Regular" ) {
 						break;
 					case 'Workflow':
 						$temp = array( 'Full', 'Hybrid', 'Resize', 'Auto' );
+						break;
+					case 'Preflight':
+						$temp = array( 'Yes', 'No' );
+						if( $value == '' ) $value = 'Yes';
 						break;
 					case 'FlatplanStages':
 						$temp = array( '1', '2', '3' );
@@ -317,6 +321,11 @@ function addEmail() {
 
 function changeSettings() {
 	var wf = $("#Workflow").val();
+
+	// Preflight only applies to Hybrid - unlike everything else below
+	// (which groups Hybrid with Resize), it must not show for Resize/Full/
+	// Auto, so it's toggled here rather than inside the switch below.
+	$("tr[class='Preflight']").toggle( wf == "Hybrid" );
 
 	// Per-workflow parameter visibility, per the Tracker Workflows matrix
 	// (2026-07, "Auto" added): CustomCode, FlatplanStages, PDFstandard,
