@@ -55,6 +55,10 @@ if( $go ) {
 	// alone, ignoring fin, whenever $stages1 is true.
 	$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
 
+	// See page_pdf-handler.php for the full rationale: defaults to Yes so a
+	// magazine that predates this setting keeps today's always-on behavior.
+	$preflightOn = ( (string) $wfXml->Item[$wfI]->Preflight !== "No" );
+
 	$handle = fopen( "pageversion.txt", 'a+');
 	if( $handle === false ) {
 		return false;
@@ -92,9 +96,22 @@ if( $go ) {
 	// filename suffix - must return before the normal replace/version/
 	// archive path below, or the report overwrites the real page.
 	if( str_ends_with( $_POST["fileName"], "_report" ) ) {
+		if( !$preflightOn ) {
+			// See page_pdf-handler.php for the full rationale.
+			@unlink( $file );
+			return;
+			}
+
 		$pn = (string) $wfXml->Item[$wfI]->PageNumbering;
 		$extra = ( $pn == "American" ) ? ' AND part="'.$_POST["part"].'"' : '';
 		$tag = ( $pageVersion != "-baseversion-" and $pageVersion != "" ) ? $pageVersion."_" : "";
+
+		// See page_pdf-handler.php for the full rationale on the XML
+		// variant: Switch can send an XML preflight report as a separate
+		// submission of this same event, distinguished only by the real
+		// extension on $_FILES[0]["name"] ($file itself was staged with a
+		// hardcoded ".pdf" name above regardless of what was uploaded).
+		$reportExt = strtolower( pathinfo( $_FILES[0]["name"] ?? '', PATHINFO_EXTENSION ) ) ?: 'pdf';
 
 		// Store the report unconditionally, even if no matching pageinfo
 		// row exists yet - see page_pdf-handler.php: Switch doesn't
@@ -107,7 +124,7 @@ if( $go ) {
 			mkdir( $dir, 0777, true );
 			umask($oldmask);
 			}
-		$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.pdf';
+		$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.'.$reportExt;
 		rename( $file, $dir.'/'.$reportName );
 
 		if( $stages1 ) {
@@ -118,6 +135,14 @@ if( $go ) {
 			}
 		else {
 			$pageInfo = sql_get( 'pageinfo', '`type`!="PRE" AND `type`!="PSTR" AND `code`="'.$jcode.'" AND `issue`="'.$issue.'" AND `page`="'.$page.'" AND `state`="'.$tag.'" AND fin="0" '.$extra, '*' );
+			}
+
+		if( $reportExt === 'xml' ) {
+			if( $pageInfo[0][0] != '' ) {
+				require_once( '/var/www/html/engine/preflightXml.php' );
+				applyPreflightXml( $dir.'/'.$reportName, $pageInfo[0][0] );
+				}
+			return;
 			}
 
 		if( $pageInfo[0][0] != '' ) {
@@ -451,11 +476,13 @@ if( $go ) {
 
 					// See page_pdf-handler.php: a fresh page replaces
 					// whatever preflight result the previous version
-					// had, so it must not survive a resubmission.
+					// had, so it must not survive a resubmission -
+					// preflight_issues (the hover-tooltip detail) included.
 					if( $type == "alter" )
 						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
 					else
 						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
+					sql_delete( 'preflight_issues', 'page_id="'.$pageInfo[0][0].'"' );
 					$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'comment' );
 					$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
 					$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
@@ -502,7 +529,7 @@ if( $go ) {
 					// submission for this same page may have already
 					// arrived and stored its file before this row existed.
 					$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.pdf';
-					if( is_file( TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight/'.$reportName ) ) {
+					if( $preflightOn && is_file( TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight/'.$reportName ) ) {
 						$names[] = "preflight_error";
 						$values[] = "1";
 						$names[] = "preflight_report";
@@ -511,10 +538,22 @@ if( $go ) {
 						$values[] = $_POST["fileName"]."_report.pdf";
 						}
 
+					// Same retroactive pickup, for the XML report - see
+					// page_pdf-handler.php for the full rationale on why
+					// this has to happen after sql_add() rather than
+					// alongside the $names/$values build above.
+					$xmlReportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.xml';
+					$xmlReportPath = TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight/'.$xmlReportName;
+
 					echo "pageinfo add";
 					var_dump( $names );
 					var_dump( $values );
 					$id = sql_add( 'pageinfo', $names, $values );
+
+					if( $preflightOn && is_file( $xmlReportPath ) ) {
+						require_once( '/var/www/html/engine/preflightXml.php' );
+						applyPreflightXml( $xmlReportPath, $id );
+						}
 					$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'comment' );
 					$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
 					$values = array( '0', 'newPage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );

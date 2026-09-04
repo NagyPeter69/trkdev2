@@ -411,7 +411,74 @@ jQuery(document).ready(function(){
 <div id="headerExtraLine"></div>
 <? } ?>
 
-<div id='fpPages'>
+<style>
+@keyframes fpInitSpin { to { transform: rotate(360deg); } }
+.fpSpinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: fpInitSpin 0.8s linear infinite; }
+</style>
+
+<div id="fpInitOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; background: rgb(89, 89, 89); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+	<div class="fpSpinner"></div>
+	<div style="margin-top: 14px; color: #fff; font-size: 13px; letter-spacing: 0.03em;"><?= $lang["flatplan"]["loading"] ?? "Loading high-res render" ?></div>
+</div>
+<script>
+// #header (logo+menu) is emitted well before this point and is already
+// fully painted by the time this script runs - pull the curtain's top down
+// to sit right below it instead of covering it, so the menu bar stays
+// visible and interactive through the load. This runs synchronously,
+// blocking the parser before it reaches anything below, so there's no frame
+// where the curtain is still at top:0 covering the header.
+var fpHeaderEl = document.getElementById( 'header' );
+if( fpHeaderEl ) {
+	document.getElementById( 'fpInitOverlay' ).style.top = fpHeaderEl.getBoundingClientRect().bottom + 'px';
+	}
+
+// The raw HTML/CSS for the thumbnail strip, toolbox and render canvas is
+// visibly unstyled/misplaced for a moment on a hard reload - default colors,
+// icons at wrong positions, #content_box painting white then partial-gray
+// then full-gray - before flatplan.css finishes applying and the JS that
+// positions everything (centerToolbar(), placeBox(), etc.) has run. That's
+// raw browser paint order, not an AJAX timing issue, so it can't be patched
+// by hiding/showing pieces of that same content after the fact - the only
+// fix is a curtain that paints first and covers all of it.
+//
+// #fpPages/#fpToolBox/#content_wrapper/#fpFooter are also given
+// visibility:hidden in their own markup below (see each element) rather
+// than being repositioned: their layout (some via CSS "static position"
+// guesses, #loading inside #fpFooter via an explicit but ambiguously-
+// relative top:0) isn't reliably correct until flatplan.css and the page's
+// own JS have both run, which briefly puts things like a sliver of the
+// toolbox, or #loading's spinner, outside the curtain's reach - including,
+// for #loading, painting red-tinted on the black header before its real
+// state is known. An earlier attempt pinned #fpPages/#fpToolBox/
+// #content_wrapper's top to a measured pixel value instead, but
+// getBoundingClientRect() is viewport-relative while position:absolute's
+// top is relative to the nearest positioned ancestor - those aren't
+// guaranteed to be the same coordinate space, and here they weren't,
+// leaving a permanent gray gap after load. visibility:hidden sidesteps all
+// of this: wrong or not, none of it is painted until reveal, and by reveal
+// time it has already settled correctly on its own (confirmed by every
+// prior "fully loaded" screenshot - nothing ever had to be repositioned
+// after load, so the eventual layout was always correct).
+//
+// Hidden/revealed together once both the thumbnail strip (loadPages()
+// firstRun) and the render canvas (showFooterControls(), which already
+// only fires once a real render is visible) have delivered their first
+// content, or after a fixed timeout as a safety net if either never fires.
+var fpInitOverlayHidden = false;
+var fpInitOverlayReady = { pages: false, canvas: false };
+function fpHideInitOverlay() {
+	if( fpInitOverlayHidden ) return;
+	fpInitOverlayHidden = true;
+	$("#fpInitOverlay").fadeOut(200, function(){ $(this).remove(); });
+	$("#fpPages, #fpToolBox, #content_wrapper, #fpFooter").css( "visibility", "visible" );
+	}
+function fpInitOverlayCheck() {
+	if( fpInitOverlayReady.pages && fpInitOverlayReady.canvas ) fpHideInitOverlay();
+	}
+setTimeout( fpHideInitOverlay, 35000 );
+</script>
+
+<div id='fpPages' style='visibility: hidden;'>
 	<div class='inner'>
 		<?php if( $user[0][4] != 0 ) { ?>
 			<div style='float: left; margin-left: -1px;'>
@@ -591,7 +658,7 @@ jQuery(document).ready(function(){
 	</table>
 </div>
 
-<div id='fpToolBox'>
+<div id='fpToolBox' style='visibility: hidden;'>
 	<? include_once( "plugins/preview_rightPanel.php" ); ?>
 </div>
 
@@ -956,7 +1023,7 @@ if( $next != 0 ) {
 list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );	
 
 ?>
-<div id='content_wrapper' style='position: absolute; left: 229px; overflow: hidden;'>
+<div id='content_wrapper' style='position: absolute; left: 229px; overflow: hidden; visibility: hidden;'>
 	<div id='content_box' style='background-color: rgb( 128, 128, 128 ); overflow: hidden;'>
 		<div id="fpnopages" style="margin-top: -12.5px; pointer-events: none; display: none; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; background-color: transparent; z-index: 900; vertical-align: middle;">
 			<div style="display: table; width: 100%; height: 100%;">
@@ -1033,7 +1100,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 	</div>
 </div>
 
-<div id='fpFooter'>
+<div id='fpFooter' style='visibility: hidden;'>
 	<?php if( !isMobile() ) { ?>
 		<?php
 			// Preflight state for both pages, computed once here (separate
@@ -1084,7 +1151,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 		.footer_content, so this right:Npx is relative to the same
 		containing block #loading uses. Empty/classless (invisible) in
 		single-page mode. -->
-		<div id='preflightMarker2' onclick='downloadPreflight("<?= $pfPageID[1] ?>")' data-pageid='<?= $pfPageID[1] ?>' class='<?= ( $pfError[1] == 1 ) ? "preflightError" : "" ?>' style='position: absolute; right: 32px; top: 17.5px; transform: translateY(-50%); width: 16.5px; height: 16.5px;' title='Preflight failed'></div>
+		<div id='preflightMarker2' onclick='downloadPreflight("<?= $pfPageID[1] ?>")' data-pageid='<?= $pfPageID[1] ?>' class='<?= ( $pfError[1] == 1 ) ? "preflightError" : "" ?>' style='position: absolute; right: 32px; top: 17.5px; transform: translateY(-50%); width: 16.5px; height: 16.5px;'></div>
 	<?php } ?>
 	
    	<div id='sbs_v1' class='sbs_ver' style='position: absolute; left: 0px; display: none;'></div>
@@ -1144,7 +1211,7 @@ list( $dtitles, $dcolors ) = getAllColors( "../../".$file[0]["Name"] );
 				Vertically centered in #fpFooter's 35px bar via top:17.5px
 				(half of 35) + translateY(-50%). Sized 150% of the base 11px
 				marker. -->
-				<div id='preflightMarker' onclick='downloadPreflight("<?= $pageID[0] ?>")' data-pageid='<?= $pageID[0] ?>' class='<?= ( $preflightRow[0]["preflight_error"] == 1 ) ? "preflightError" : "" ?>' style='position: absolute; left: 126px; top: 17.5px; transform: translateY(-50%); width: 16.5px; height: 16.5px;' title='Preflight failed'></div>
+				<div id='preflightMarker' onclick='downloadPreflight("<?= $pageID[0] ?>")' data-pageid='<?= $pageID[0] ?>' class='<?= ( $preflightRow[0]["preflight_error"] == 1 ) ? "preflightError" : "" ?>' style='position: absolute; left: 126px; top: 17.5px; transform: translateY(-50%); width: 16.5px; height: 16.5px;'></div>
 			<?php } ?>
 
 		<?php if( isMobile() ) { ?>
@@ -1681,6 +1748,10 @@ function loadPages() {
 						reloadBG();
 						}
 					realfirstRun = false;
+
+					fpInitOverlayReady.pages = true;
+					if( nopages ) fpInitOverlayReady.canvas = true;
+					fpInitOverlayCheck();
 					}, 20 );
 				}
 						
@@ -2362,6 +2433,85 @@ function downloadPreflight( id ) {
 	if ($idown) { $idown.attr('src', link); }
 	else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
 	}
+
+// Detailed Warning/Error hover tooltip for the .preflightError marker - see
+// flatplan.php for the full rationale (same feature, same markup
+// convention, kept as an exact duplicate here the same way downloadPreflight
+// itself already is between these two files). Click keeps downloading the
+// PDF report via downloadPreflight() above, untouched.
+var $preflightTooltip = null;
+// See flatplan.php for the rationale on the token + self-heal pattern below
+// (same duplicated feature).
+var preflightHoverToken = 0;
+
+function ensurePreflightTooltip() {
+	if( !$preflightTooltip || !$preflightTooltip.closest( 'body' ).length ) {
+		$preflightTooltip = $( "<div class='preflightTooltip ui-tooltip ui-widget ui-widget-content ui-corner-all floatMenu'></div>" ).appendTo( 'body' );
+		}
+	return $preflightTooltip;
+	}
+
+$(document).on( 'mouseenter', '.preflightError', function( e ) {
+	var pageId = $(this).attr( 'data-pageid' );
+	if( !pageId ) return;
+
+	var myToken = ++preflightHoverToken;
+	var $tip = ensurePreflightTooltip();
+
+	// #preflightMarker (left page / single-page mode) opens up-right;
+	// #preflightMarker2 (right page, spread mode only) opens up-left - both
+	// markers sit close to the footer/screen edge, so anchoring the growth
+	// direction away from that edge (rather than always down-right, which
+	// used to run the tooltip off the bottom/side of the window) keeps it
+	// fully on screen regardless of content length.
+	//
+	// The left-opening (openLeft) case is positioned with `right`, not
+	// `left` + a horizontal translateX(-100%) - a shrink-to-fit absolutely
+	// positioned box's available width is calculated from its `left` (or
+	// `right`) offset to the OPPOSITE edge of its containing block, before
+	// any transform is applied (transforms are purely a paint-time effect,
+	// invisible to layout). #preflightMarker2 sits near the right edge of
+	// the page, so a `left` anchored there left almost no room on that side
+	// for the shrink-to-fit calculation, squeezing the box into a narrow,
+	// tall wrapped column - confirmed live 2026-09-04 by screenshot - even
+	// though translateX(-100%) then visually moved the (already-squeezed)
+	// box to the left. Anchoring with `right` instead makes the browser
+	// calculate available width towards the LEFT edge of the page from the
+	// start, which is the direction the box actually has room in. Only the
+	// vertical flip still needs a transform, since text height auto-grows
+	// safely either way.
+	var off = $(this).offset();
+	var openLeft = ( this.id === 'preflightMarker2' );
+	$tip.css({
+		top: off.top - 6,
+		left: openLeft ? 'auto' : ( off.left + this.offsetWidth + 6 ),
+		right: openLeft ? ( $(document).width() - off.left + 6 ) : 'auto',
+		transform: 'translateY(-100%)'
+		}).text( 'Loading…' ).show();
+
+	$.getJSON( 'engine/preflight_issues_ajax.php', { pageid: pageId }, function( issues ) {
+		if( myToken !== preflightHoverToken ) return;
+		$tip = ensurePreflightTooltip();
+
+		if( !issues || !issues.length ) {
+			$tip.text( 'Preflight failed - click to download the report' );
+			return;
+			}
+
+		$tip.empty();
+		for( var i = 0; i < issues.length; i++ ) {
+			$( '<div></div>' )
+				.toggleClass( 'preflightIssueWarning', issues[i].severity === 'Warning' )
+				.text( issues[i].message )
+				.appendTo( $tip );
+			}
+		});
+	});
+
+$(document).on( 'mouseleave', '.preflightError', function( e ) {
+	preflightHoverToken++;
+	if( $preflightTooltip ) $preflightTooltip.hide();
+	});
 
 function changePic( data ) {
 	removeAdvancedTool();
@@ -3317,6 +3467,8 @@ function showFooterControls() {
 	if( !disableZoom ) {
 		$(".status1, .status2, #colorStdLabel1, #colorStdLabel2").css( "visibility", "visible" );
 		}
+	fpInitOverlayReady.canvas = true;
+	fpInitOverlayCheck();
 	}
 
 function fit_pages() {

@@ -954,6 +954,33 @@ systematic comparison. Treat it as a sanity check, never as sufficient by itself
   unsubscribe preference (Gate B, independent from the admin's PMD-Mails "M" checkbox — see
   the mail gating section below); `pwset_token`/`pwset_expires` back the secure
   set-your-own-password link that replaced emailing plaintext passwords.
+- `magazines.preflight` (`varchar(10) NOT NULL DEFAULT 'Yes'`) — new column, 2026-09-03: mirrors
+  the Hybrid-only publication-level "Preflight" Yes/No setting into the DB, same pattern as the
+  pre-existing `HideApprovedComments` mirror (the setting's real source of truth is still the
+  PMD XML `<Preflight>` node, written/read via `changeXmlDatabase()`). Applied live on this dev
+  box's `nyomadake_intra` DB the same day, via a one-time web-triggered admin script (this dev
+  shell has no DB credentials directly - `TRKDEV_DB_PASSWORD` is only in the web server's
+  environment) - the script was deleted immediately after running. Confirmed present via
+  `SHOW COLUMNS FROM magazines LIKE 'preflight'`. Still needs to be applied on staging/production
+  separately when this feature ships there. **2026-09-04**: this setting had no actual consumer
+  until now - it only fed the admin edit-form dropdown. `page_pdf-handler.php` /
+  `page_pdf_teszt-handler.php` now read the PMD XML `<Preflight>` node (not the DB mirror, same as
+  every other workflow setting these two files read) at the top of the request and skip all
+  preflight work when it's explicitly "No" - the `_report` submission branch returns immediately
+  (discarding the temp upload) instead of creating the `_preflight` directory/looking up
+  `pageinfo`, and the retroactive `is_file()` pickups on new-page-submission are skipped too.
+  Missing/empty still means Yes (same default the admin form and `changeXmlDatabase()` use), so
+  jobs that predate this setting keep today's always-on behavior unchanged.
+- `preflight_issues` — new table, 2026-09-04: holds the per-page Warning/Error entries parsed
+  out of pdfToolbox's XML preflight report (`page_id`, `severity` enum('Error','Warning'),
+  `message`, `time`), backing a hover tooltip on the `.preflightError` marker in Flatplan/Pages
+  View (`client/engine/preflight_issues_ajax.php`). Separate from the pre-existing
+  `pageinfo.preflight_error`/`preflight_report` columns, which stay PDF-report-only and keep
+  gating the marker itself and its click-to-download behavior unchanged — this table is purely
+  additive. Applied live on this dev box via `CREATE TABLE` against `nyomadake_intra`. The
+  actual XML-parsing logic (`extractPreflightIssues()` in `engine/preflightXml.php`) is a stub
+  pending a real sample pdfToolbox XML report — the table/endpoint/UI plumbing all work today,
+  but nothing populates it until that parser is finished.
 
 Before cutover: run an actual schema diff (`mariadb-dump --no-data` from production vs. this
 repo's `db/schema.sql`, or equivalent) and reconcile every difference deliberately — don't

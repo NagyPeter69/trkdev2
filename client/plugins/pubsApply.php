@@ -800,6 +800,22 @@
 			$mag = sql_get( 'magazines', 'code="'.$magazine.'"', 'id, publisher_id, type' );
 
 			sql_update( "magazines", "HideApprovedComments='".$_POST["ApprovedComments"]."'", "id='".$mag[0][0]."'" );
+			sql_update( "magazines", "preflight='".( $_POST["Preflight"] ?? "Yes" )."'", "id='".$mag[0][0]."'" );
+
+			// Turning Preflight off mid-production isn't a real workflow
+			// (there's normally no reason to disable it once a job is
+			// underway), but if it ever happens, existing red markers must
+			// disappear immediately rather than linger until each page
+			// happens to get a new version resubmitted - the normal trigger
+			// that clears them (see page_pdf-handler.php). Scoped to this
+			// magazine's own pageinfo rows (Preflight is a magazine-level
+			// setting, not per-issue, so this matches every issue ever
+			// processed under it, same scope page_pdf-handler.php itself
+			// uses for this job).
+			if( ( $_POST["Preflight"] ?? "Yes" ) === "No" ) {
+				sql_update( 'pageinfo', 'preflight_error="0", preflight_report="", preflight_origname=""', 'code="'.$magazine.'"' );
+				sql_delete( 'preflight_issues', 'page_id IN (SELECT id FROM pageinfo WHERE code="'.$magazine.'")' );
+				}
 			
 			if( $xml->Item[$i]->Client == $_POST["Client"] ) {
 				error_log("Ügyfél ugyanaz");

@@ -566,6 +566,7 @@ CREATE TABLE `magazines` (
   `clientChangeResult` varchar(255) NOT NULL DEFAULT '',
   `pubName` varchar(255) NOT NULL DEFAULT '',
   `HideApprovedComments` varchar(10) NOT NULL DEFAULT 'No',
+  `preflight` varchar(10) NOT NULL DEFAULT 'Yes',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=372 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -664,6 +665,19 @@ CREATE TABLE `parts` (
   `mag_id` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `preflight_issues`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `preflight_issues` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `page_id` int(11) NOT NULL,
+  `severity` enum('Error','Warning') NOT NULL,
+  `message` text NOT NULL,
+  `time` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `page_id` (`page_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `publications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

@@ -55,6 +55,16 @@ if( $go ) {
 	// alone, ignoring fin, whenever $stages1 is true.
 	$stages1 = ( (string) $wfXml->Item[$wfI]->FlatplanStages == "1" and (string) $wfXml->Item[$wfI]->Workflow != "Hybrid" );
 
+	// magazines.preflight / PMD <Preflight> - defaults to Yes (same default
+	// the admin form and changeXmlDatabase() itself use) so a magazine that
+	// predates this setting, or has it genuinely empty, keeps today's
+	// always-on behavior. When it's explicitly "No", this job never wants
+	// preflight report handling - see the "_report" branch and the
+	// retroactive is_file() pickups below, both skipped entirely in that
+	// case rather than doing pointless directory/file work for a feature
+	// the job has turned off.
+	$preflightOn = ( (string) $wfXml->Item[$wfI]->Preflight !== "No" );
+
 	$handle = fopen( "pageversion.txt", 'a+');
 	if( $handle === false ) {
 		return false;
@@ -97,9 +107,35 @@ if( $go ) {
 	// archiving the actual print page to _old and putting the report PDF
 	// in its place. Must return before any of that runs.
 	if( str_ends_with( $_POST["fileName"], "_report" ) ) {
+		if( !$preflightOn ) {
+			// Preflight is off for this job - Switch shouldn't be running
+			// pdfToolbox or sending a report at all in that case, but if one
+			// arrives anyway (stale Switch flow config, manual resend,
+			// etc.), just discard the temp upload and stop here rather than
+			// creating the _preflight directory, looking up pageinfo, or
+			// storing/parsing anything nobody asked for.
+			@unlink( $file );
+			return;
+			}
+
 		$pn = (string) $wfXml->Item[$wfI]->PageNumbering;
 		$extra = ( $pn == "American" ) ? ' AND part="'.$_POST["part"].'"' : '';
 		$tag = ( $pageVersion != "-baseversion-" and $pageVersion != "" ) ? $pageVersion."_" : "";
+
+		// pdfToolbox preflight results normally arrive as this PDF report;
+		// optionally Switch can also send an XML version of the same
+		// report as a SEPARATE submission of this same event (same
+		// fileName, same jobCode/issue/page/part/state - only the actual
+		// uploaded file differs). $file itself was staged with a hardcoded
+		// ".pdf" name above regardless of what was actually uploaded (see
+		// $file's definition) - that's harmless since it's immediately
+		// renamed below to a name built from the REAL extension, taken from
+		// Switch's own filename for the upload ($_FILES[0]["name"],
+		// confirmed via a real captured webhook payload to still carry the
+		// true extension even though $file discards it). Defaults to pdf
+		// if that's ever missing, so today's PDF-only behavior is
+		// unaffected until Switch actually starts sending XML.
+		$reportExt = strtolower( pathinfo( $_FILES[0]["name"] ?? '', PATHINFO_EXTENSION ) ) ?: 'pdf';
 
 		// Store the report unconditionally, even if no matching pageinfo
 		// row exists yet - Switch doesn't guarantee the report arrives
@@ -115,7 +151,7 @@ if( $go ) {
 			mkdir( $dir, 0777, true );
 			umask($oldmask);
 			}
-		$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.pdf';
+		$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.'.$reportExt;
 		rename( $file, $dir.'/'.$reportName );
 
 		if( $stages1 ) {
@@ -126,6 +162,19 @@ if( $go ) {
 			}
 		else {
 			$pageInfo = sql_get( 'pageinfo', '`type`!="PRE" AND `type`!="PSTR" AND `code`="'.$jcode.'" AND `issue`="'.$issue.'" AND `page`="'.$page.'" AND `state`="'.$tag.'" AND fin="0" '.$extra, '*' );
+			}
+
+		if( $reportExt === 'xml' ) {
+			// The XML report only adds structured issue detail for the
+			// hover tooltip - preflight_error/preflight_report keep coming
+			// exclusively from the PDF report above, so the red marker and
+			// click-to-download behavior are unaffected whether or not the
+			// XML report exists for a given page.
+			if( $pageInfo[0][0] != '' ) {
+				require_once( '/var/www/html/engine/preflightXml.php' );
+				applyPreflightXml( $dir.'/'.$reportName, $pageInfo[0][0] );
+				}
+			return;
 			}
 
 		if( $pageInfo[0][0] != '' ) {
@@ -490,11 +539,17 @@ if( $go ) {
 					// fails too, but until/unless that arrives the marker
 					// must not survive a resubmission - otherwise a page
 					// the client already fixed would keep showing a stale
-					// error forever.
+					// error forever. preflight_issues (the parsed XML detail
+					// behind the hover tooltip) is cleared the same way and
+					// for the same reason - it's re-populated by
+					// applyPreflightXml() if/when a new XML report arrives
+					// for this version, same as preflight_report is for the
+					// PDF.
 					if( $type == "alter" )
 						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$alter[1].'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
 					else
 						sql_update( 'pageinfo', 'version="'.( intval( $pageInfo[0][3] )+1 ).'", status="'.$s.'", pack_id="'.$pack_id.'", type="'.$type.'", view="", preflight_error="0", preflight_report="", preflight_origname="", boxes=""', 'id="'.$pageInfo[0][0].'"' );
+					sql_delete( 'preflight_issues', 'page_id="'.$pageInfo[0][0].'"' );
 					$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'info' );
 					$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
 					$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
@@ -543,7 +598,7 @@ if( $go ) {
 					// that report update had nothing to attach itself to
 					// yet at the time it ran.
 					$reportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.pdf';
-					if( is_file( TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight/'.$reportName ) ) {
+					if( $preflightOn && is_file( TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight/'.$reportName ) ) {
 						$names[] = "preflight_error";
 						$values[] = "1";
 						$names[] = "preflight_report";
@@ -557,8 +612,22 @@ if( $go ) {
 						$values[] = $_POST["fileName"]."_report.pdf";
 						}
 
+					// Same retroactive pickup, for the XML report - it can't
+					// carry preflight_error/preflight_report itself (that
+					// stays PDF-only, see the "_report" branch above), but
+					// its issues can only be attached to preflight_issues
+					// once this row's id exists, so this has to happen
+					// after the sql_add() below rather than alongside the
+					// $names/$values build above.
+					$xmlReportName = str_pad( $page, 3, '0', STR_PAD_LEFT ).'_'.$_POST["part"].'_preflight.xml';
+					$xmlReportPath = TRKPATH.'/packages/'.$jcode.'/'.$issue.'/_preflight/'.$xmlReportName;
 
 					$id = sql_add( 'pageinfo', $names, $values );
+
+					if( $preflightOn && is_file( $xmlReportPath ) ) {
+						require_once( '/var/www/html/engine/preflightXml.php' );
+						applyPreflightXml( $xmlReportPath, $id );
+						}
 					$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status', 'info' );
 					$pT = ( $pageState  == "FIN" ? "FIN" : ( $pageType == "NOR" ? "NOR" : "PRE"  ) );
 					$values = array( '0', 'newPage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );

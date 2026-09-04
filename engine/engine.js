@@ -1291,34 +1291,47 @@ function singleDoubleClick( ids, fpType ) {
 		$( id ).off();
 		$('body')
 		.on("click", id, function(e){
-			var state = e.target.outerHTML.substring( e.target.outerHTML.indexOf('state') );
+			// Use the delegate-matched .thumb/.pagenr element (jQuery's
+			// "this" inside a delegated handler), not e.target - e.target is
+			// whatever was actually clicked, which for a marker/overlay
+			// element nested inside .thumb (e.g. .preflightError, added
+			// 2026-09) has no id of its own. Building the lookup selector
+			// from e.target.id in that case produced the syntactically
+			// invalid "#currentplace #[state='...']" (empty id before the
+			// attribute selector), throwing a SyntaxError inside this
+			// setTimeout on every such click - and since that throw landed
+			// before the `clicks = 0` reset below, it also left this
+			// closure's double-click detection permanently stuck at
+			// clicks=1 until the next grid rebind.
+			var matched = this;
+			var state = matched.outerHTML.substring( matched.outerHTML.indexOf('state') );
 			var start_pos = state.indexOf('"') + 1;
 			var end_pos = state.indexOf('"',start_pos);
 			state = state.substring(start_pos,end_pos);
 
 			clicks++;
 			if(clicks === 1) {
-				
+
 				timer = setTimeout(function() {
-					if( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']").hasClass( 'thumb' ) ) {
-						thumbClick( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']"), 'single', e );
+					if( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']").hasClass( 'thumb' ) ) {
+						thumbClick( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']"), 'single', e );
 						}
-					else if( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']").hasClass( 'pagenr' ) ) {
-						pageSelect( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']"), 'single' );
+					else if( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']").hasClass( 'pagenr' ) ) {
+						pageSelect( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']"), 'single' );
 						}
 					clicks = 0;
 				}, DELAY);
-			} 
-			
+			}
+
 			else {
-				
+
 				if( fpType != "PLAN" ) {
 					clearTimeout(timer);
-					if( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']").hasClass( 'thumb' ) ) {
-						thumbClick( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']"), 'mass', e );
+					if( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']").hasClass( 'thumb' ) ) {
+						thumbClick( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']"), 'mass', e );
 						}
-					else if( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']").hasClass( 'pagenr' ) ) {
-						pageSelect( $("#"+currentplace+" #"+e.target.id+"[state='"+state+"']"), 'mass' );
+					else if( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']").hasClass( 'pagenr' ) ) {
+						pageSelect( $("#"+currentplace+" #"+matched.id+"[state='"+state+"']"), 'mass' );
 						}
 					clicks = 0;
 					}

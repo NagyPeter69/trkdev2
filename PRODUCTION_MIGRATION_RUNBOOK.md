@@ -77,6 +77,21 @@ identifies as the old name in some contexts:
    mail, file-transfer links — see SYSTEM_STATE.md's mail-system section). Get this wrong and every
    password-reset email silently links to the wrong host.
 
+### 1.3 nginx `client_max_body_size` — check it's actually set
+
+trkdev2's `/etc/nginx/sites-available/trkdev` had **no `client_max_body_size` directive at all**
+(found 2026-09-04, tracked down as the root cause of a large flatplan PDF drag-drop upload
+silently vanishing) — nginx's built-in default is 1MB, well below even a single 10MB chunk of
+the app's own chunked-upload protocol (`client/filetransfer.php`, `client/flatplan.php`'s
+drag-drop-to-slot path), so any file over ~1MB got a 413 before PHP ever ran, with nothing in the
+app to notice or report it. Fixed on trkdev2 by adding `client_max_body_size 5000M;` (matching
+`upload_max_filesize` in `/etc/php/8.4/fpm/conf.d/99-trkdev.ini`) to both `server {}` blocks. If
+production's nginx config was cloned from a similarly bare template rather than carried forward
+from the legacy box, it likely has the exact same gap — check `client_max_body_size` is actually
+present in whatever nginx config production ends up running, don't assume it's fine because the
+old box "worked" (its uploads may have always been silently size-limited too, or its config
+differs from trkdev2's in ways this migration hasn't diffed).
+
 ## 2. Schema diff — do this for real, don't trust the checklist
 
 SYSTEM_STATE.md's "Known schema deltas vs. production" section was **explicitly flagged as

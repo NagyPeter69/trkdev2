@@ -410,6 +410,36 @@ select[name="comp_operation"]:disabled {
 	border-radius: 2px;
 	}
 
+/* Sized/positioned like a plain div; background/border/font-size/rounding
+   come from the ui-tooltip/ui-widget/ui-widget-content/ui-corner-all
+   classes applied alongside this one in flatplan.php / flatplan_preview.php,
+   matching the app's one existing tooltip look (the jQuery UI tooltip
+   auto-wired onto every [title] element) instead of introducing a second,
+   different-looking one. ui-widget-content's own color (#222, near-black)
+   is illegible against its background (images/floatBG.png tiles as
+   essentially solid black - confirmed 2026-09-04 by reading its actual
+   pixels, not just eyeballing the tiny thumbnail) - overridden here with a
+   light color so the text is actually visible; every other jQuery UI
+   tooltip in the app inherits that same illegible color too, this is just
+   the first one whose content is long/important enough that it was
+   noticed. */
+.preflightTooltip {
+	position: absolute;
+	z-index: 9999;
+	padding: 8px 10px;
+	pointer-events: none;
+	max-width: 320px;
+	display: none;
+	color: #fff;
+	font-size: 13px;
+	}
+.preflightTooltip > div + div {
+	margin-top: 4px;
+	}
+.preflightTooltip .preflightIssueWarning {
+	color: #b0b0b0;
+	}
+
 .different {
 	border-style: solid;
 	border-width: 0 7px 11px 7px;

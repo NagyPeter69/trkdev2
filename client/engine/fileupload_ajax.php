@@ -6,8 +6,12 @@ include_once( TRKPATH."/engine/switchAPI.php" );
 
 $_FILES["file"]['name'] = letter_change_fileupload( $_FILES["file"]['name'] );
 
-$target_chunk_path = TRKPATH.'/uploads/blob/chunk/'.$_POST["tempdir"].'/';
-$toswitch_path = 'uploads/blob/chunk/'.$_POST["tempdir"];
+// tempdir is client-supplied (Date.now()) - strip to digits-only so it can't
+// be used for path traversal.
+$tempdir = preg_replace( '/[^0-9]/', '', $_POST["tempdir"] );
+
+$target_chunk_path = TRKPATH.'/uploads/blob/chunk/'.$tempdir.'/';
+$toswitch_path = 'uploads/blob/chunk/'.$tempdir;
 $target_path = TRKPATH.'/uploads/blob/';
 
 if( !is_dir( TRKPATH.'/uploads/blob/chunk' ) ) {
@@ -16,10 +20,19 @@ if( !is_dir( TRKPATH.'/uploads/blob/chunk' ) ) {
 	umask($oldmask);
 	}
 
-if( !is_dir( TRKPATH.'/uploads/blob/chunk/'.$_POST["tempdir"] ) ) {
+if( !is_dir( TRKPATH.'/uploads/blob/chunk/'.$tempdir ) ) {
 	$oldmask = umask(0);
-	mkdir( TRKPATH.'/uploads/blob/chunk/'.$_POST["tempdir"], 0777);
+	mkdir( TRKPATH.'/uploads/blob/chunk/'.$tempdir, 0777);
 	umask($oldmask);
+	}
+
+// Record which account owns this chunk folder, written once to disk rather
+// than kept in the PHP session, so ownership survives logout/relogin or a
+// session timeout mid-upload and cancelupload (ajax.php) can still verify it
+// later against whichever account is asking.
+$owner_file = TRKPATH.'/uploads/blob/chunk/'.$tempdir.'/.owner';
+if( !empty( $tempdir ) && !file_exists( $owner_file ) && !empty( $_SESSION['intra_user'] ) ) {
+	file_put_contents( $owner_file, $_SESSION['intra_user'] );
 	}
 
 $chunk_prefix = "chunk_";
@@ -43,12 +56,22 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 
 	$final = fopen($target_chunk_merge, 'ab');
 	$write = fwrite($final, $buff);
-	fclose($final);	
-	//unlink( $target_chunk_file.$num );
+	fclose($final);
+	unlink( $target_chunk_file.$num );
 	
 	error_log( $num." == ".$num_chunks );
-	
-	if ($num === $num_chunks) {
+
+	if ($num !== $num_chunks) {
+		// Not the last chunk yet - nothing else to do. This used to return
+		// an empty body; the chunked-upload callers now all parse the
+		// response as JSON on every chunk (not just the last), so an empty
+		// body here made JSON.parse() throw and every multi-chunk upload
+		// report failure after chunk 1 (confirmed live 2026-09-04: a 350MB
+		// drag-drop died here every time despite chunk 1 actually writing
+		// to disk fine).
+		print json_encode( array( "ok" => true ) );
+		}
+	elseif ($num === $num_chunks) {
 		$user = sql_aget( "accounts", "id='".$_SESSION['intra_user']."'", "*" );
 		$names = array( "filename", "publisher", "jobname", "username", "email", "time", "type", "jtype", "userid" );
 		$values = array( $_FILES["file"]['name'], $user[0]["publisher"], $_POST["jobid"], $user[0]["full_name"], $user[0]["email"], time(), "upload", $_POST["jtype"], $user[0]["id"] );
@@ -151,9 +174,8 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 						}
 					}
 					
-				$mails = (string) $xml->Item[$x]->Mails;
-				error_log( $mails );
-				$mails = explode( ";", $mails );
+				$mails = gatedMailRecipients( $mag[0]["id"], $mag[0]["type"], (string) $xml->Item[$x]->Mails );
+				error_log( print_r( $mails, true ) );
 				
 				for( $i = 0; $i < count( $mails ); $i++ ) {
 					$hash = md5( "adhocuserdownload-".time()."-".$mails[$i] );
@@ -164,7 +186,6 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 						sql_add( "adhoc_hotlinks", $names, $values );
 						
 						$to = $mails[$i]."|".$mails[$i];
-						//$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
 						$link = "https://".URL."/index.php?hash=".$hash;
 						$subject = "".$mag[0]["name"]." - Colorcom Tracker feltöltés";
 						$body = "Kedves ".$mails[$i].",<br>
@@ -180,11 +201,41 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 				}
 			}
 		else {
+			// MailComm used to be hardcoded "Yes" regardless of the
+			// magazine's own MailComm setting or the uploader's personal
+			// opt-out (accounts.mailOptOut) - the two gates every other
+			// mail-sending path in the app already honors (see
+			// gatedMailRecipients() in engine.php). Deliberately NOT
+			// checking Gate A (PMD Mails-list membership / the admin's "M"
+			// checkbox) here - that list is for broadcasting job events to
+			// subscribed staff, not for telling the uploader about
+			// problems with their own submission, and most uploaders
+			// aren't on it, so applying it here would silently kill the
+			// notification for exactly the person who needs it.
+			$mailComm = "No";
+			if( !empty( $mag[0]["id"] ) && !empty( $mag[0]["code"] ) ) {
+				$pmdxml = simplexml_load_file( '../xml/'.PMD.'.xml' );
+				$pmdxpath = $pmdxml->xpath('/Publications');
+				foreach( $pmdxpath as $pmdtemp ) {
+					for( $mc = 0; $mc < count( $pmdtemp->Item ); $mc++ ) {
+						if( $pmdtemp->Item[$mc]->Code == $mag[0]["code"] ) {
+							break;
+							}
+						}
+					}
+				if( (string) $pmdxml->Item[$mc]->MailComm === "Yes" ) {
+					$optOut = array_filter( explode( ',', $user[0]["mailOptOut"] ?? '' ) );
+					if( !in_array( (string) $mag[0]["id"], $optOut, true ) ) {
+						$mailComm = "Yes";
+						}
+					}
+				}
+
 			$data = array(
 				"Code" => $code,
 				"User" => $user[0]["full_name"],
 				"Mail" => $user[0]["email"],
-				"MailComm" => "Yes",
+				"MailComm" => $mailComm,
 				"Part" => $_POST["part"],
 				"Type" => $_POST["type"],
 				"Issue" => $pub[0]["code"],
@@ -201,10 +252,19 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 			}
 		
 		if( !empty( $code ) && !empty( $pub[0]["code"] ) ) {
-			sql_update( 'accounts', 'actual="'.$code.'_'.$pub[0]["code"].'"', 'id="'.$_SESSION['intra_user'].'"' );	
+			sql_update( 'accounts', 'actual="'.$code.'_'.$pub[0]["code"].'"', 'id="'.$_SESSION['intra_user'].'"' );
 			}
-			
-		print $result;
+
+		print json_encode( array( "ok" => true, "result" => $result ) );
 		}
+	}
+else {
+	// move_uploaded_file() failed - exceeded a size limit, the connection
+	// dropped mid-upload, disk full, etc. Previously this fell through
+	// silently: no response body, no status code, and the chunked-upload
+	// callers had nothing to react to anyway. Report it so the caller can
+	// surface an error instead of the upload just vanishing.
+	http_response_code( 500 );
+	print json_encode( array( "ok" => false, "error" => "upload failed" ) );
 	}
 ?>

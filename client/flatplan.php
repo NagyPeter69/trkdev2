@@ -2,6 +2,51 @@
 <link href="css/flatplan.css" rel="stylesheet" type="text/css" />
 <link href="css/main.css" rel="stylesheet" type="text/css" />
 <link href="css/load_bar.css" rel="stylesheet" type="text/css" />
+<style>
+.thumb.dropHover {
+	outline: 3px solid #2ecc71;
+	outline-offset: -3px;
+	}
+#dropUploadOverlay {
+	display: none;
+	position: fixed;
+	top: 0; left: 0; right: 0; bottom: 0;
+	background: rgba(0,0,0,0.65);
+	z-index: 999999;
+	}
+#dropUploadOverlay .dropUploadBox {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background: #1a1a1a;
+	color: #fff;
+	padding: 40px 70px;
+	border-radius: 6px;
+	text-align: center;
+	min-width: 260px;
+	}
+#dropUploadOverlay .dropUploadTitle {
+	font-family: myriad_thin;
+	font-size: 23px;
+	padding-bottom: 20px;
+	}
+#dropUploadOverlay .dropUploadFilename {
+	font-size: 13px;
+	color: #ccc;
+	padding-bottom: 20px;
+	word-break: break-all;
+	}
+#dropUploadOverlay .dropUploadPercent {
+	font-family: myriad_bold;
+	font-size: 42px;
+	}
+#dropUploadOverlay.dropUploadError .dropUploadPercent {
+	font-family: myriad_thin;
+	font-size: 20px;
+	color: #ff6b6b;
+	}
+</style>
 <script type="text/javascript">
 jQuery(document).ready(function(){
     $( document ).tooltip({
@@ -212,6 +257,14 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 <? }  else { ?>
 <div id="headerExtraLine"></div>
 <? } ?>
+
+<div id='dropUploadOverlay'>
+	<div class='dropUploadBox'>
+		<div class='dropUploadTitle'>Uploading&hellip;</div>
+		<div class='dropUploadFilename'></div>
+		<div class='dropUploadPercent'>0%</div>
+	</div>
+</div>
 
 <div style='display: none;'>
 	<div id='downloader' style='width: 125px; height: 16px; position: relative; float: right; margin-top: -2px; padding-right: 23px;'>
@@ -525,24 +578,6 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 				</div>
 			</div>
 			<div id="liveLog" style="background: rgb(227, 227, 227); //position: absolute; display: block; overflow-x: hidden; overflow-y: auto; width: 229px;"></div>
-			
-<!--
-			<?php if( $process == "Full" ) { ?>
-			<div id="anyagfeltoltes" style="height: 62px;">
-				<form class="box" method="post" action="" enctype="multipart/form-data" style="height: 100%;">
-				  <div class="box__title" style="padding-top: 13px; font-size: 13px;">Upload Package</div>
-				  <div class="box__input" style="padding-top: 5px; font-size: 13px;">
-				    <input class="box__file" type="file" name="file[]" id="file" data-multiple-caption="{count} files selected" multiple />
-				    <label for="file"><span style="font-family: myriad_bold;">Choose a file</span><span class="box__dragndrop" style="font-family: myriad_thin;"> or drag it here</span>.</label>
-				    <button class="box__button" type="submit">Upload</button>
-				  </div>
-				  <div class="box__uploading" style="padding-top: 5px; font-size: 13px; display: none;">Uploading (<span id="anyagpercent"></span>)&hellip;</div>
-				  <div class="box__success" style="padding-top: 5px; font-size: 13px; display: none;">Done!</div>
-				  <div class="box__error" style="padding-top: 5px; font-size: 13px; display: none;">Error! <span></span>.</div>
-				</form>					
-			</div>
-			<? } ?>
--->
 			</td>
 			<td id="fp_content" align="right" valign="top" style="margin-right: 10px; overflow-x: hidden; overflow-y: auto; width: 100%; display: block;">
 				<? if( $_GET["manage"] == "1" && $_GET["opt"] != "PRE" ) { ?>
@@ -771,6 +806,68 @@ function downloadPreflight( id ) {
 	if ($idown) { $idown.attr('src',link); }
 	else { $idown = $('<iframe>', { id:'idown', src:link }).hide().appendTo('body'); }
 	}
+
+// Detailed Warning/Error hover tooltip for the .preflightError marker,
+// fetched from preflight_issues (populated from the pdfToolbox XML report,
+// see engine/preflightXml.php - empty until Switch actually sends one).
+// Delegated from document rather than bound per-marker, same reason as the
+// drag-drop handlers above: markers are re-rendered by the flatplan grid's
+// poll loop and a direct binding would go stale after the first refresh.
+// Click (downloadPreflight(), bound inline via onclick on the marker
+// itself) is untouched and keeps downloading the PDF report.
+var $preflightTooltip = null;
+// Bumped on every mouseenter/mouseleave so a getJSON response belonging to
+// an already-left-or-superseded hover can recognize itself as stale and
+// skip touching the tooltip, instead of a fragile $tooltip.is(':visible')
+// timing check.
+var preflightHoverToken = 0;
+
+function ensurePreflightTooltip() {
+	// Self-healing: re-create if this is the first hover, or if the
+	// previously-created element is ever found detached from the document
+	// (defensive - not reproduced, but cheap insurance against exactly the
+	// "hover silently stops doing anything" failure mode being chased here).
+	if( !$preflightTooltip || !$preflightTooltip.closest( 'body' ).length ) {
+		$preflightTooltip = $( "<div class='preflightTooltip ui-tooltip ui-widget ui-widget-content ui-corner-all floatMenu'></div>" ).appendTo( 'body' );
+		}
+	return $preflightTooltip;
+	}
+
+$(document).on( 'mouseenter', '.preflightError', function( e ) {
+	var pageId = $(this).attr( 'data-pageid' );
+	if( !pageId ) return;
+
+	var myToken = ++preflightHoverToken;
+	var $tip = ensurePreflightTooltip();
+	var off = $(this).offset();
+	$tip.css({ top: off.top + 16, left: off.left + 16 }).text( 'Loading…' ).show();
+
+	$.getJSON( 'engine/preflight_issues_ajax.php', { pageid: pageId }, function( issues ) {
+		if( myToken !== preflightHoverToken ) return;
+		$tip = ensurePreflightTooltip();
+
+		if( !issues || !issues.length ) {
+			$tip.text( 'Preflight failed - click to download the report' );
+			return;
+			}
+
+		$tip.empty();
+		for( var i = 0; i < issues.length; i++ ) {
+			// Message text ultimately comes from the pdfToolbox XML report -
+			// treat it as untrusted and let jQuery's text() escape it,
+			// rather than building HTML from it directly.
+			$( '<div></div>' )
+				.toggleClass( 'preflightIssueWarning', issues[i].severity === 'Warning' )
+				.text( issues[i].message )
+				.appendTo( $tip );
+			}
+		});
+	});
+
+$(document).on( 'mouseleave', '.preflightError', function( e ) {
+	preflightHoverToken++;
+	if( $preflightTooltip ) $preflightTooltip.hide();
+	});
 
 function fpfiledownload( id ) {
 	window.open( "filedownload.php?type=fp&id="+id );
@@ -1309,7 +1406,154 @@ var alter = "NOR";
 ?>
 
 var pubID = "<?= $pub[0][0] ?>";
-function plannerContextMenu( info, menu ) { 
+var hybridFP = <?= $hybridFP ? 'true' : 'false' ?>;
+var pubCode = "<?= $magazine[0][3] ?>";
+var issueCode = "<?= $pub[0][10] ?>";
+
+if( hybridFP ) {
+	// Hybrid publications get a direct drag-and-drop PDF upload onto a
+	// Flatplan slot, on top of the whole-issue Upload page path. The grid
+	// under #fp_holder/#fp_holder2 is fully replaced by loadPages()'s poll
+	// loop every 500ms, so listeners must be delegated from document (a
+	// direct .thumb binding would stop working after the first refresh).
+	$(document).on( 'dragover drop', function( e ) {
+		e.preventDefault();
+		});
+
+	$(document).on( 'dragover', '.thumb', function( e ) {
+		e.preventDefault();
+		e.stopPropagation();
+		$('.thumb.dropHover').not( this ).removeClass( 'dropHover' );
+		$(this).addClass( 'dropHover' );
+		});
+
+	$(document).on( 'dragleave', '.thumb', function( e ) {
+		$(this).removeClass( 'dropHover' );
+		});
+
+	$(document).on( 'drop', '.thumb', function( e ) {
+		e.preventDefault();
+		e.stopPropagation();
+		$(this).removeClass( 'dropHover' );
+
+		if( dropUploadActive ) return;
+
+		var position = $(this).attr( 'page' );
+		var files = e.originalEvent.dataTransfer.files;
+		if( !position || files.length !== 1 ) return;
+
+		var file = files[0];
+		if( file.name.split('.').pop().toUpperCase() !== 'PDF' ) return;
+
+		uploadPdfToSlot( file, position );
+		});
+	}
+
+// If the dropped file's own name already carries the pub code and issue
+// (a "proper(ish)" name), it's sent unmodified - otherwise it's prefixed
+// with the 3-digit slot position, same {position}_{code}_{issue}_...
+// convention Switch jobs already use elsewhere in this app (see
+// client/filedownload.php, flatplan_ajax.php's drawPage/drawAmericanPage).
+//
+// Sent as real chunks (same tempdir/num/num_chunks protocol
+// fileupload_ajax.php already expects from filetransfer.php/blob.php) rather
+// than one giant POST - a single-POST upload of a large file both exceeds
+// nginx/php's body-size limits and gives the browser no per-chunk progress
+// events to report. The grid itself is left alone here; loadPages()'s
+// existing 500ms poll picks up the new page once Switch processes it.
+//
+// While a drop upload is running, a full-screen overlay (#dropUploadOverlay)
+// blocks the rest of the UI and dropUploadActive gates the drop handler
+// above - a large file can take a while even chunked, and without this an
+// impatient user dragging a second file mid-upload would interleave two
+// uploads writing into the same flow.
+var dropUploadSliceSize = 1024 * 1024 * 10; // 10MB, matches filetransfer.php
+var dropUploadActive = false;
+
+function uploadPdfToSlot( file, position ) {
+	var finalName = file.name;
+	var upperName = file.name.toUpperCase();
+
+	if( upperName.indexOf( pubCode.toUpperCase() ) === -1 || upperName.indexOf( String( issueCode ) ) === -1 ) {
+		var pos3 = ( '00' + position ).slice( -3 );
+		finalName = pos3 + '_' + pubCode + '_' + issueCode + '_' + file.name;
+		}
+
+	dropUploadActive = true;
+	var $overlay = $('#dropUploadOverlay');
+	$overlay.removeClass( 'dropUploadError' );
+	$overlay.find( '.dropUploadTitle' ).text( 'Uploading…' );
+	$overlay.find( '.dropUploadFilename' ).text( file.name );
+	$overlay.find( '.dropUploadPercent' ).text( '0%' );
+	$overlay.show( 0 );
+
+	var tempdir = Date.now();
+	var size = file.size;
+	var numChunks = Math.max( Math.ceil( size / dropUploadSliceSize ), 1 );
+
+	sendDropUploadChunk( file, finalName, position, tempdir, 1, numChunks, 0 );
+	}
+
+function sendDropUploadChunk( file, finalName, position, tempdir, num, numChunks, start ) {
+	var end = Math.min( start + dropUploadSliceSize, file.size );
+	var slicer = file.slice ? file.slice : ( file.mozSlice || file.webkitSlice );
+	var chunk = slicer.call( file, start, end );
+
+	var fd = new FormData();
+	fd.append( 'type', 'pdf_to_flatplan' );
+	fd.append( 'jobid', pubID );
+	fd.append( 'jtype', 'pub' );
+	fd.append( 'part', $('#part').length ? $('#part').val() : '' );
+	fd.append( 'tempdir', tempdir );
+	fd.append( 'num', String( num ) );
+	fd.append( 'num_chunks', String( numChunks ) );
+	fd.append( 'file', chunk, finalName );
+
+	var xhr = new XMLHttpRequest();
+	xhr.upload.addEventListener( 'progress', function( e ) {
+		if( !e.lengthComputable ) return;
+		var chunkBytesDone = start + e.loaded;
+		var pct = Math.min( 100, Math.round( chunkBytesDone * 100 / file.size ) );
+		$('#dropUploadOverlay .dropUploadPercent').text( pct + '%' );
+		});
+
+	xhr.addEventListener( 'load', function() {
+		var ok = xhr.status >= 200 && xhr.status < 300;
+		if( ok ) {
+			try { ok = JSON.parse( xhr.responseText ).ok !== false; } catch( err ) { ok = false; }
+			}
+
+		if( !ok ) {
+			dropUploadFailed();
+			return;
+			}
+
+		if( num < numChunks ) {
+			sendDropUploadChunk( file, finalName, position, tempdir, num + 1, numChunks, end );
+			}
+		else {
+			dropUploadActive = false;
+			$('#dropUploadOverlay .dropUploadTitle').text( 'Uploaded' );
+			$('#dropUploadOverlay .dropUploadPercent').text( '100%' );
+			setTimeout( function() { $('#dropUploadOverlay').hide( 0 ); }, 1000 );
+			}
+		});
+
+	xhr.addEventListener( 'error', function() { dropUploadFailed(); });
+
+	xhr.open( 'POST', 'engine/fileupload_ajax.php', true );
+	xhr.send( fd );
+	}
+
+function dropUploadFailed() {
+	dropUploadActive = false;
+	var $overlay = $('#dropUploadOverlay').addClass( 'dropUploadError' );
+	$overlay.find( '.dropUploadTitle' ).text( 'Upload failed' );
+	$overlay.find( '.dropUploadPercent' ).text( '' );
+	setTimeout( function() { $overlay.hide( 0 ); }, 4000 );
+	}
+
+function plannerContextMenu( info, menu ) {
 	var cbox = new Array();
 	
 	$("#"+currentplace+" input[type='checkbox'][name='pageSelector[]']:checked").each(function(){
@@ -1467,99 +1711,7 @@ $(".custom-menu li").click(function(){
     	}
      $(".custom-menu").fadeOut(100);
  	});
- 	
-var $form = $('.box');
-$form.addClass('has-advanced-upload');
 
-var $input    = $form.find('input[type="file"]'),
-    $label    = $form.find('label'),
-    showFiles = function(files) {
-      $label.text(files.length > 1 ? ($input.attr('data-multiple-caption') || '').replace( '{count}', files.length ) : files[ 0 ].name);
-    };
-
-var droppedFiles = false;
-$form.on('drag dragstart dragend dragover dragenter dragleave drop', function(e) {
-	e.preventDefault();
-	e.stopPropagation();
-	})
-.on('dragover dragenter', function() {
-	$form.addClass('is-dragover');
-	})
-.on('dragleave dragend drop', function() {
-	$form.removeClass('is-dragover');
-	})
-.on('drop', function(e) {
-	droppedFiles = e.originalEvent.dataTransfer.files;
-	$form.trigger('submit');
-	}); 	
-
-$input.on('change', function(e) {
-	$form.trigger('submit');
-	});
-
-function uploadProgress(e) { // upload process in progress
-    if (e.lengthComputable) {
-        iBytesUploaded = e.loaded;
-        iBytesTotal = e.total;
-        var iPercentComplete = Math.round(e.loaded * 100 / e.total);
-
-		if( iPercentComplete.toString() >= '99' || iPercentComplete.toString() >= 99 ) {
-			$("#anyagpercent").html( 'Almost done' );
-			}
-		else {
-			$("#anyagpercent").html( (iPercentComplete).toString() + '%' );
-			}
-    }
-}
-
-function uploadFinish(e) {
-	var response = e.target.responseText;
-	
-	$(".box__uploading").hide(0);
-	
-	if( response == "error" ) {
-		$(".box__success").hide(0);
-		$(".box__error").show(0);
-		}
-		
-	else {
-		$(".box__success").show(0);
-		$(".box__error").hide(0);
-		}
-		
-	setTimeout( function() {
-		$('.box')[0].reset();
-		$('.box__file').val("");
-		$form.removeClass('is-uploading');
-		$(".box__success").hide(0);
-		$(".box__error").hide(0);
-		$(".box__input").show(0);
-		}, 2000);
-	}
-
-$form.on('submit', function(e) {
-	if ($form.hasClass('is-uploading')) return false;
-	$form.addClass('is-uploading').removeClass('is-error');
-	
-	$(".box__input").hide(0);
-	$(".box__uploading").show(0);
-	
-	e.preventDefault();
-	var ajaxData = new FormData($form.get(0));
-	ajaxData.append( "code", "<?= $magazine[0][3] ?>" );
-	if (droppedFiles) {
-    	$.each( droppedFiles, function(i, file) {
-			ajaxData.append( $input.attr('name'), file );
-    		});
-  		}
-
-    var oXHR = new XMLHttpRequest();        
-    oXHR.upload.addEventListener('progress', uploadProgress, false);
-    oXHR.addEventListener('load', uploadFinish, false);
-    oXHR.open('POST', 'engine/anyagfeltoltes.php');
-    oXHR.send(ajaxData);
-	});
- 
 function plannerAddCheck() {} 
  	
 </script>

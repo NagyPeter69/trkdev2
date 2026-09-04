@@ -793,7 +793,7 @@
 				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' data-pageid='".$fPage[0][0]."' class='preflightError' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			}
 		elseif( $class == 'left' ) {
@@ -809,7 +809,7 @@
 				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' data-pageid='".$fPage[0][0]."' class='preflightError' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			}
 
@@ -1271,7 +1271,7 @@
 				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' data-pageid='".$fPage[0][0]."' class='preflightError' style='float: left; margin-top: 3px; margin-left: 3px;'></div>";
 				}
 			}
 		elseif( $class == 'left' ) {
@@ -1287,7 +1287,7 @@
 				$triangle = "<div class='".$fPage[0][12]."' title='".htmlspecialchars( $diffTip )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			if( $fPage[0][18] == 1 ) {
-				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' class='preflightError' title='".htmlspecialchars( $lang["flatplan"]["fppreflight_tip"] )."' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
+				$preflight = "<div onclick='downloadPreflight(\"".$fPage[0][0]."\")' data-pageid='".$fPage[0][0]."' class='preflightError' style='float: right; margin-top: 3px; margin-right: 3px;'></div>";
 				}
 			}
 
@@ -1564,9 +1564,33 @@
 					$pages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' ".$moreQuery." ORDER BY page DESC LIMIT 1", "*" );
 					$length = $pages[0][5];
 					}
+
+				// A freshly-created issue's Parts already give $length a
+				// real (nonzero) page count long before any page is
+				// actually uploaded - the Pages view (type=fpPreview)
+				// gains nothing from rendering a slot per planned page in
+				// that case, and drawPage() runs a packages query plus
+				// several is_file()/getimagesize() filesystem checks per
+				// slot, none of which can ever hit for a page that was
+				// never uploaded - same fix as the American-numbering
+				// branch above already has via $allPartPages, just using
+				// an existence check instead (this branch isn't
+				// part-scoped). This must NOT touch the Flatplan view
+				// (same branch, but no type=fpPreview): its empty slots
+				// are cheap and are exactly what the user drags PDFs onto
+				// to upload, so an empty grid there is not itself a
+				// "nothing to show" state.
+				if( $_GET["type"] == "fpPreview" ) {
+					$hasAnyPages = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" LIMIT 1', 'id' );
+					if( empty( $hasAnyPages[0][0] ) ) {
+						$nopages = 1;
+						$length = -1;
+						}
+					}
+
 				$counter = 1;
 				$i = 0;
-				
+
 				if( $_GET["type"] == "fpPreview" ) {
 				//if( 0 ) {
 					while( $i <= $length ) {
