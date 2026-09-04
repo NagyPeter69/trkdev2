@@ -18,12 +18,6 @@
 			}
 		}
 
-	if( $_GET['op'] == 'tesztLevel' ) {
-		$txt = invoicing( $_GET["id"] );
-		
-		$result = $txt;
-		}
-
 	if( $_GET['op'] == 'deliverLoad' ) {
 		$delivers = sql_aget( "deliver_table", "pub_id='".$_GET["id"]."'", "*" );
 		
@@ -468,10 +462,7 @@ Feldolgozott képek:
 
 
 		produkcioSendmailAttach( $subject, $body, $to, $txt, $magazine[0][2]."_".$issue[0][10].".txt" );
-		
-		$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
-		produkcioSendmailAttach( $subject, $body, $to, $txt, $magazine[0][2]."_".$issue[0][10].".txt" );
-		
+
 		$result = "ok";
 		}
 

@@ -27,17 +27,7 @@ for( $i = 0; $i < count( $mails ); $i++ ) {
 	if( !empty( $user[0]["id"] ) ) {
 		$names = array( "user_id", "hash", "magazine_id", "email", "time", "redirect" );
 		$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=flatplan" );
-		sql_add( "adhoc_hotlinks", $names, $values );		
-		
-		$link = "https://".URL."/index.php?hash=".$hash;
-		$subject = "".$mag[0]["name"]." - Colorcom Tracker feltöltés";
-		$body = "Kedves ".$mails[$i].",<br>
-		<br>
-		a(z) ".$mag[0]["name"]." kiadványhoz új PDF oldalak lettek feltöltve amit a következő linkre kattintva tekinthet meg: <a href='".$link."'>".$link."</a>.<br>
-		<br>
-		Üdvözlettel:<br>
-		Colorcom Media";
-		produkcioSendmail( $subject, $body, $to );
+		sql_add( "adhoc_hotlinks", $names, $values );
 		}
 	}
 	

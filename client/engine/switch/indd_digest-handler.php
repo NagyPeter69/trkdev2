@@ -36,28 +36,9 @@ for( $i = 0; $i < count( $mails ); $i++ ) {
 		<br>
 		Kind regards,<br>
 		Colorcom Media";
-		
-		/*
-		$body = "Kedves ".$mails[$i].",<br>
-		<br>
-		a(z) ".$mag[0]["name"]." kiadványhoz új fájlok lettek feltöltve amit a következő linkre kattintva tekinthet meg: <a href='".$link."'>".$link."</a><br>
-		<br>
-		Üdvözlettel:<br>
-		Colorcom Media";
-		*/
-		
+
 		produkcioSendmail( $subject, $body, $to );
-		/*
-		$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
-		produkcioSendmail( $subject, $body, $to );
-		*/
 		error_log( "Mail sent: ".$mails[$i] );
 		}
 	}
-/*	
-$to = "peter.tamas@colorcom.hu|peter.tamas@colorcom.hu";
-$body .= "<br>Cimzettek: ".$cimzettek."";
-produkcioSendmail( $subject, $body, $to );
-error_log( "Mail sent: ".$mails[$i] );	
-*/
 ?>

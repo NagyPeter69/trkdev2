@@ -38,26 +38,6 @@ for( $i = 0; $i < count( $mails ); $i++ ) {
 		produkcioSendmail( $subject, $body, $to );
 		error_log( "Mail sent: ".$mails[$i] );
 		}
-		/*
-	else {
-		$names = array( "user_id", "hash", "magazine_id", "email", "time", "redirecto" );
-		//$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets&packid=".$pack[0]["id"]."" );
-		$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets" );
-		sql_add( "adhoc_hotlinks", $names, $values );		
-		
-		$to = $mails[$i]."|".$mails[$i];
-		$link = "https://".URL."/index.php?hash=".$hash;
-		$subject = "".$mag[0]["name"]." - Colorcom Tracker feltöltés";
-		$body = "Kedves ".$mails[$i].",<br>
-		<br>
-		a(z) ".$mag[0]["name"]." kiadványhoz új fájlok lettek feltöltve amit a következő linkre kattintva tekinthet meg: <a href='".$link."'>".$link."</a>.<br>
-		<br>
-		Üdvözlettel:<br>
-		Colorcom Media";
-		produkcioSendmail( $subject, $body, $to );
-		error_log( "Mail sent: ".$mails[$i] );		
-		}
-	*/
 	}
 
 ?>

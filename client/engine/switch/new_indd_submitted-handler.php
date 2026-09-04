@@ -117,41 +117,4 @@ foreach( $_POST as $key=>$value ) {
 		} 
 	}
 
-//Levélküldés
-$xml = simplexml_load_file( TRKPATH."/xml/".PMD.".xml" );
-$xpath = $xml->xpath('/Publications');
-foreach($xpath as $temp) {
-	for( $i = 0; $i < count( $temp->Item ); $i++ ) {
-		if( $temp->Item[$i]->Code == $_POST['jobCode'] )
-			break;
-		}
-	}
-	
-// $file = $_POST["fileName"].".xml";
-// if ( move_uploaded_file( $_FILES[0]["tmp_name"], $file ) ) {
-	// $report = simplexml_load_file( $file );
-	// $xpath = $report->xpath('/uploadReport');
-	
-	// $mails = (string) $xml->Item[$i]->Mails;
-	// $mails = explode( ";", $mails );
-	// $url = URL;
-	// $pub = sql_aget( "publisher", "id='".$p_id[0][1]."'", "*" );
-	// if( $pub[0]["name"] == "TestCo" ) {
-		// $url = "trkdev.colorcom.hu";
-		// }
-
-	// for( $i = 0; $i < count( $mails ); $i++ ) {
-		// $to = $mails[$i]."|".$mails[$i];
-		// $subject = str_replace(".indd", "", $report->docName)." ::: ".$report->subject;
-		// $body = "";
-		
-		// $body .= "Dear User,<br><br>";
-		// $body .= "uploading of the document ".str_replace(".indd", "", $report->docName)." was successful, its processing has been started.<br><br>";
-		// $body .= "Kind regards,<br><br>";
-		// $body .= "Colorcom Media";
-		
-		// error_log( $body );
-		// produkcioSendmail( $subject, $body, $to );
-		// }
-	// }
 ?>

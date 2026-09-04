@@ -927,17 +927,6 @@ function issueManagement( op, id, divid ) {
 		}
 	}	
 	
-function tesztLevel() {
-	$.ajax ({
-		url:"engine/issueManagementAjax.php?op=tesztLevel&id=<?= $_GET["id"] ?>",
-		type: "GET",
-		dataType: 'json',
-		success:function( data ) {
-			console.log( data );
-			}
-		});		
-	}	
-	
 function addDeliver( pubid ) {
 	$.ajax ({
 		url:"engine/issueManagementAjax.php?op=addDeliver&pubid="+pubid,

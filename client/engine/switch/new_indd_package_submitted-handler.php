@@ -117,43 +117,4 @@ foreach( $_POST as $key=>$value ) {
 		} 
 	}
 
-//Levélküldés
-$xml = simplexml_load_file( TRKPATH."/xml/".PMD.".xml" );
-$xpath = $xml->xpath('/Publications');
-foreach($xpath as $temp) {
-	for( $i = 0; $i < count( $temp->Item ); $i++ ) {
-		if( $temp->Item[$i]->Code == $_POST['jobCode'] )
-			break;
-		}
-	}
-	
-$file = $_POST["fileName"].".xml";
-// if ( move_uploaded_file( $_FILES[0]["tmp_name"], $file ) ) {
-	// $report = simplexml_load_file( $file );
-	// $xpath = $report->xpath('/uploadReport');
-	
-	// $mails = (string) $xml->Item[$i]->Mails;
-	// $mails = explode( ";", $mails );
-	// $url = URL;
-	// $pub = sql_aget( "publisher", "id='".$p_id[0][1]."'", "*" );
-	// if( $pub[0]["name"] == "TestCo" ) {
-		// $url = "trkdev.colorcom.hu";
-		// }
-	
-	// $link = "https://".$url."/switchReports/".( $type == "Adhoc" ? $_POST["jobCode"] : $_POST["jobCode"]."_".$_POST["issue"] )."/".$report->reportID.".html";
-	// error_log( $link );
-	// for( $i = 0; $i < count( $mails ); $i++ ) {
-		// $to = $mails[$i]."|".$mails[$i];
-		// $subject = str_replace(".indd", "", $report->docName)." ::: ".$report->subject;
-		// $body = "";
-		
-		// $body .= $report->intro."<br><br>";
-		// $body .= $report->text."<br><br>";
-		// $body .= "<a href='".$link."'>".$link."</a><br><br>";
-		// $body .= str_replace(",", ",<br><br>", $report->outro);
-		
-		// error_log( $body );
-		// produkcioSendmail( $subject, $body, $to );
-		// }
-	// }
 ?>
