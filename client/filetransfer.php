@@ -743,6 +743,30 @@ var file;
 var start;
 var ending;
 var tempdir;
+var currentXHR = null;
+var uploadActive = false;
+var uploadAborted = false;
+
+// Navigating away (menu click, back button, tab close) is a full page
+// unload here, not an SPA route change - it kills any in-flight XHR
+// instantly with no warning. Ask for confirmation while a chunked upload
+// is running, and if the user leaves anyway, tell the server via
+// sendBeacon (survives unload, unlike a normal XHR) to delete the
+// in-progress tempdir immediately instead of waiting up to 24h for
+// cron/blob_cleaner.php to age it out.
+window.addEventListener('beforeunload', function( e ) {
+	if( uploadActive ) {
+		e.preventDefault();
+		e.returnValue = '';
+		return '';
+		}
+	});
+
+window.addEventListener('pagehide', function( e ) {
+	if( uploadActive && tempdir ) {
+		navigator.sendBeacon( 'engine/ajax.php?op=cancelupload&tempdir='+tempdir );
+		}
+	});
 
 function fireUpload() {
 	oFile = files_data[file_counter];
@@ -781,24 +805,45 @@ function fireUpload() {
 function pre_check() {
 	file_counter = 0;
 	file_max = files_data.length;
-	
+	uploadActive = true;
+	uploadAborted = false;
+
 	fireUpload();
 	}
 
 function finishedUpload() {
+	uploadActive = false;
 	setTimeout(function() {
 		location.reload();
-		}, 5000);	
+		}, 5000);
 	}
 
 function stopUpload() {
-	
+	uploadAborted = true;
+	uploadActive = false;
+
+	if( currentXHR ) {
+		currentXHR.abort();
+		}
+
+	if( tempdir ) {
+		$.ajax({
+			url: "engine/ajax.php?op=cancelupload&tempdir="+tempdir,
+			type: "GET",
+			dataType: 'json'
+			});
+		}
+
+	setTimeout(function() {
+		location.reload();
+		}, 300);
 	}
 
 function startUploading( file, start, end ) {
 	ending = end;
-	var ajaxData = new FormData();	
+	var ajaxData = new FormData();
 	var oXHR = new XMLHttpRequest();
+	currentXHR = oXHR;
  	iBytesUploaded = start;
 	console.log( num+", "+num_chunks );
     if (size - end < 0) { // Uses a closure on size here you could pass this as a param
@@ -808,12 +853,15 @@ function startUploading( file, start, end ) {
     if (end < size) {
         oXHR.onreadystatechange = function () {
             if (oXHR.readyState == XMLHttpRequest.DONE) {
+				if( uploadAborted ) {
+					return;
+					}
 				num++;
                 startUploading( file, start + sliceSize, start + (sliceSize * 2))
             }
         }
     }
-	
+
 	oXHR.open('POST', 'engine/fileupload_ajax.php', true );
 	oXHR.upload.addEventListener('progress', uploadProgress, false);
 	if( num == num_chunks ) {
@@ -896,6 +944,9 @@ var progress = function(perc) {
 	}
 
 function uploadFinish(e) {
+	if( uploadAborted ) {
+		return;
+		}
 	$(".progressText[fid='"+prev_counter+"']").css("color", "rgb( 25, 141, 62 )" ).html("sikeres");
 	$(".progressText[fid='"+prev_counter+"']").show(0);
 	$("#progressBarWrap[class='"+prev_counter+"']").hide(0);
