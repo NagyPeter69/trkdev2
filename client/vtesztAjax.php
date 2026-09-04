@@ -150,7 +150,7 @@ elseif( $difference > 0 && $_POST['file'][1]["Name"] != "" ) {
 		$zoomWidth = pixel__( ($_POST['file'][0]["Width"]+$_POST['file'][1]["Width"]) );
 		if( $difference < ( floatval( $cbox[1]['Right'] )-floatval( $cbox[1]['Left'] ) ) ) {
 			$debug = 1;
-			$sizes['right'] = $difference;
+			$sizes['right'] = $sizes['left'] + $difference;
 			$sizes['width'] = $temp;
 			if( $zoomWidth < $_POST['fpBox']['Width'] )
 				$_POST['positions']['width'] = $zoomWidth;

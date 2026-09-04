@@ -44,7 +44,7 @@ function tesztAjaxCacheKey( $terminalPath ) {
 	}
 
 $renderCacheFile = TRKPATH.'/engine/r3/_cache_'.tesztAjaxCacheKey( $terminalPath ).'.jpg';
-if( is_file( $renderCacheFile ) ) {
+if( is_file( $renderCacheFile ) && filesize( $renderCacheFile ) > 0 ) {
 	$imgData = base64_encode( file_get_contents( $renderCacheFile ) );
 	$imgData = 'data:image/jpeg;base64,'.$imgData;
 	$debug = 'cached';
@@ -209,9 +209,10 @@ if( floatval( str_replace( ",", ".", $sizes['left'] ) ) >= floatval( str_replace
 				$icc_rgb = file_get_contents( "/var/www/html/r3API/r3/sRGB_Color_Space_Profile.icc" );
 				$image->profileImage('icc', $icc_rgb);
 				$image->setImageFormat('jpg');
-				$image->compositeImage($img, $img->getImageCompose(), "-".$diff, 0); 
+				$image->compositeImage($img, $img->getImageCompose(), "-".$diff, 0);
 			$image->writeImage("engine/r3/".$to);
-			}	
+			$to = "engine/r3/".$to;
+			}
 		}
 	
 	if( $sizes["width"] > 0 ) {
@@ -355,7 +356,7 @@ $result = $imgData;
 // the branches' own internal temp-file handling.
 if( !empty( $imgData ) && strpos( $imgData, 'base64,' ) !== false ) {
 	$rawBinary = base64_decode( substr( $imgData, strpos( $imgData, 'base64,' )+7 ) );
-	if( $rawBinary !== false ) {
+	if( $rawBinary !== false && strlen( $rawBinary ) > 0 ) {
 		file_put_contents( $renderCacheFile, $rawBinary );
 		}
 	}
