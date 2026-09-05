@@ -265,16 +265,27 @@ if( $_GET['op'] == 'load_publications' ) {
 					}
 				}
 			else {
+				// This branch has to lay out the same flex-item sequence as
+				// the populated branch above (name, pubSettingsDot, one
+				// pubStatus, pubDeadline, then Client) - .pub_info is a flex
+				// row (see client.css), so the Client column's on-screen
+				// position is just the sum of every sibling width before it.
+				// This used to emit two differently-sized empty .pubStatus
+				// placeholders and no pubSettingsDot placeholder at all,
+				// which shifted Client (and everything after it) sideways
+				// versus rows with an active issue - plus a stray closing
+				// </div> here that closed .pub_info early (it's already
+				// closed once by its real opening tag's caller, further
+				// down), corrupting the row's DOM structure on top of that.
 				$current = "<div style='float:left; width: 90px; margin-left: 10px;'>".$lang["publications"]["no_current"]."</div>";
-				$current .= "<div id='' class='pubStatus' style='float:left; margin-left: 5px; width: 105px; height: 1px;'></div>";
-				$current .= "<div id='' class='pubStatus' style='float:left; margin-left: 5px; width: 100px; height: 1px;'></div>";
+				$current .= "<div class='pubSettingsDot' style='visibility: hidden;'></div>";
+				$current .= "<div id='' class='pubStatus' style='float:left; margin-left: 5px; width: 140px; height: 1px;'></div>";
 				$current .= "<div class='pubDeadline pubExtraInfo'>&nbsp;</div>";
 				$current .= "<div id='".( $pub[0][0] ?? '' )."_client' class='pubExtraInfo pubClient' style='float:left; margin-left: 5px; width: ".$pubwidth."px; height: 1px;'>".$client."</div>";
 				$current .= "<div id='".( $pub[0][0] ?? '' )."_type' class='pubExtraInfo pubType' style='float:left; margin-left: 5px; width: 70px;'>".$magazines[$i][10]."</div>";
 				$current .= "<div id='".( $pub[0][0] ?? '' )."_workflow' class='pubExtraInfo pubWorkflow' style='float:left; margin-left: 5px; width: 65px; height: 1px;'>".$process."</div>";
 				$current .= "<div id='".( $pub[0][0] ?? '' )."_pn' class='pubExtraInfo pubPn' style='float:left; margin-left: 5px; width: 35px;'>".$lang["pn"][$pn]."</div>";
-				$current .= "</div>";				
-				}		
+				}
 
 			$onclick = '';
 			if( count( $publications2 ) > 0 ) {
