@@ -230,7 +230,19 @@
 				$names = array( "publisher_id", "name", "code", "calendarGroup", "type", "preflight" );
 				$values = array( "0", $_POST["Name"], $_POST["Code"], "", $_POST["Type"], $_POST["Preflight"] ?? "Yes" );
 				$mid = sql_add( "magazines", $names, $values );
-				
+				// sql_add() returns false on a failed INSERT (duplicate code
+				// racing past the check above, a DB error, etc.) - nothing
+				// downstream checked this before, so a failed magazine insert
+				// still went on to create publications/accounts/parts against
+				// a bogus magazine_id, send a real email, and write a PMD entry
+				// for a magazine that was never actually created. Bail out
+				// here instead - this is the "DB row missing, PMD orphan
+				// created anyway" half of the PMD/DB consistency the project
+				// owner asked to guarantee (2026-09-05).
+				if( empty( $mid ) ) {
+					$error[] = "Code";
+					}
+				else {
 				$name = array( "publisher_id", "magazine_id", "pages", "uploadable", "code", "deadline", "enhance" );
 				$value = array( "0", $mid, "0", "true", $_POST["Code"], $_POST["Deadline"], $_POST["Enhance"] );
 				error_log("ADHOC MELÓ: ".$_POST["ClientType"] );
@@ -294,65 +306,121 @@
 					}
 				syncPublicationPages( $id );
 
-				$link = "https://".URL."/index.php?hash=".$hash;
-				$subject = sprintf( $lang["publications"]["adhoc_mail_subject"], $_POST["Name"] );
-				$to = $_POST["Mails"]."|".$_POST["Mails"];
-				if( $_POST["ClientType"] == "known" && !empty( $u[0]["full_name"] ) ) {
-					// This is a separate, job-scoped access link for the elevated
-					// role - not the recipient's existing Tracker login - so say
-					// so explicitly and greet them by name instead of the generic
-					// "Dear Customer" used for a genuinely new/unknown contact.
-					// Subject/greeting/closing come from $lang (loaded per
-					// $_POST["Language"] at the top of this file), same as
-					// $guide, so the whole mail is in one language instead of
-					// mixing a hardcoded-Hungarian wrapper around it.
-					$body = sprintf( $lang["publications"]["adhoc_mail_known"], $u[0]["full_name"], $_POST["Name"], $_POST["Code"], "<a href='".$link."'>".$link."</a>" )."
-					<br>
-					".$guide."
-					<br>
-					".$lang["publications"]["adhoc_mail_closing"];
+				// PMD write happens - and is checked - before the notification
+				// mail below, not after. produkcioSendmail() has no timeout
+				// (same unbounded-hang risk switchAPI.php's curl calls used to
+				// have, see engine's SYSTEM_STATE.md) - with the mail send
+				// first, a slow/unreachable mail server could hang the request
+				// long enough for nginx's own timeout to kill it before
+				// changeXmlDatabase() ever ran, leaving a DB-only magazine
+				// with no PMD entry and no chance for the rollback below to
+				// even execute. Reproduced live 2026-09-05 testing this fix
+				// with the mail server firewalled off (candidate box's
+				// deliberate migration-safety block) - confirmed a real,
+				// distinct drift vector, not just a hypothetical one.
+				$pmdOk = changeXmlDatabase( 'add', $_POST );
+				if( !$pmdOk ) {
+					// The other direction of the same consistency guarantee:
+					// the magazine/publication/account rows above are already
+					// committed (no transactions on this MyISAM table), but
+					// changeXmlDatabase() just logged a CRITICAL write failure
+					// - roll every one of them back rather than leave a DB-only
+					// magazine with no PMD entry (this exact class of failure
+					// is what caused the 2026-07-27 pmd.xml ownership incident;
+					// this time, don't leave the half-created job behind too).
+					sql_delete( "adhoc_hotlinks", "magazine_id='".$mid."'" );
+					sql_delete( "parts", "mag_id='".$mid."'" );
+					if( !empty( $aid ) ) sql_delete( "accounts", "id='".$aid."'" );
+					if( !empty( $id ) ) sql_delete( "publications", "id='".$id."'" );
+					sql_delete( "magazines", "id='".$mid."'" );
+					$error[] = "Code";
 					}
 				else {
-					$body = sprintf( $lang["publications"]["adhoc_mail_unknown"], $_POST["Name"], $_POST["Code"], "<a href='".$link."'>".$link."</a>" )."
-					<br>
-					".$guide."
-					<br>
-					".$lang["publications"]["adhoc_mail_closing"];
-					}
-				produkcioSendmail( $subject, $body, $to );
-				
-				changeXmlDatabase( 'add', $_POST );
-				toSwitch( 'new_publication' , 'publications|'.$id, 'C_database/'.$_POST["Code"].''.ISSUEPOSTFIX.'', 'issueData' );
+					toSwitch( 'new_publication' , 'publications|'.$id, 'C_database/'.$_POST["Code"].''.ISSUEPOSTFIX.'', 'issueData' );
 
-				if( isset( $insideWidth ) ) {
-					syncInsidePartAdSize( $mid, $_POST["Code"], $_POST["Workflow"], $insideWidth, $insideHeight );
+					if( isset( $insideWidth ) ) {
+						syncInsidePartAdSize( $mid, $_POST["Code"], $_POST["Workflow"], $insideWidth, $insideHeight );
+						}
+
+					$link = "https://".URL."/index.php?hash=".$hash;
+					$subject = sprintf( $lang["publications"]["adhoc_mail_subject"], $_POST["Name"] );
+					$to = $_POST["Mails"]."|".$_POST["Mails"];
+					if( $_POST["ClientType"] == "known" && !empty( $u[0]["full_name"] ) ) {
+						// This is a separate, job-scoped access link for the elevated
+						// role - not the recipient's existing Tracker login - so say
+						// so explicitly and greet them by name instead of the generic
+						// "Dear Customer" used for a genuinely new/unknown contact.
+						// Subject/greeting/closing come from $lang (loaded per
+						// $_POST["Language"] at the top of this file), same as
+						// $guide, so the whole mail is in one language instead of
+						// mixing a hardcoded-Hungarian wrapper around it.
+						$body = sprintf( $lang["publications"]["adhoc_mail_known"], $u[0]["full_name"], $_POST["Name"], $_POST["Code"], "<a href='".$link."'>".$link."</a>" )."
+						<br>
+						".$guide."
+						<br>
+						".$lang["publications"]["adhoc_mail_closing"];
+						}
+					else {
+						$body = sprintf( $lang["publications"]["adhoc_mail_unknown"], $_POST["Name"], $_POST["Code"], "<a href='".$link."'>".$link."</a>" )."
+						<br>
+						".$guide."
+						<br>
+						".$lang["publications"]["adhoc_mail_closing"];
+						}
+					produkcioSendmail( $subject, $body, $to );
 					}
 				}
-				
+				}
+
 			if( $_POST["Type"] == "Regular" ) {
 				$publisher = sql_aget( "publishers", "name='".$_POST["Client"]."'", "*" );
 				$names = array( "publisher_id", "name", "code", "calendarGroup", "type", "preflight" );
 				$values = array( $publisher[0]["id"], $_POST["Name"], $_POST["Code"], "", $_POST["Type"], $_POST["Preflight"] ?? "Yes" );
 				$mid = sql_add( "magazines", $names, $values );
-
-				changeXmlDatabase( 'add', $_POST );
-
-				// Whatever Parts the create.php dialog collected need to be
-				// saved as this magazine's pub_id="0" template row set -
-				// the same convention jobsettings.php and newIssue.php read
-				// from ("pub_id='0' AND mag_id=...") to pre-populate the
-				// Parts table for the first issue. This was previously
-				// discarded entirely: create.php submits under "parttype",
-				// not "type", and nothing here ever read it, so page
-				// sequences typed in at creation silently vanished and the
-				// first New Issue dialog opened with zero Part rows.
-				$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
-				for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
-					$values = array( "0", $_POST["parttype"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
-					sql_add( "parts", $names, $values );
+				// Same PMD/DB consistency guarantee as the Adhoc branch above:
+				// a failed magazine insert must not still get a PMD entry
+				// written for it (sql_add() returns false on failure, nothing
+				// checked that before).
+				if( empty( $mid ) ) {
+					$error[] = "Code";
+					}
+				else {
+				$pmdOk = changeXmlDatabase( 'add', $_POST );
+				if( !$pmdOk ) {
+					// And the other direction: PMD write failed (logged
+					// CRITICAL by changeXmlDatabase() itself) - roll back the
+					// magazine row rather than leave a DB-only magazine with
+					// no PMD entry. Nothing else has been created yet at this
+					// point (Parts are created below, after this check), so
+					// there's nothing else to undo.
+					sql_delete( "magazines", "id='".$mid."'" );
+					$mid = false;
+					$error[] = "Code";
+					}
+				else {
+					// Whatever Parts the create.php dialog collected need to be
+					// saved as this magazine's pub_id="0" template row set -
+					// the same convention jobsettings.php and newIssue.php read
+					// from ("pub_id='0' AND mag_id=...") to pre-populate the
+					// Parts table for the first issue. This was previously
+					// discarded entirely: create.php submits under "parttype",
+					// not "type", and nothing here ever read it, so page
+					// sequences typed in at creation silently vanished and the
+					// first New Issue dialog opened with zero Part rows.
+					$names = array( "pub_id", "name", "place", "color", "size", "mag_id", "grayscale" );
+					for( $i = 0; $i < count( $_POST["parttype"] ?? array() ); $i++ ) {
+						$values = array( "0", $_POST["parttype"][$i], $_POST["position"][$i] ?? "", $_POST["color"][$i], $_POST["trim_x"][$i]."x".$_POST["trim_y"][$i], $mid, $_POST["grayscale"][$i] );
+						sql_add( "parts", $names, $values );
+						}
 					}
 				}
+				}
 			
+			// Everything below assumes a real, successfully-created magazine
+			// (both the magazine row and its PMD entry) - if either branch
+			// above bailed out and added an error instead, $mid is empty and
+			// none of this notification/bookkeeping tail should run either.
+			if( !empty( $mid ) ) {
 			$allowedMags = explode( ",", $user[0][21] );
 			if( $allowedMags[0]!= "" ) {
 				if( !in_array( $mid, $allowedMags ) ) $allowedMags[] = $mid;
@@ -362,13 +430,13 @@
 				$amags = $mid;
 				}
 			sql_update( "accounts", "showMagazines='".$amags."'", "id='".$user[0][0]."'" );
-			
+
 			$admins = sql_aget( "accounts", "`group`='2'", "id, showMagazines" );
 			for( $i = 0; $i < count( $admins ); $i++ ) {
 				if( $admins[$i]["id"] != $user[0][0] ) {
 					sql_update( "accounts", "showMagazines='".$admins[$i]["showMagazines"].",".$mid."'", "id='".$admins[$i]["id"]."'" );
 					}
-				}			
+				}
 
 			$admins = sql_aget( "accounts", "`group`='5'", "id, showMagazines" );
 			for( $i = 0; $i < count( $admins ); $i++ ) {
@@ -376,11 +444,11 @@
 					sql_update( "accounts", "showMagazines='".$admins[$i]["showMagazines"].",".$mid."'", "id='".$admins[$i]["id"]."'" );
 					}
 				}
-			
+
 			$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date' );
 			$values = array( $_SESSION['intra_user'], 'newMagazine', '0', $mid, '', '', time() );
-			sql_add( 'system_log', $names, $values );			
-			
+			sql_add( 'system_log', $names, $values );
+
 			$subject = $_POST['Name']." létrehozva a Trackeren";
 			$to = "Colorcom Prepress|produkcio@colorcom.hu";
 			$body = "
@@ -409,6 +477,7 @@
 			// "Create" panel stuck open even though the job was created
 			// successfully. Confirmed live 2026-07-29 creating FKB30.
 			$switchResponse = SwitchSend_TESZT( $array );
+			}
 			}
 
 		$result = array( $error );

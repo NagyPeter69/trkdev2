@@ -785,9 +785,6 @@
 		}
 
 	function changeXmlDatabase( $operation, $values, $xml2 = '/var/www/html/client/xml/'.PMD.'.xml' ) {
-		error_log( "CHANGEXML DEBUG" );
-		error_log( "--".$operation."--" );
-		error_log( $xml2 );
 		$xml = simplexml_load_file( $xml2 );
 		$deny = array( 'addRUser', 'ApprovedComments', 'pn', 'Uploadable', 'Deadline', 'publisher', 'magazine', 'old', 'old_code', 'xml_go', $values['deny'] ?? '', 'deny', 'type', 'code', 'CustomCode_2', 'counter_parts', 'Client2', 'adhocUser' );
 		
@@ -999,6 +996,15 @@
 				."is_writable=".var_export( is_writable( $xml2 ), true )." running as uid=".getmyuid()
 				.". This publication/magazine change was saved to the database but is now OUT OF SYNC with PMD "
 				."until this is fixed and the write is retried." );
+			// Callers that create a new DB row and then call changeXmlDatabase()
+			// need to know this failed so they can undo that row rather than
+			// leave a DB-only ghost with no PMD entry (the other half of the
+			// drift this return value exists to let callers prevent - see
+			// pubsApply.php's sub=='create' handler, the first caller that
+			// actually checks this). Callers that don't check it (most of the
+			// ~15 other call sites) behave exactly as before - a bool return
+			// that's never inspected changes nothing for them.
+			return false;
 			}
 
 		// Every call to changeXmlDatabase() changes the on-disk dataset, so
@@ -1013,6 +1019,7 @@
 		// route through it instead of maintaining a second, divergent copy
 		// of the same upload logic.
 		XMLUpload2( PMD.'.xml' );
+		return true;
 		}
 	
 	function toSwitch( $type, $job, $saveTo, $root ) {

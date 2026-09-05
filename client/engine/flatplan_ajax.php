@@ -349,7 +349,32 @@
 			$acceptType = array( 'PRE' );
 			}
 		
-		$fPage[0] = $fPages2[ $page ];
+		$fPage[0] = $fPages2[ $page ] ?? null;
+		if( !isset( $fPage[0] ) ) {
+			// A page with no pageinfo row at all (covered by a neighbouring
+			// wide/gatefold image, or simply not reached yet) used to leave
+			// $fPage[0] null, and every one of the ~30 $fPage[0][N] reads
+			// below - version, proof/diff/preflight marks, comments, approval
+			// state, the row's own checkbox - warned on it individually.
+			// Filling in pageinfo's own column count (21) of empty strings
+			// matches the "no data" sentinel this codebase already uses
+			// everywhere else ($fPage[0][0] == "" is literally how "empty
+			// slot" is detected throughout this file) - PHP 8's non-numeric-
+			// string comparison rules make every existing == / > / < check
+			// against these behave exactly as before, just without the
+			// warnings. Surfaced 2026-09-05 fixing QVN78's pages 218-220.
+			$fPage[0] = array_fill( 0, 21, "" );
+			}
+		// Same reasoning as $fPage[0] above, one level up: none of the
+		// branches below set $file/$link/$commentMark/$secBg/$textColor for
+		// a page that's an ad without its ad flag, isn't in $fPages2, and
+		// doesn't match a wide-package fallback either - genuinely nothing
+		// to draw. Defaults here match what each branch already treats as
+		// "no file"/"no link" elsewhere in this function (empty string,
+		// is_file("") is safely false) rather than leaving them undefined
+		// for the unconditional reads further down (footer text, checkbox,
+		// comment mark, header color).
+		$file = ""; $link = ''; $commentMark = ""; $secBg = ""; $textColor = "000000";
 		if( $page == 0 ) {
 			return "<div style='float: left;'><div class='".$class."_pagenr pagenr'>&nbsp;</div><div style='position: absolute; left: 0px; z-index: 2; width: ".($w)."px; height: ".($h+30)."px;'>&nbsp;</div></div>";
 			}
@@ -468,7 +493,7 @@
 			foreach( $tempPage as $Pack ) {
 				$temp = explode( "-", $Pack[3] );
 				$start = intval( $temp[0] );
-				if( $temp[1] != "" )
+				if( ( $temp[1] ?? "" ) != "" )
 					$end = intval( $temp[1] );
 				else
 					$end = $start;
@@ -479,17 +504,25 @@
 					}
 				$rowCount++;
 				}
-			if( $tempPage[$rowCount][0] != "" && $found == 1 ) {
+			// $found must be checked first - PHP evaluates && left-to-right,
+			// so checking the array access before $found meant it always ran
+			// even when the loop above found nothing and left $rowCount one
+			// past the last valid index.
+			if( $found == 1 && ( $tempPage[$rowCount][0] ?? "" ) != "" ) {
 				$place = addingNumber( $tempPage[$rowCount][0] );
 				$secBg = "background: #".$bPalette[$place]." !important;";
 				}
 				
 			if( $found == 0 ) {
-				unset( $secBg );
-				unset( $textColor );
+				// Genuinely nothing here (no wide-package match either) -
+				// leave $secBg/$textColor at their safe top-of-function
+				// defaults rather than unsetting them, which only pushed the
+				// same "undefined" warning onto whichever read comes next.
+				$secBg = "";
+				$textColor = "000000";
 				}
 			}	
-		if( $fPage[0][9] > 1 or $page%2 == 0 or $fPages2[ (intval($page)-1) ][0] == "" ) {
+		if( $fPage[0][9] > 1 or $page%2 == 0 or ( $fPages2[ (intval($page)-1) ][0] ?? "" ) == "" ) {
 			$lPage = $page;
 			}
 		elseif( $fPage[0][0] != "" ) {
@@ -920,7 +953,32 @@
 		
 		//error_log( $page );
 		//error_log( print_r( $fPages2[ $page ], true ) );
-		$fPage[0] = $fPages2[ $page ];
+		$fPage[0] = $fPages2[ $page ] ?? null;
+		if( !isset( $fPage[0] ) ) {
+			// A page with no pageinfo row at all (covered by a neighbouring
+			// wide/gatefold image, or simply not reached yet) used to leave
+			// $fPage[0] null, and every one of the ~30 $fPage[0][N] reads
+			// below - version, proof/diff/preflight marks, comments, approval
+			// state, the row's own checkbox - warned on it individually.
+			// Filling in pageinfo's own column count (21) of empty strings
+			// matches the "no data" sentinel this codebase already uses
+			// everywhere else ($fPage[0][0] == "" is literally how "empty
+			// slot" is detected throughout this file) - PHP 8's non-numeric-
+			// string comparison rules make every existing == / > / < check
+			// against these behave exactly as before, just without the
+			// warnings. Surfaced 2026-09-05 fixing QVN78's pages 218-220.
+			$fPage[0] = array_fill( 0, 21, "" );
+			}
+		// Same reasoning as $fPage[0] above, one level up: none of the
+		// branches below set $file/$link/$commentMark/$secBg/$textColor for
+		// a page that's an ad without its ad flag, isn't in $fPages2, and
+		// doesn't match a wide-package fallback either - genuinely nothing
+		// to draw. Defaults here match what each branch already treats as
+		// "no file"/"no link" elsewhere in this function (empty string,
+		// is_file("") is safely false) rather than leaving them undefined
+		// for the unconditional reads further down (footer text, checkbox,
+		// comment mark, header color).
+		$file = ""; $link = ''; $commentMark = ""; $secBg = ""; $textColor = "000000";
 		//error_log( $fPage[0][0] );
 		if( $fPage[0][6] == "ad" ) {
 			$file = "_ads/".str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$fPage[0][1]."_ad_preview.jpg";
@@ -974,7 +1032,7 @@
 			foreach( $tempPage as $Pack ) {
 				$temp = explode( "-", $Pack[3] );
 				$start = intval( $temp[0] );
-				if( $temp[1] != "" )
+				if( ( $temp[1] ?? "" ) != "" )
 					$end = intval( $temp[1] );
 				else
 					$end = $start;
@@ -985,17 +1043,25 @@
 					}
 				$rowCount++;
 				}
-			if( $tempPage[$rowCount][0] != "" && $found == 1 ) {
+			// $found must be checked first - PHP evaluates && left-to-right,
+			// so checking the array access before $found meant it always ran
+			// even when the loop above found nothing and left $rowCount one
+			// past the last valid index.
+			if( $found == 1 && ( $tempPage[$rowCount][0] ?? "" ) != "" ) {
 				$place = addingNumber( $tempPage[$rowCount][0] );
 				$secBg = "background: #".$bPalette[$place]." !important;";
 				}
 				
 			if( $found == 0 ) {
-				unset( $secBg );
-				unset( $textColor );
+				// Genuinely nothing here (no wide-package match either) -
+				// leave $secBg/$textColor at their safe top-of-function
+				// defaults rather than unsetting them, which only pushed the
+				// same "undefined" warning onto whichever read comes next.
+				$secBg = "";
+				$textColor = "000000";
 				}
 			}	
-		if( $fPage[0][9] > 1 or $page%2 == 0 or $fPages2[ (intval($page)-1) ][0] == "" ) {
+		if( $fPage[0][9] > 1 or $page%2 == 0 or ( $fPages2[ (intval($page)-1) ][0] ?? "" ) == "" ) {
 			$lPage = $page;
 			}
 		elseif( $fPage[0][0] != "" ) {
@@ -1534,7 +1600,7 @@
 			// Part's first page, not a "nothing to show" state. Bootstrapping
 			// first/last to 1 reuses drawAmericanPage()'s existing
 			// empty-slot rendering unchanged, rather than duplicating it.
-			$bootstrapEmptyPart = ( count( $allPartPages ) == 0 && $_GET["type"] != "fpPreview" );
+			$bootstrapEmptyPart = ( count( $allPartPages ) == 0 && ( $_GET["type"] ?? "" ) != "fpPreview" );
 			if( $bootstrapEmptyPart ) {
 				$first = 1;
 				$last = 1;
@@ -1559,6 +1625,7 @@
 			//$text = $_GET["opt"];
 			if( count($allPartPages) > 0 || $bootstrapEmptyPart ) {
 				if( $_GET["part"] == "MELL" or $_GET["part"] == "BEL" ) {
+					$counter = 1;
 					for( $i = 0; $i <= $last; $i++ ) {
 						$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px; height: ".($sizes[1]+28)."px; width: ".(2*$sizes[0])."px;'>";
 							$text .= drawAmericanPage( $_GET['id'], $i, 'left', $i, $ptype );
@@ -1576,7 +1643,7 @@
 						$sizes[1] = $sizes[1]*3.5;
 						}
 					
-					if( $_GET["type"] == "fpPreview" ) {
+					if( ( $_GET["type"] ?? "" ) == "fpPreview" ) {
 						if( $sizes[0] > 186 ) {
 							$arany = 186 / $sizes[0];
 							$sizes[0] = 186;
@@ -1595,7 +1662,7 @@
 					}
 				}
 			else {
-				if( $_GET["type"] == "fpPreview" ) {
+				if( ( $_GET["type"] ?? "" ) == "fpPreview" ) {
 					$nopages = 1;
 					}
 				else {
@@ -1700,7 +1767,7 @@
 				// are cheap and are exactly what the user drags PDFs onto
 				// to upload, so an empty grid there is not itself a
 				// "nothing to show" state.
-				if( $_GET["type"] == "fpPreview" ) {
+				if( ( $_GET["type"] ?? "" ) == "fpPreview" ) {
 					$hasAnyPages = sql_get( 'pageinfo', 'code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" LIMIT 1', 'id' );
 					if( empty( $hasAnyPages[0][0] ) ) {
 						$nopages = 1;
@@ -1711,7 +1778,7 @@
 				$counter = 1;
 				$i = 0;
 
-				if( $_GET["type"] == "fpPreview" ) {
+				if( ( $_GET["type"] ?? "" ) == "fpPreview" ) {
 				//if( 0 ) {
 					while( $i <= $length ) {
 						if( $counter == 5 ) $counter = 1;
@@ -1719,7 +1786,7 @@
 						$leftPage = sql_aget( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND page="'.$i.'" AND issue="'.$issue[0][10].'" AND state="" AND fin="'.$fin.'" ORDER BY page ASC LIMIT 1', '*' );
 						$rightPage = sql_aget( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND page="'.($i+1).'" AND issue="'.$issue[0][10].'" AND state="" AND fin="'.$fin.'" ORDER BY page ASC LIMIT 1', '*' );
 						
-						if( $leftPage[0]["width"] > 1 ) {
+						if( ( $leftPage[0]["width"] ?? 0 ) > 1 ) {
 							if( $_GET['opt'] == 'FIN' ) {
 								$text .= "<div class='widePage' style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 									$text .= drawPage( $_GET['id'], $i, 'left', $i, "FIN" );
@@ -1738,7 +1805,7 @@
 								}
 							}
 						
-						elseif( $rightPage[0]["width"] > 1 ) {
+						elseif( ( $rightPage[0]["width"] ?? 0 ) > 1 ) {
 							if( $_GET['opt'] == 'FIN' ) {
 								$text .= "<div class='widePage' style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 									$text .= drawPage( $_GET['id'], ($i+1), 'left', $i, "FIN" );
