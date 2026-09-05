@@ -7,6 +7,24 @@
 	
 	include_once('../lang/en.php');
 
+	// This file never checked authentication at all (unlike most of its
+	// siblings, which at least built $rights/$user but then never gated on
+	// them either - see client/plugins/pubsApply.php's 2026-09-05 fix).
+	// sub=='export' dumps action_log/user_log data - add the same check
+	// used everywhere else in this pass.
+	$rights = array();
+	if( isset( $_SESSION['intra_user'] ) ) {
+		$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
+		$r = sql_aget( 'user_groups', 'id="'.$user[0][8].'"', '*' );
+		foreach( $r[0] as $key => $val ) {
+			$rights[$key] = $val;
+			}
+		}
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	if( $_GET["sub"] == "export" ) {
 		$error = array();
 		

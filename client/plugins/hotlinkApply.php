@@ -5,7 +5,16 @@ include_once( '../../engine/connect.php' );
 include_once( '../../engine/engine.php' );
 include_once( '../../engine/xml_handler.php' );
 
-$user = sql_get( "accounts", "id='".$_SESSION['intra_user']."'", "*" );
+$user = sql_get( "accounts", "id='".( $_SESSION['intra_user'] ?? '' )."'", "*" );
+
+// See client/plugins/pubsApply.php's 2026-09-05 fix - none of this file's
+// sub== handlers checked authentication before running, despite recording
+// $user[0][0] as the creator of the hotlink/handout link they send. Same
+// fix: one gate before any sub is dispatched.
+if( empty( $user[0][0] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
 
 if( $_GET["sub"] == "sendhandout" ) {
 	$error = array();
