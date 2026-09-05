@@ -201,24 +201,7 @@ $data = array(
 	"gen" => $lang["calendar"]["pdf_gen"],
 	);
 
-$headers = array(
-	"Content-Type: multipart/form-data",
-	"Connection: Keep-Alive",
-	);
-
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/calendarpdf.php" );
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
-curl_setopt($ch, CURLOPT_POST, true );
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-$response = curl_exec ($ch);
-$response = json_decode( $response, true );
-
-$data = explode( ',', $response["pdf"] );
-$data = base64_decode( $data[ 1 ] );
+$pdfBytes = renderCalendarPdf( $data );
 
 header('MIME-Version: 1.0');
 header('Content-Type: text/html; charset=utf-8');
@@ -228,6 +211,6 @@ header('Content-Type: application/pdf');
 header('Content-Transfer-Encoding: binary');
 header('Cache-Control: public');
 header('Content-Disposition: inline; filename="'.$name.'.pdf"');
-echo $data;
+echo $pdfBytes;
 
 ?>

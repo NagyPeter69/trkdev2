@@ -2031,12 +2031,477 @@ function calendarMonthsRow( $monthsArray, $year, $magazines, $rights, $user ) {
 
 function calendarLongestMonth( $array ) {
 	$max = 0;
-	
+
 	foreach( $array as $key => $value ) {
 		if( count( $value ) > $max ) $max = count( $value );
 		}
-		
+
 	return $max;
+	}
+
+function getEvent( $events, $date ) {
+	$f = "";
+	for( $e = 0; $e < count( $events ); $e++ ) {
+		if( $events[$e]["start"] <= strtotime( $date ) ) {
+			if( $events[$e]["end"] >= strtotime( $date ) ) {
+				$f = $events[$e];
+				break;
+				}
+			}
+		}
+
+	return $f;
+	}
+
+function hexToRgb( $hex, $alpha = false ) {
+	$hex      = str_replace('#', '', $hex);
+	$length   = strlen($hex);
+	$rgb['r'] = hexdec($length == 6 ? substr($hex, 0, 2) : ($length == 3 ? str_repeat(substr($hex, 0, 1), 2) : 0));
+	$rgb['g'] = hexdec($length == 6 ? substr($hex, 2, 2) : ($length == 3 ? str_repeat(substr($hex, 1, 1), 2) : 0));
+	$rgb['b'] = hexdec($length == 6 ? substr($hex, 4, 2) : ($length == 3 ? str_repeat(substr($hex, 2, 1), 2) : 0));
+	if ( $alpha ) {
+		$rgb['a'] = $alpha;
+		}
+	return $rgb;
+	}
+
+// Renders the yearly print/sales calendar as a PDF using DynaPDF directly,
+// in-process. This used to be done by POSTing the same $data to
+// http://{DYNAIP}/dynAPI/tracker/calendarpdf.php - a second, now-unreachable
+// production box - base64-encoding the whole calendar dataset there and
+// back over HTTP to itself for no reason: DynaPDF is available right here.
+// Ported 1:1 from that file's drawing logic (only the transport changed -
+// this returns raw PDF bytes instead of a base64 JSON envelope).
+function renderCalendarPdf( $data ) {
+	$data["printdays"] = is_array( $data["printdays"] ) ? $data["printdays"] : json_decode( $data["printdays"], true );
+	$data["salesdays"] = is_array( $data["salesdays"] ) ? $data["salesdays"] : json_decode( $data["salesdays"], true );
+	$data["events"] = is_array( $data["events"] ) ? $data["events"] : json_decode( $data["events"], true );
+	$data["magazines"] = is_array( $data["magazines"] ) ? $data["magazines"] : json_decode( $data["magazines"], true );
+
+	$fname = "/var/www/html/client/temp/calendar-".time().".pdf";
+
+	$pdf = new dynapdf();
+	include('/var/www/html/config.inc.php');
+
+	$pdf->CreateNewPDF( $fname );
+
+	$pdf->SetDocInfo(dynapdf::diTitle, $data["fname"].".pdf" );
+	$pdf->SetImportFlags(dynapdf::ifImportAll | dynapdf::ifImportAsPage | dynapdf::ifDocInfo);
+	$pdf->SetImportFlags2(dynapdf::if2UseProxy);
+	$pdf->SetPDFVersion( 10 );
+	$pdf->SetPageCoords(dynapdf::pcTopDown);
+
+	$pdf->SetPageWidth( 1190 );
+	$pdf->SetPageHeight( 842 );
+
+	$year = intval( $data["year"] );
+	$honapok = array( "December", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" );
+	$napok = array( "", "h", "k", "sz", "cs", "p", "sz", "v" );
+
+	for( $h = 0; $h < count( $honapok ); $h++ ) {
+		if( $h == 0 ) {
+			$napCount = cal_days_in_month( CAL_GREGORIAN, 12, ($year-1) );
+			$start = strftime( "%u", strtotime( "1 ".$honapok[$h]." ".($year-1) ) );
+			$end = strftime( "%u", strtotime( $napCount." ".$honapok[$h]." ".($year-1) ) );
+			}
+		else {
+			$napCount = cal_days_in_month( CAL_GREGORIAN, $h, $year);
+			$start = strftime( "%u", strtotime( "1 ".$honapok[$h]." ".$year ) );
+			$end = strftime( "%u", strtotime( $napCount." ".$honapok[$h]." ".$year ) );
+			}
+
+		$calendar[$h] = array();
+
+		if( $start != 1 ) {
+			for( $i = 1; $i < $start; $i++ ) {
+				$calendar[$h][] = "";
+				}
+			}
+
+		for( $i = 1; $i <= $napCount; $i++ ) {
+			$calendar[$h][] = $i;
+			}
+		}
+
+	$max = calendarLongestMonth( $calendar );
+
+	$bw = 30;
+	$bh = 54;
+
+	$startx = 10;
+	$starty = 85;
+
+	$headercolor = $pdf->RGB(177, 63, 130);
+	$headerfont = $pdf->RGB(255, 255, 255);
+
+	$lastyearcolor = $pdf->RGB(251, 231, 242);
+	$monthbox = $pdf->RGB(220, 192, 208);
+
+	$normaldaybox = $pdf->RGB(255, 255, 255);
+	$szombatdaybox = $pdf->RGB(250, 230, 244);
+	$vasarnapdaybox = $pdf->RGB(220, 192, 208);
+	$holydaybox = $pdf->RGB(255, 221, 210);
+	$mwholydaybox = $pdf->RGB(185, 196, 240);
+	$currentdaybox = $pdf->RGB( 157, 216, 235 );
+
+	$dayfontcolor = $pdf->RGB(130, 130, 130);
+	$holydayfontcolor = $pdf->RGB(255, 0, 0);
+	$eworkdayfontcolor = $pdf->RGB(66, 159, 218);
+	$currentdayfontcolor = $pdf->RGB( 4, 66, 141 );
+
+	$pdf->Append();
+		$magazines = $data["magazines"];
+	    $d = 1;
+		$pdf->SetStrokeColor( $pdf->RGB( 0, 0, 0 ) );
+		$pdf->SetLineWidth( 0.5 );
+		//PDF HEADER
+		$pdf->SetFont('Helvetica', dynapdf::fsRegular, 26.0, false, dynapdf::cp1252);
+		$pdf->SetFillColor( $headercolor );
+		$pdf->Rectangle( $startx, $startx+15, $bw*6, ( $bh / 1.5 ), dynapdf::fmFillStroke );
+
+		$pdf->SetFillColor( $headerfont );
+		$pdf->WriteFTextEx( $startx, $startx+16, $bw*6, ( $bh / 1.5 ), 1, $year );
+
+		$pdf->SetFont('Helvetica', dynapdf::fsRegular, 20.0, false, dynapdf::cp1252);
+		$pdf->SetFillColor( $pdf->RGB( 0, 0, 0 ) );
+		$pdf->WriteFTextEx( $startx + $bw*6 + 10, $startx+15-4, 999, ( $bh / 1.5 ), 0, $data["publisher"]." ".$data["title"]." ".$year." – ".$data["ver"] );
+
+		$pdf->SetFont('Helvetica', dynapdf::fsRegular, 12.0, false, dynapdf::cp1252);
+		$pdf->WriteFTextEx( $startx + $bw*6 + 10, $startx+15+23, 999, ( $bh / 1.5 ), 0, $data["gen"].": ".date( "Y.m.d. H:i" ) );
+
+		// CALENDAR HEADER
+	    $pdf->SetFont('Helvetica', dynapdf::fsRegular, 10.0, false, dynapdf::cp1252);
+
+	    $pdf->SetFillColor( $headercolor );
+	    $pdf->Rectangle( $startx, $starty, $bw, ( $bh / 3 ), dynapdf::fmFillStroke );
+	    $x = $startx + $bw;
+	    $y = $starty;
+	    for( $i = 0; $i < $max; $i++ ) {
+		    if( $d == 8 ) $d = 1;
+
+		    $pdf->SetFillColor( $headercolor );
+		    $pdf->Rectangle( $x, $y, $bw, ( $bh / 3 ), dynapdf::fmFillStroke );
+
+			$pdf->SetFillColor( $headerfont );
+	    	$pdf->WriteFTextEx( $x, $y+2, $bw, ( $bh / 3 ), 1, strtoupper( $napok[$d] ) );
+
+		    $x += $bw;
+		    $d++;
+		    }
+
+		$pdf->SetStrokeColor( $pdf->RGB( 172, 172, 172 ) );
+	    $pdf->SetFillColor( $headercolor );
+	    $pdf->Rectangle( $x, $y, $bw, ( $bh / 3 ), dynapdf::fmFillStroke );
+
+		//HÓNAPOK
+	    $y = $starty + ( $bh / 3 );
+	    foreach( $calendar as $key => $month ) {
+		    $x = $startx;
+		    if( $key == 0 ) {
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 8.0, false, dynapdf::cp1252);
+				$pdf->SetFillColor( $lastyearcolor );
+			    $pdf->Rectangle( $x, $y, $bw, $bh, dynapdf::fmFillStroke );
+			    $pdf->SetFillColor( $headercolor );
+			    $pdf->Rectangle( $x+3, $y+4, 24, 10, dynapdf::fmFillStroke );
+			    $pdf->SetFillColor( $headerfont );
+			    $pdf->WriteFTextEx( $x, $y+4, $bw, ( $bh / 3 ), 1, ( $year - 1 ) );
+			    $pdf->SetFont('Helvetica', dynapdf::fsRegular, 15.0, false, dynapdf::cp1252);
+			    $pdf->SetFillColor( $headerfont );
+				$pdf->WriteFTextEx( $x, $y+15, $bw, ( $bh / 3 ), 1, "12" );
+			    }
+
+			else {
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 15.0, false, dynapdf::cp1252);
+				$pdf->SetFillColor( $monthbox );
+			    $pdf->Rectangle( $x, $y, $bw, $bh, dynapdf::fmFillStroke );
+				$pdf->SetFillColor( $headerfont );
+				$pdf->WriteFTextEx( $x, $y+15, $bw, ( $bh / 3 ), 1, $key );
+				}
+
+			$sz = 1;
+			$v = 1;
+
+			$x += $bw;
+			for( $i = 0; $i < count( $month ); $i++ ) {
+				if( $sz == 7 ) $sz = 0;
+				if( $v == 8 ) $v = 1;
+
+				$holiday = calendarHoliday( $key, $month[$i], $year );
+				$eworkday = calendarExtraWorkday( $key, $month[$i], $year );
+				$eholiday = calendarExtraHoliday( $key, $month[$i], $year );
+
+				$workday = false;
+				if( $sz !== 6 && $v !== 7 && !$holiday && !$eworkday && !$eholiday && !empty( $month[$i] ) ) {
+					$workday = true;
+					}
+
+				if( $key == "0" ) {
+					$date = ($year-1)."-12-".str_pad( $month[$i], 2, '0', STR_PAD_LEFT );
+					}
+				else {
+					$date = $year."-".str_pad( $key, 2, '0', STR_PAD_LEFT )."-".str_pad( $month[$i], 2, '0', STR_PAD_LEFT );
+					}
+
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 8.0, false, dynapdf::cp1252);
+
+				$event = getEvent( $data["events"], $date );
+				if( date( "Y-m-d") == $date ) {
+					$pdf->SetFillColor( $currentdaybox );
+					}
+				elseif( !empty($event["id"] ) ) {
+					$color = hexToRgb( adjustBrightness( $data["magazines"][$event["magazine_id"]]["color"], +150 ) );
+					$pdf->SetFillColor( $pdf->RGB( $color["r"], $color["g"] , $color["b"] ) );
+					}
+				elseif( $sz === 6 ) {
+					$pdf->SetFillColor( $szombatdaybox );
+					}
+				elseif( $v === 7 ) {
+					$pdf->SetFillColor( $vasarnapdaybox );
+					}
+				elseif( $holiday or $eholiday ) {
+					$pdf->SetFillColor( $holydaybox );
+					}
+				else {
+					$pdf->SetFillColor( $normaldaybox );
+					}
+
+				$pdf->Rectangle( $x, $y, $bw, $bh, dynapdf::fmFillStroke );
+
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 15.0, false, dynapdf::cp1252);
+
+				if( date( "Y-m-d") == $date ) {
+					$pdf->SetFillColor( $currentdayfontcolor );
+					}
+				elseif( $holiday ) {
+					$pdf->SetFillColor( $holydayfontcolor );
+					}
+				elseif( $eworkday ) {
+					$pdf->SetFillColor( $eworkdayfontcolor );
+					}
+				else {
+					$pdf->SetFillColor( $dayfontcolor );
+					}
+
+				$pdf->WriteFTextEx( $x, $y+15, $bw, ( $bh / 3 ), 1, $month[$i] );
+
+				if( !empty( $month[$i] ) ) {
+					if( $key == "0" ) {
+						$check_date = ( intval($year)-1)."-12-".str_pad( $month[$i], 2, '0', STR_PAD_LEFT );
+						}
+					else {
+						$check_date = $year."-".str_pad( $key, 2, '0', STR_PAD_LEFT )."-".str_pad( $month[$i], 2, '0', STR_PAD_LEFT );
+						}
+
+					$pdf->SetFont('Helvetica', dynapdf::fsRegular, 11.0, false, dynapdf::cp1252);
+					$pdf->SetFillColor( $holydayfontcolor );
+
+					$counter = 0;
+
+					$allcount = count( $data["printdays"][$check_date] ) + count( $data["salesdays"][$check_date] );
+					if( $allcount >= 4 ) {
+						$ym = $y + $bh - ( $bh / 8 )-1;
+						$bheight = ($bh/8)+1;
+						}
+					else {
+						$ym = $y + $bh - ( $bh / 4 );
+						$bheight = ($bh/4);
+						}
+
+					for( $o = 0; $o < count( $data["printdays"][$check_date] ); $o++ ) {
+						$pdf->SetCharacterSpacing(-0.2);
+						$color = hexToRgb( adjustBrightness( $data["printdays"][$check_date][$o]["color"], +20 ) );
+						$pdf->SetFillColor( $pdf->RGB( $color["r"], $color["g"] , $color["b"] ) );
+						$pdf->Rectangle( $x, $ym, $bw, $bheight, dynapdf::fmFill );
+
+						$pdf->SetFont('Helvetica', dynapdf::fsRegular, 6.0, false, dynapdf::cp1252);
+						$color = hexToRgb( fontcolor( $data["printdays"][$check_date][$o]["color"] ) );
+						$pdf->SetFillColor( $pdf->RGB( $color["r"], $color["g"] , $color["b"] ) );
+
+						if( $allcount < 4 ) {
+							if( $data["printdays"][$check_date][$o]["magazine_id"] == "0" ) {
+								$pdf->WriteFTextEx( $x, $ym-0.5, $bw, ($bh), 1, $data["printdays"][$check_date][$o]["specificName"] );
+								}
+							else {
+								$pdf->WriteFTextEx( $x, $ym-0.5, $bw, ($bh/4), 1, "print order" );
+								}
+							}
+
+						if( strlen( $data["printdays"][$check_date][$o]["magCode"]." ".$data["printdays"][$check_date][$o]["code"] ) >= 9 ) {
+							$pdf->SetCharacterSpacing(-1);
+							}
+
+						if( $allcount >= 4 ) {
+							$pdf->WriteFTextEx( $x-2.5, $ym-0.5, $bw+5, $bheight, 1, $data["printdays"][$check_date][$o]["magCode"]." ".$data["printdays"][$check_date][$o]["code"] );
+							}
+						else {
+							$pdf->WriteFTextEx( $x-2.5, $ym+5.5, $bw+5, $bheight, 1, $data["printdays"][$check_date][$o]["magCode"]." ".$data["printdays"][$check_date][$o]["code"] );
+							}
+
+						$counter++;
+
+						if( $allcount >= 4 ) {
+							$ym -= ( $bh / 8 )+1.5;
+							}
+						else {
+							$ym -= ( $bh / 4 );
+							}
+
+						$pdf->SetCharacterSpacing(0);
+						}
+
+					for( $o = 0; $o < count( $data["salesdays"][$check_date] ); $o++ ) {
+						$pdf->SetCharacterSpacing(-0.3);
+						$color = hexToRgb( adjustBrightness( $data["salesdays"][$check_date][$o]["color"], -40 ) );
+						$pdf->SetFillColor( $pdf->RGB( $color["r"], $color["g"] , $color["b"] ) );
+						$pdf->Rectangle( $x, $ym, $bw, $bheight, dynapdf::fmFill );
+
+						$pdf->SetFont('Helvetica', dynapdf::fsRegular, 6.0, false, dynapdf::cp1252);
+						$color = hexToRgb( fontcolor( $data["salesdays"][$check_date][$o]["color"] ) );
+						$pdf->SetFillColor( $pdf->RGB( $color["r"], $color["g"] , $color["b"] ) );
+
+						if( $allcount < 4 ) {
+							if( $data["salesdays"][$check_date][$o]["magazine_id"] == "0" ) {
+								$pdf->WriteFTextEx( $x, $ym-0.5, $bw, ($bh), 1, $data["salesdays"][$check_date][$o]["specificName"] );
+								}
+							else {
+								$pdf->WriteFTextEx( $x, $ym-0.5, $bw, ($bh/4), 1, ( $data["salesdays"][$check_date][$o]["finishtype"] == "sales" ? "sales day" : "delivery d." ) );
+								}
+							}
+
+						if( strlen( $data["salesdays"][$check_date][$o]["magCode"]." ".$data["salesdays"][$check_date][$o]["code"] ) >= 9 ) {
+							$pdf->SetCharacterSpacing(-1);
+							}
+
+						if( $allcount >= 4 ) {
+							$pdf->WriteFTextEx( $x, $ym-0.5, $bw, ($bh/4), 1, $data["salesdays"][$check_date][$o]["magCode"]." ".$data["salesdays"][$check_date][$o]["code"] );
+							}
+						else {
+							$pdf->WriteFTextEx( $x, $ym+5.5, $bw, ($bh/4), 1, $data["salesdays"][$check_date][$o]["magCode"]." ".$data["salesdays"][$check_date][$o]["code"] );
+							}
+
+
+						$counter++;
+
+						if( $allcount >= 4 ) {
+							$ym -= ( $bh / 8 )+1.5;
+							}
+						else {
+							$ym -= ( $bh / 4 );
+							}
+
+						$pdf->SetCharacterSpacing(0);
+						}
+					}
+
+				$x += $bw;
+				$sz++;
+				$v++;
+				}
+
+			//Maradék
+			$left = calendarLongestMonth( $calendar ) - count( $month );
+			for( $b = $left; $b > 0; $b-- ) {
+				if( $sz == 7 ) $sz = 0;
+				if( $v == 8 ) $v = 1;
+
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 8.0, false, dynapdf::cp1252);
+				if( $sz === 6 ) {
+					$pdf->SetFillColor( $szombatdaybox );
+					}
+				elseif( $v === 7 ) {
+					$pdf->SetFillColor( $vasarnapdaybox );
+					}
+				else {
+					$pdf->SetFillColor( $normaldaybox );
+					}
+				$pdf->Rectangle( $x, $y, $bw, $bh, dynapdf::fmFillStroke );
+				$sz++;
+				$v++;
+				$x += $bw;
+				}
+
+		    if( $key == 0 ) {
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 8.0, false, dynapdf::cp1252);
+				$pdf->SetFillColor( $lastyearcolor );
+			    $pdf->Rectangle( $x, $y, $bw, $bh, dynapdf::fmFillStroke );
+			    $pdf->SetFillColor( $headercolor );
+			    $pdf->Rectangle( $x+3, $y+4, 24, 10, dynapdf::fmFillStroke );
+			    $pdf->SetFillColor( $headerfont );
+			    $pdf->WriteFTextEx( $x, $y+4, $bw, ( $bh / 3 ), 1, ( $year - 1 ) );
+			    $pdf->SetFont('Helvetica', dynapdf::fsRegular, 15.0, false, dynapdf::cp1252);
+			    $pdf->SetFillColor( $headerfont );
+				$pdf->WriteFTextEx( $x, $y+15, $bw, ( $bh / 3 ), 1, "12" );
+			    }
+
+			else {
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 13.0, false, dynapdf::cp1252);
+				$pdf->SetFillColor( $monthbox );
+			    $pdf->Rectangle( $x, $y, $bw, $bh, dynapdf::fmFillStroke );
+				$pdf->SetFillColor( $headerfont );
+				$pdf->WriteFTextEx( $x, $y+15, $bw, ( $bh / 3 ), 1, $key );
+				}
+
+			$y += $bh;
+		    }
+
+		for( $e = 0; $e < count( $data["events"] ); $e++ ) {
+			$eyear = date( "Y", $data["events"][$e]["start"] );
+			if( $eyear == $year ) {
+				$mag[0]["color"] = hexToRgb( adjustBrightness( $data["magazines"][$data["events"][$e]["magazine_id"]]["color"], -30 ) );
+				$mag[0]["color"] = $pdf->SetFillColor( $pdf->RGB( $mag[0]["color"]["r"], $mag[0]["color"]["g"] , $mag[0]["color"]["b"] ) );
+
+				$days = ( $data["events"][$e]["end"] - $data["events"][$e]["start"] ) / 60 / 60 / 24 + 1;
+				$boxWidth = $bw;
+				$boxHeight = $bh;
+
+				$day = date( "j", $data["events"][$e]["start"] );
+				$month = date( "n", $data["events"][$e]["start"] );
+
+				$day2 = date( "j", $data["events"][$e]["end"] );
+				$month2 = date( "n", $data["events"][$e]["end"] );
+
+				$atnyulik = false;
+				if( $month != $month2 ) {
+					$days_ =  date( "t", $data["events"][$e]["start"] ) - $day + 1;
+					$left = ( intval( array_search( $day , $calendar[$month] ) ) + 1 ) * $boxWidth + 9.9;
+					$top = ( $month ) * $boxHeight + $boxHeight + $boxHeight - 5;
+
+					$l = ( intval( array_search( "1" , $calendar[($month+1)] ) ) + 1 ) * $boxWidth + 9.9;
+
+					$pdf->SetFont('Helvetica', dynapdf::fsRegular, 8.0, false, dynapdf::cp1252);
+					$pdf->SetStrokeColor( $pdf->RGB( 100, 100, 100 ) );
+					$pdf->SetFillColor( $pdf->RGB( 255, 255, 255 ) );
+					$pdf->Rectangle( $l, $top+$boxHeight, (( $days - $days_ ) * $boxWidth ), ( $boxHeight / 4 ), dynapdf::fmFillStroke );
+
+					$color = hexToRgb( adjustBrightness( $data["magazines"][$data["events"][$e]["magazine_id"]]["color"], -40 ) );
+					$pdf->SetFillColor( $pdf->RGB( $color["r"], $color["g"] , $color["b"] ) );
+					$pdf->WriteFTextEx( $l, $top+$boxHeight+1, (( $days - $days_ ) * $boxWidth ), ( $boxHeight / 4 ), 1, $data["events"][$e]["name"] );
+					}
+
+				else {
+					$days_ = $days;
+					$left = ( intval( array_search( $day , $calendar[$month] ) ) + 1 ) * $boxWidth + 9.9;
+					$top = ( $month ) * $boxHeight + $boxHeight + $boxHeight - 5;
+					}
+
+				$pdf->SetFont('Helvetica', dynapdf::fsRegular, 8.0, false, dynapdf::cp1252);
+				$pdf->SetStrokeColor( $pdf->RGB( 100, 100, 100 ) );
+				$pdf->SetFillColor( $pdf->RGB( 255, 255, 255 ) );
+				$pdf->Rectangle( $left, $top, ($days_ * $boxWidth ), ( $boxHeight / 4 ), dynapdf::fmFillStroke );
+
+				$color = hexToRgb( adjustBrightness( $data["magazines"][$data["events"][$e]["magazine_id"]]["color"], -40 ) );
+				$pdf->SetFillColor( $pdf->RGB( $color["r"], $color["g"] , $color["b"] ) );
+				$pdf->WriteFTextEx( $left, $top+1, ($days_ * $boxWidth ), ( $boxHeight / 4 ), 1, $data["events"][$e]["name"] );
+				}
+			}
+
+	$pdf->EndPage();
+	$pdf->CloseFile();
+
+	$bytes = file_get_contents( $fname );
+	unlink( $fname );
+
+	return $bytes;
 	}
 
 function fileRemove( $data, $path, $ext ) {

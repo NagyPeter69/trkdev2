@@ -6,6 +6,7 @@
 	include_once( '../../engine/engine.php' );
 	include_once( '../../engine/xml_handler.php' );
 	include_once( 'switchAPI.php' );
+	include_once( 'dynaAPI.php' );
 	include_once('../lang/en.php');
 
 	// See client/plugins/pubsApply.php's 2026-09-05 fix - this file had no
@@ -446,29 +447,9 @@
 		$zip2->open( "../temp/".$loc, ZipArchive::CREATE );
 		$removable = array();
 		for ($i = 0; $i < count($files); $i++) {
-			$data = array();
-			$data["pdf"] = file_get_contents($path.'/'.$files[$i]);
-
-			$headers = array(
-				"Content-Type: multipart/form-data",
-				"Connection: Keep-Alive",
-				);
-				
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/multi.php" );
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
-			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
-			curl_setopt($ch, CURLOPT_POST, true );
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-			$response = curl_exec ($ch);
-			$response = json_decode( $response, true );
-
-			$data = explode( ',', $response["pdf"] );
-				
 			$name = $magazine[0][3]."_".$issue."_".$pages[$i].".pdf";
-			file_put_contents('../temp/_zip/'.$name, base64_decode( $data[ 1 ] ) );
-			
+			dynaNormalizePdf( $path.'/'.$files[$i], '../temp/_zip/'.$name );
+
 			$zip2->addFile( '../temp/_zip/'.$name, $name );
 			$removable[] ='../temp/_zip/'.$name;
 			}
@@ -510,17 +491,6 @@
 
 			include( "/var/www/html/dynAPI/tracker/one_local.php" );
 
-	/*
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/one.php" );
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
-			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
-			curl_setopt($ch, CURLOPT_POST, true );
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-			$response = curl_exec ($ch);
-			$response = json_decode( $response, true );
-	*/
 			$result = $loc;
 			}
 		}

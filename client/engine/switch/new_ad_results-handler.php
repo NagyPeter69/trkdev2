@@ -83,7 +83,7 @@ if( $ad[0][0] != '' ) {
 		$pdf->ImportPDFFile( 1, 1.0, 1.0 );
 		$pdf->CloseImportfile();
 
-		$sizes = getBBox( $target.'/'.$name, "", "cropbox" );	
+		$sizes = getBBox( $target.'/'.$name, "", "cropbox" );
 		//error_log( json_encode( $sizes ) );
 		$sizes["Width"] = pixel_( ( $sizes["Right"] - $sizes["Left"] ), 100 );
 		$sizes["Height"] = pixel_( ( $sizes["Top"] - $sizes["Bottom"] ), 100 );
@@ -91,7 +91,7 @@ if( $ad[0][0] != '' ) {
 		$pdf->EditPage(1);
 			$width = $pdf->GetPageWidth();
 			$height = $pdf->GetPageHeight();
-			
+
 			$box = $pdf->GetBBox( dynapdf::pbBleedBox );
 			$tbox = $pdf->GetBBox( dynapdf::pbTrimBox );
 
@@ -99,43 +99,20 @@ if( $ad[0][0] != '' ) {
 			$tbox['Height'] = $tbox['Top']-$tbox['Bottom'];
 			$tbox['StartX'] = ( $tbox['Left']-$box['Left'] )+$box['Left'];
 			$tbox['StartY'] = ( $tbox['Bottom']-$box['Bottom'] )+$box['Bottom'];
-			$sbox = array( 
+			$sbox = array(
 						"StartX"=> $tbox['StartX']+10,
 						"StartY"=> $tbox['StartY']+10,
 						"Width"=> $tbox['Width']-20,
 						"Height"=> $tbox['Height']-20
-						);	
-		$pdf->EndPage();		
+						);
+		$pdf->EndPage();
 		$pdf->CloseFile();
-		
-		$data = array();
-		$data["width"] = $width;
-		$data["height"] = $height;
-		$data["sizes"] = array();
-		$data["sizes"] = json_encode($sizes);
-		$data["tbox"] = array();
-		$data["tbox"] = json_encode($tbox);
-		$data["sbox"] = array();
-		$data["sbox"] = json_encode($sbox);
-		$data["pdf"] = file_get_contents($target.'/'.$name);
 
-		$headers = array(
-			"Content-Type: multipart/form-data",
-			"Connection: Keep-Alive",
-			);
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/ad_check.php" );
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
-		curl_setopt($ch, CURLOPT_POST, true );
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-		$response = curl_exec ($ch);
-		$response = json_decode( $response, true );
-
-		$data = explode( ',', $response["pdf"] );
-		file_put_contents( $file_name.'_check.pdf', base64_decode( $data[ 1 ] ) );
+		// Used to POST the whole PDF (base64) to http://{DYNAIP}/dynAPI/tracker/ad_check.php,
+		// a second, now-unreachable production box calling itself over the
+		// network to do a DynaPDF box-overlay it can just as well do
+		// in-process - see client/engine/dynaAPI.php's dynaAdCheckOverlay().
+		dynaAdCheckOverlay( $target.'/'.$name, $file_name.'_check.pdf', $sizes, $tbox, $sbox );
 
 		$terminalPath = "/var/www/html/client";	
 		$from_ = $terminalPath."/engine/switch/".$file_name."_check.pdf";
@@ -151,43 +128,19 @@ if( $ad[0][0] != '' ) {
 		file_put_contents( $to_, $imgData );
 
 
-		if( $errors['lowres'] == 'true' ) {		
+		if( $errors['lowres'] == 'true' ) {
 			error_log( "VAN LOWRES");
-			
-			unset( $pdf );
-			$data = array();
-			$data["width"] = $width;
-			$data["height"] = $height;
-			$data["lowres"] = array();
-			$data["lowres"] = json_encode($lowres);
-			$data["tbox"] = array();
-			$data["tbox"] = json_encode($tbox);
-			$data["sbox"] = array();
-			$data["sbox"] = json_encode($sbox);
-			
-			/*$path = $file_name.'_check.jpg';
-			$type = pathinfo($path, PATHINFO_EXTENSION);
-			$d = file_get_contents($path);*/
-			$data["img"] = file_get_contents($file_name.'_check.jpg');
-			
-			$headers = array(
-				"Content-Type: multipart/form-data",
-				"Connection: Keep-Alive",
-				);
-				
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, "http://".DYNAIP."/dynAPI/tracker/ad_lowres.php" );
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
-			curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
-			curl_setopt($ch, CURLOPT_POST, true );
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $data );
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
-			$response = curl_exec ($ch);
-			$response = json_decode( $response, true );
 
-			$data = explode( ',', $response["pdf"] );
-			file_put_contents( $file_name.'_lowres.jpg', base64_decode( $data[ 1 ] ) );
-			}			
+			unset( $pdf );
+
+			// Used to POST the rendered check.jpg (base64) to
+			// http://{DYNAIP}/dynAPI/tracker/ad_lowres.php, same
+			// self-call-over-the-network anti-pattern as ad_check.php above -
+			// see dynaAdLowresOverlay() in client/engine/dynaAPI.php. $to_ is
+			// the same file $data["img"] used to be read from (this script's
+			// cwd is this same client/engine/switch/ directory).
+			dynaAdLowresOverlay( $to_, $width, $height, $tbox, $sbox, $lowres, $file_name.'_lowres.jpg' );
+			}
 		
 		unlink( $file_name.'_check.pdf' );
 		//die();
