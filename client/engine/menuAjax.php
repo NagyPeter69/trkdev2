@@ -14,6 +14,13 @@
 			$rights[$key] = $val;
 			}
 		}
+	// See client/plugins/pubsApply.php's 2026-09-05 fix - none of
+	// this file's op== handlers checked authentication before
+	// running. Same fix: one gate before any op is dispatched.
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
 
 	if( !empty( $user[0][17] ) ) {	
 		include_once('../lang/'.$user[0][17].'.php');	

@@ -7,7 +7,15 @@
 	include_once( '../../engine/xml_handler.php' );
 	include_once( 'switchAPI.php' );
 	include_once('../lang/en.php');
-	
+
+	// See client/plugins/pubsApply.php's 2026-09-05 fix - this file had no
+	// authentication check at all.
+	$user = sql_get( 'accounts', 'id="'.( $_SESSION['intra_user'] ?? '' ).'"', '*' );
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	$ad = sql_get( 'ads', 'id="'.$_GET['id'].'"', '*' );
 	$pub = sql_get( 'publications', 'id="'.$ad[0][1].'"', '*' );
 	$issue = $pub[0][10];

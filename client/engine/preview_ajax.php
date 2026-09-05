@@ -1,20 +1,32 @@
 <?PHP
+	session_start();
 	header('Content-Type: text/html; charset=utf-8');
 
 	include_once( '../../engine/connect.php' );
 	include_once( '../../engine/engine.php' );
 	include_once( '../../engine/xml_handler.php' );
-	
+
 	include_once('../lang/hu.php');
 	$rights = array();
-	if( isset( $_GET['intra_user'] ) ) {
-		$user = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', '*' );
+	// This file never called session_start() at all, so it had no way to
+	// read the real session and fell back to trusting $_GET['intra_user']
+	// directly - anyone could pass any account id with no session or
+	// password at all, including to mark arbitrary other users' pages as
+	// "viewed" further below. See client/plugins/pubsApply.php's 2026-09-05
+	// fix; same principle, applied here by using the real session instead
+	// of the spoofable GET value throughout this file.
+	if( isset( $_SESSION['intra_user'] ) ) {
+		$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
 		$r = sql_aget( 'user_groups', 'id="'.$user[0][8].'"', '*' );
 		foreach( $r[0] as $key => $val ) {
 			$rights[$key] = $val;
 			}
 		}
-	
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	if( $_GET['op'] == 'refreshComments' ) {
 		//error_log( "DEBUG: ".$user[0][4] );
 		$myPublisher = sql_get( 'publishers', 'id="'.$user[0][4].'"', '*' );
@@ -163,16 +175,16 @@
 			$debug .= $dir."/".$file2."<br>";
 			if( is_file( $dir."/".$file2 ) ) {
 				$viewed = explode( ",", $pageinfo[0][10] );
-				if( !in_array( $_GET['intra_user'], $viewed ) )
+				if( !in_array( $_SESSION['intra_user'], $viewed ) )
 					if( $viewed[0] == "" )
-						$viewed[0] = $_GET['intra_user'];
+						$viewed[0] = $_SESSION['intra_user'];
 					else
-						$viewed[] =  $_GET['intra_user'];
-					
+						$viewed[] =  $_SESSION['intra_user'];
+
 				$viewed = implode( ",", $viewed );
 				sql_update( 'pageinfo', 'view="'.$viewed.'"', 'id="'.$pageinfo[0][0].'"' );
-					
-				$img[] = PdfToImageRender( $path, "../temp", $file2."_".$_GET['intra_user'], partDetect( $issue[0][0], $page, "color", $_GET["part"] ) );
+
+				$img[] = PdfToImageRender( $path, "../temp", $file2."_".$_SESSION['intra_user'], partDetect( $issue[0][0], $page, "color", $_GET["part"] ) );
 				}
 			}
 			

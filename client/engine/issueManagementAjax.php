@@ -18,6 +18,14 @@
 			}
 		}
 
+	// See client/plugins/pubsApply.php's 2026-09-05 fix - none of this
+	// file's op== handlers checked authentication before running. Same
+	// fix: one gate before any op is dispatched.
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	if( $_GET['op'] == 'deliverLoad' ) {
 		$delivers = sql_aget( "deliver_table", "pub_id='".$_GET["id"]."'", "*" );
 		

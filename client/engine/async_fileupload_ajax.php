@@ -4,6 +4,16 @@ include_once( '../../engine/connect.php' );
 include_once('../../engine/engine.php');
 include_once( TRKPATH."/engine/switchAPI.php" );
 
+// This file's actual dispatch call is already commented out below (line 24,
+// pre-existing - not something this fix changes), so nothing currently
+// happens on an unauthenticated request either way. Gating anyway, cheaply,
+// in case that line is ever re-enabled without this being reconsidered -
+// see client/plugins/pubsApply.php's 2026-09-05 fix.
+if( empty( $_SESSION['intra_user'] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
+
 $_FILES["file"]['name'] = letter_change3( $_FILES["file"]['name'] );
 $tmp_name = $_FILES["file"]["tmp_name"];
 $target = TRKPATH.'/uploads/uploadPack';

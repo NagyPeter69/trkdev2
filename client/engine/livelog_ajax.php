@@ -6,7 +6,13 @@ include_once( '../../engine/connect.php' );
 include_once( '../../engine/engine.php' );
 include_once('../lang/en.php');
 
-$user = sql_get( "accounts", "id='".$_SESSION['intra_user']."'", "*" );
+$user = sql_get( "accounts", "id='".( $_SESSION['intra_user'] ?? '' )."'", "*" );
+// See client/plugins/pubsApply.php's 2026-09-05 fix - this file had no
+// authentication check at all. Same fix: gate before doing anything else.
+if( empty( $user[0][0] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
 
 parse_str($_POST['action_log'], $action_log );
 if( $_GET["pub"] == "all" ) {

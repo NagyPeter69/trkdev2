@@ -1,16 +1,28 @@
 <?php
 if( !isset( $_POST['file'] ) ) die();
+session_start();
 header('Content-Type: text/html; charset=utf-8');
 
 include_once( '../engine/connect.php' );
 include_once('../engine/engine.php');
 include_once('engine/dynaAPI.php');
 
+// This file never called session_start() at all, so it had no way to read
+// the real session and fell back to trusting $_GET['intra_user'] directly -
+// anyone could pass any account id with no session or password at all. See
+// client/plugins/pubsApply.php's 2026-09-05 fix; same principle, applied
+// here by gating on the real session instead of the spoofable GET value
+// (kept below only for whatever display/logging uses it already had).
+if( empty( $_SESSION['intra_user'] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
+
 $zoom = $_GET['zoom'];
 $colors = $_POST['colors'];
 $cbox = $_POST['cBox'];
 $terminalPath = "/var/www/html/client";
-$user = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', '*' );
+$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
 
 // Render cache: every zoom tick and page-nav used to re-run r3/DynaPDF
 // from scratch every single time (measured ~0.8-3s+ per render), even

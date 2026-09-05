@@ -8,6 +8,14 @@
 	
 	include_once('../lang/en.php');
 
+	// See client/plugins/pubsApply.php's 2026-09-05 fix - this file had no
+	// authentication check at all despite reading real job/upload history.
+	$user = sql_get( 'accounts', 'id="'.( $_SESSION['intra_user'] ?? '' ).'"', '*' );
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	if( $_GET['op'] == 'getHistory' ) {
 		$ret = '';
 		$jobs = CreateJobCode( $_SESSION['intra_user'] );

@@ -8,6 +8,15 @@
 	include_once( 'switchAPI.php' );
 	include_once('../lang/en.php');
 
+	// See client/plugins/pubsApply.php's 2026-09-05 fix - this file had no
+	// authentication check at all despite performing real page-approval
+	// writes and Switch pushes.
+	$user = sql_get( 'accounts', 'id="'.( $_SESSION['intra_user'] ?? '' ).'"', '*' );
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	if( isset( $_GET['type'] ) && $_GET['type'] != '' ) {
 		$pages = $_POST['pageselector'];
 		$states =  $_POST['state'];

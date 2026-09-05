@@ -14,6 +14,20 @@ $target_chunk_path = TRKPATH.'/uploads/blob/chunk/'.$tempdir.'/';
 $toswitch_path = 'uploads/blob/chunk/'.$tempdir;
 $target_path = TRKPATH.'/uploads/blob/';
 
+// This file had no authentication check at all (see
+// client/plugins/pubsApply.php's 2026-09-05 fix) - an upload's ownership
+// is deliberately allowed to keep going even if the session times out
+// mid-upload (see the .owner comment below), so this can't just require a
+// valid session on every chunk without breaking that. Only the *first*
+// chunk of a genuinely new upload (no .owner file recorded yet) needs one -
+// once ownership is established, later chunks are trusted the same way
+// they always were.
+$owner_file_check = TRKPATH.'/uploads/blob/chunk/'.$tempdir.'/.owner';
+if( !empty( $tempdir ) && !file_exists( $owner_file_check ) && empty( $_SESSION['intra_user'] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
+
 if( !is_dir( TRKPATH.'/uploads/blob/chunk' ) ) {
 	$oldmask = umask(0);
 	mkdir( TRKPATH.'/uploads/blob/chunk', 0777);

@@ -17,6 +17,13 @@ if( isset( $_SESSION['intra_user'] ) ) {
 		$rights[$key] = $val;
 		}
 	}
+// See client/plugins/pubsApply.php's 2026-09-05 fix - none of
+// this file's op== handlers checked authentication before
+// running. Same fix: one gate before any op is dispatched.
+if( empty( $user[0][0] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
 
 function calculateSize( $pageInfo, $magazine, $issue ) {
 	$dir = sql_get( 'packages', 'id="'.$pageInfo[1].'"', 'name, directory, id' );

@@ -13,7 +13,13 @@ $colors = $_POST['colors'];
 $cbox = $_POST['cBox'];
 $phpPath = "engine/r3";
 $terminalPath = "/var/www/html/client";
-$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
+$user = sql_get( 'accounts', 'id="'.( $_SESSION['intra_user'] ?? '' ).'"', '*' );
+// See client/plugins/pubsApply.php's 2026-09-05 fix - this file had no
+// authentication check at all. Same fix: gate before doing anything else.
+if( empty( $user[0][0] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
 $user[0][15] = "mediabox";
 
 function pixel__( $num, $_zoom = '' ) {

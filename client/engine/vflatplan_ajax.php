@@ -344,6 +344,23 @@ include_once('../../engine/engine.php');
 		return $txt;
 		}
 		
+	// This whole file had no real access control - $rights/$user above is
+	// built from $_SESSION['standalone_user'], which nothing in this
+	// codebase ever sets, so that block never actually gated anything, and
+	// several op== handlers below (saveTool, colorPick, refreshPageStatus,
+	// changeOpt) had no check of any kind, not even the hotlinks-hash lookup
+	// a few of the others already do. This file's whole design is external,
+	// hash-based access (see client/vflatplan.php, which resolves
+	// $_GET['hash'] against the hotlinks table before including this) - so
+	// gate the same way here, once, for every op, rather than patching each
+	// individually. See client/plugins/pubsApply.php's 2026-09-05 fix for
+	// the session-based equivalent used everywhere else in this pass.
+	$vHotlink = sql_get( 'hotlinks', 'hashtag="'.( $_GET['hash'] ?? '' ).'" LIMIT 1', '*' );
+	if( empty( $vHotlink[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	if( $_GET['op'] == 'loadPagePair' ) {
 		$holderWidth = 0;
 		$text = '';

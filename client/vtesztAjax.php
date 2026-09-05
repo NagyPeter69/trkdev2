@@ -11,6 +11,16 @@ header('Content-Type: text/html; charset=utf-8');
 include_once( '../engine/connect.php' );
 include_once('../engine/engine.php');
 
+// This file has no op== dispatch and relies on $_SESSION['standalone_user'],
+// which nothing in this codebase ever sets - confirmed dead already (also
+// references the nonexistent /var/www/intra path below). Gating anyway,
+// cheaply, in case it's ever revived - see client/plugins/pubsApply.php's
+// 2026-09-05 fix.
+if( empty( $_SESSION['standalone_user'] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
+
 $zoom = $_GET['zoom'];
 $colors = $_POST['colors'];
 $cbox = $_POST['cBox'];
