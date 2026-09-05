@@ -4,6 +4,11 @@ client/assets/
 client/temp/
 client/handout/
 client/labor/
+# ...moved here 2026-09-05 (confirmed dead: two fully-commented-out/broken
+# test scripts plus ~594M of one-off test PSDs/TIFs/PDFs, nothing else in
+# the repo ever referenced it) - same "disposable, never tracked" reasoning
+# applies at its new location, not just the old one.
+_unnecessary/client/labor/
 client/uploads/
 client/advertisements/
 dynAPI/tracker/
