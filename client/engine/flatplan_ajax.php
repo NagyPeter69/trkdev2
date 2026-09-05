@@ -335,7 +335,7 @@
 		}
 	
 	function drawPage( $id, $page, $class, $i, $pageType = 'normal' ) {
-		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $pages, $length, $lang;
+		global $holderWidth, $fPages2, $alterP, $alters, $rPalette, $gPalette, $bPalette, $magazine, $issue, $sizes, $path, $fin, $imghash, $pages, $length, $lang, $fpStages;
 		
 		list( $w, $h ) = $sizes;
 
@@ -429,7 +429,28 @@
 				$secBg = "background: #".$bPalette[$place]." !important;";
 				}
 				
-			if( $pageType == "normal" ) {
+			if( $fpStages == "1" ) {
+				// A 1-stage job's rendered file lives wherever
+				// page_pdf-handler.php actually stored it based on this
+				// row's own fin state (index 11), not wherever the view's
+				// currently-selected stage/opt would otherwise imply - see
+				// the FlatplanStages==1 handling where $fPages2 is built
+				// above, which intentionally mixes fin=0 and fin=1 rows
+				// into the same view for these jobs. $pageType only ever
+				// becomes "FIN" when $_GET['opt']=='FIN', which such a job
+				// can never send (no FIN chip to select it), so without this
+				// branch every finished page here always checked the bare
+				// (non-FIN) path - reproduced live 2026-09-05 against QVN78.
+				// Same fix drawAmericanPage() already has; this function was
+				// missing its half.
+				if( $fPage[0][11] == "1" ) {
+					$file = $tempPage[0][1]."/FIN/".str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$fPage[0][1]."_preview.jpg";
+					}
+				else {
+					$file = $tempPage[0][1]."/".str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$fPage[0][1]."_preview.jpg";
+					}
+				}
+			elseif( $pageType == "normal" ) {
 				$file = $tempPage[0][1]."/".str_pad( $page, 3, '0', STR_PAD_LEFT)."_".$fPage[0][1]."_preview.jpg";
 				}
 			elseif( $pageType == "FIN" ) {
@@ -495,8 +516,15 @@
 			// Ad slots keep their orange header (secBg, set above) even
 			// before the ad's own preview file has landed - the slot being
 			// booked/reserved for an ad is the thing being flagged, not
-			// whether its content has arrived yet.
-			unset( $fPage );
+			// whether its content has arrived yet. Only the file-dependent
+			// display fields get cleared here - $fPage itself must survive,
+			// since everything below (version, proof/diff/preflight marks,
+			// comments, approval-state footer class, the row's own checkbox)
+			// still needs this page's real pageinfo row. unsetting it here
+			// (as this did before) threw "undefined variable $fPage" for
+			// every such page, silently losing all of that for the rest of
+			// the render - reproduced live 2026-09-05 against QVN78, a
+			// finished job with several booked-but-not-yet-filed pages.
 			$page_thumb = "";
 			$link = '';
 			$file = "";
@@ -560,7 +588,7 @@
 		// the two thumbnails' combined width and leaving a visible gap
 		// between them instead of the pages touching at the spine.
 		if( intval( $page )%2 != 0 ) {
-			if( $page == 1 && $fPage[0][9] > 1 && $_GET["type"] == "fpPreview" ) {
+			if( $page == 1 && $fPage[0][9] > 1 && ( $_GET["type"] ?? "" ) == "fpPreview" ) {
 				$txt .= "";
 				}
 			else {
@@ -607,6 +635,14 @@
 					$display = "none";
 					}
 				break;
+			default:
+				// No filter selected (the normal starting state - $_GET['filter']
+				// is empty until the user picks one) matched none of the cases
+				// above, leaving $display undefined and every subsequent
+				// "if ($display == 'block')" check silently false. Match 'all'
+				// - no filter means show everything, not hide everything.
+				$display = "block";
+				break;
 			}
 		
 		switch( $class ) {
@@ -639,11 +675,11 @@
 
 		$alterPage = array();
 		if( $fPage[0][0] != "" ) {
-			if( $alterP[$page]!= "" && in_array( $fPage[0][6], $acceptType ) )
+			if( ( $alterP[$page] ?? "" ) != "" && in_array( $fPage[0][6], $acceptType ) )
 				$alterPage = sql_get( 'pageinfo', $typeSelect.' AND page="'.$page.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'"', '*' );
 			}
 		else {
-			if( $alterP[$page]!= "" ) {
+			if( ( $alterP[$page] ?? "" ) != "" ) {
 				$alterPage = sql_get( 'pageinfo', $typeSelect.' AND page="'.$page.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'"', '*' );
 				
 				
@@ -725,7 +761,7 @@
 				$txt .= "</div>";
 				$txt .= "<div  id='".$page."_athumb_".($alt+1)."' state='".$alterPage[$alt][8]."' class='thumb' alter='".($alt+1)."' page='".$page."' ";
 				if( $altLink != '' ) {
-					if( $_GET['type'] == 'fpPreview' ) $txt .= " onclick='changePic(\"".$altLink."\")'";
+					if( ( $_GET['type'] ?? '' ) == 'fpPreview' ) $txt .= " onclick='changePic(\"".$altLink."\")'";
 					else $txt .= "double='".$altLink."'";
 					}
 				$txt .= " style='background: url(images/empty_slot.png); position: absolute; z-index: ".(1000-($alt+1))."; top: 17px; ".$scale." ".$alterThumb."'>";
@@ -776,7 +812,13 @@
 				}
 			}
 		$txt .= "<div alter='0' id='".$fPage[0][1]."_".$page."' item='".$fPage[0][1]."' page='".$page."' class='".$class."_pagenr pagenr checking2' style='z-index: 1000; width: ".($w)."px; ".$secBg." color: #".$textColor.";'>";
-		
+
+		// $version/$proof/$triangle/$preflight are only ever assigned inside the
+		// conditionals below, but used unconditionally further down - a page
+		// missing all of these (no version yet, no proof mark, no diff, no
+		// preflight error) left them undefined, throwing PHP warnings on every
+		// such page (the common case, not the exception).
+		$version = ""; $proof = ""; $triangle = ""; $preflight = "";
 		if( $fPage[0][3] != "" )
 			$version = "v".$fPage[0][3];
 		
@@ -815,7 +857,7 @@
 
 		$txt .= "</div><div id='".$page."_thumb' state='' class='thumb' alter='0' page='".$page."'";
 		if( $link != '' ) {
-			if( $_GET['type'] == 'fpPreview' ) $txt .= " onclick='changePic(\"".$link."\")'";
+			if( ( $_GET['type'] ?? '' ) == 'fpPreview' ) $txt .= " onclick='changePic(\"".$link."\")'";
 			else $txt .= "double='".$link."'";
 			}
 		$txt .= " style='background-color: #DDD !important; background: url(images/empty_slot.png); position: absolute; z-index: 1000; top: 17px; ".$scale." ".$page_thumb."' ";
@@ -982,8 +1024,15 @@
 			// Ad slots keep their orange header (secBg, set above) even
 			// before the ad's own preview file has landed - the slot being
 			// booked/reserved for an ad is the thing being flagged, not
-			// whether its content has arrived yet.
-			unset( $fPage );
+			// whether its content has arrived yet. Only the file-dependent
+			// display fields get cleared here - $fPage itself must survive,
+			// since everything below (version, proof/diff/preflight marks,
+			// comments, approval-state footer class, the row's own checkbox)
+			// still needs this page's real pageinfo row. unsetting it here
+			// (as this did before) threw "undefined variable $fPage" for
+			// every such page, silently losing all of that for the rest of
+			// the render - reproduced live 2026-09-05 against QVN78, a
+			// finished job with several booked-but-not-yet-filed pages.
 			$page_thumb = "";
 			$link = '';
 			$file = "";
@@ -1090,6 +1139,14 @@
 					$display = "none";
 					}
 				break;
+			default:
+				// No filter selected (the normal starting state - $_GET['filter']
+				// is empty until the user picks one) matched none of the cases
+				// above, leaving $display undefined and every subsequent
+				// "if ($display == 'block')" check silently false. Match 'all'
+				// - no filter means show everything, not hide everything.
+				$display = "block";
+				break;
 			}
 		
 		switch( $class ) {
@@ -1119,11 +1176,11 @@
 
 		$alterPage = array();
 		if( $fPage[0][0] != "" ) {
-			if( $alterP[$page]!= "" && in_array( $fPage[0][6], $acceptType ) )
+			if( ( $alterP[$page] ?? "" ) != "" && in_array( $fPage[0][6], $acceptType ) )
 				$alterPage = sql_get( 'pageinfo', $typeSelect.' AND page="'.$page.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'"', '*' );
 			}
 		else {
-			if( $alterP[$page]!= "" ) {
+			if( ( $alterP[$page] ?? "" ) != "" ) {
 				$alterPage = sql_get( 'pageinfo', $typeSelect.' AND page="'.$page.'" AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state!="" AND fin="'.$fin.'"', '*' );
 				}
 			}
@@ -1203,7 +1260,7 @@
 				$txt .= "</div>";
 				$txt .= "<div  id='".$page."_athumb_".($alt+1)."' state='".$alterPage[$alt][8]."' class='thumb' alter='".($alt+1)."' page='".$page."' ";
 				if( $altLink != '' ) {
-					if( $_GET['type'] == 'fpPreview' ) $txt .= " onclick='changePic(\"".$altLink."\")'";
+					if( ( $_GET['type'] ?? '' ) == 'fpPreview' ) $txt .= " onclick='changePic(\"".$altLink."\")'";
 					else $txt .= "double='".$altLink."'";
 					}
 				$txt .= " style='background: url(images/empty_slot.png); position: absolute; z-index: ".(1000-($alt+1))."; top: 17px; ".$scale." ".$alterThumb."'>";
@@ -1254,7 +1311,13 @@
 				}
 			}
 		$txt .= "<div alter='0' id='".$fPage[0][1]."_".$page."' item='".$fPage[0][1]."' page='".$page."' class='".$class."_pagenr pagenr checking2' style='z-index: 1000; width: ".($w)."px; ".$secBg." color: #".$textColor.";'>";
-		
+
+		// $version/$proof/$triangle/$preflight are only ever assigned inside the
+		// conditionals below, but used unconditionally further down - a page
+		// missing all of these (no version yet, no proof mark, no diff, no
+		// preflight error) left them undefined, throwing PHP warnings on every
+		// such page (the common case, not the exception).
+		$version = ""; $proof = ""; $triangle = ""; $preflight = "";
 		if( $fPage[0][3] != "" )
 			$version = "v".$fPage[0][3];
 		
@@ -1293,7 +1356,7 @@
 
 		$txt .= "</div><div id='".$page."_thumb' state='' class='thumb' alter='0' page='".$page."'";
 		if( $link != '' ) {
-			if( $_GET['type'] == 'fpPreview' ) $txt .= " onclick='changePic(\"".$link."\")'";
+			if( ( $_GET['type'] ?? '' ) == 'fpPreview' ) $txt .= " onclick='changePic(\"".$link."\")'";
 			else $txt .= "double='".$link."'";
 			}
 		$txt .= " style='background-color: #DDD !important; background: url(images/empty_slot.png); position: absolute; z-index: 1000; top: 17px; ".$scale." ".$page_thumb."' ";
@@ -1384,6 +1447,12 @@
 		$fpXmlInfo = collectFromXml( "../xml/".PMD.".xml", $magazine[0][3], array( "FlatplanStages", "Workflow" ) );
 		$stages1 = ( (string) $fpXmlInfo["FlatplanStages"] == "1" and (string) $fpXmlInfo["Workflow"] != "Hybrid" );
 		$finClause = $stages1 ? '' : ' AND fin="'.$fin.'"';
+		// drawPage() needs this too (global $fpStages) - same reason
+		// drawAmericanPage() already reads it: a stages1 job's rendered file
+		// lives wherever it was actually stored based on each page's own fin
+		// state, not wherever $pageType (derived from $_GET['opt'], which
+		// never becomes "FIN" for a job with no FIN chip to select) implies.
+		$fpStages = (string) $fpXmlInfo["FlatplanStages"];
 
 		$bPalette = colorGenerate( 'blue' );
 		$bPalette = colorGenerate( 'red', $bPalette );
@@ -1395,7 +1464,15 @@
 			}
 
 		$fPages2 = array();
-		$fPagesSql = sql_get( 'pageinfo', $typeSelect.' AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state=""'.$finClause, '*' );
+		// A FlatplanStages==1 job (see the single-stage rule above) leaves
+		// $finClause empty, so this can match BOTH a page's old/basic (fin=0)
+		// row and its final (fin=1) resubmission at once. Without an explicit
+		// order, whichever row MySQL happens to return last for a given page
+		// wins the overwrite below - non-deterministic, and observed picking
+		// the stale basic row over the real final one for an otherwise fully
+		// finished job (QVN78, reported 2026-09-05). Order fin ascending so
+		// the final row - if one exists - is always the one left standing.
+		$fPagesSql = sql_get( 'pageinfo', $typeSelect.' AND code="'.$magazine[0][3].'" AND issue="'.$issue[0][10].'" AND state=""'.$finClause.' ORDER BY fin ASC', '*' );
 		foreach( $fPagesSql as $fP ) {
 			$fPages2[ intval($fP[5]) ] = $fP;
 			}
@@ -1423,8 +1500,13 @@
 					$moreQuery .= " AND fin='0'";
 					}
 				}
-			$pages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' AND part='".$_GET["part"]."' ".$moreQuery." ORDER BY page ASC", "*" );
-			$fPages2 = array();	
+			// Same fin=0/fin=1 ambiguity as the European branch above when
+			// $fpStages=="1" leaves $moreQuery empty (both a page's basic and
+			// final rows can match) - order fin ascending too so a real final
+			// resubmission always wins the per-page overwrite below, not
+			// whichever row the DB happens to return last.
+			$pages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' AND part='".$_GET["part"]."' ".$moreQuery." ORDER BY page ASC, fin ASC", "*" );
+			$fPages2 = array();
 			foreach( $pages as $fP ) {
 				$fPages2[ intval($fP[5]) ] = $fP;
 				}
@@ -1584,9 +1666,24 @@
 					else {
 						$moreQuery .= " AND fin='0'";
 						}
-					$pages = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' ".$moreQuery." ORDER BY page DESC LIMIT 1", "*" );
-					$length = $pages[0][5];
+					$pagesRow = sql_get( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$issue[0][10]."' ".$moreQuery." ORDER BY page DESC LIMIT 1", "*" );
+					$length = $pagesRow[0][5];
 					}
+
+				// drawPage() reads this (global $pages) to tell a genuinely
+				// out-of-range page (rendered as an invisible spacer) from one
+				// that's simply missing its own pageinfo row because a
+				// neighbouring wide/gatefold image already covers it (which
+				// still needs its normal slot drawn). Left unset here before,
+				// so drawPage()'s "$page > $pages" check compared every real
+				// page number against null - always true - misclassifying
+				// every such gap page as out-of-range. That emitted a
+				// wrongly-doubled-width invisible spacer instead of a normal
+				// slot for each one, throwing off the row-wrapping float math
+				// for everything after it - reproduced live 2026-09-05
+				// against QVN78 (pages 218-220, covered by page 217's wide
+				// cover image, breaking the layout for 221 onward).
+				$pages = $length;
 
 				// A freshly-created issue's Parts already give $length a
 				// real (nonzero) page count long before any page is

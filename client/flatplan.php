@@ -121,6 +121,21 @@ foreach( $wfXpath as $wfTemp ) {
 		}
 	}
 $hybridFP = ( (string) $wfXml->Item[$wfI]->Workflow == "Hybrid" );
+
+// Resize and Auto workflows have no page-approval capability (same gate
+// menu.php already uses to hide the Flatplan/Pages/Planner nav links for
+// them) - build a magazine-code -> Workflow lookup once here so the job
+// switcher dropdown below can skip them too. A SuperUser can still land on
+// this page directly for such a job (menu.php's gate is nav-link-only, not
+// enforced here), but shouldn't be offered it as a switch target from a
+// dropdown whose whole purpose is jumping between approval-capable jobs.
+$workflowByCode = array();
+foreach( $wfXpath as $wfTemp ) {
+	for( $wfJ = 0; $wfJ < count( $wfTemp->Item ); $wfJ++ ) {
+		$workflowByCode[ (string) $wfTemp->Item[$wfJ]->Code ] = (string) $wfTemp->Item[$wfJ]->Workflow;
+		}
+	}
+$noApprovalWorkflows = array( 'Resize', 'Auto' );
 // Same "no second stage" case the fin-forcing block below handles for
 // $_GET['opt'] - reused further down (see the customMenu accept/reject/
 // cancel <li> block) so that gate doesn't have to rely on $_GET['opt']
@@ -297,7 +312,15 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 					
 									for( $i = 0; $i < count( $pubs ); $i++ ) {
 										$magazine = sql_get( 'magazines', 'id="'.$pubs[$i][2].'"', 'code, type' );
-										
+
+										// This dropdown's whole purpose is jumping to another
+										// job's Flatplan/approval view - Resize and Auto jobs
+										// have no such view (menu.php's $noApprovalWorkflow gate),
+										// so don't offer them as a switch target here.
+										if( in_array( $workflowByCode[ $magazine[0][0] ] ?? '', $noApprovalWorkflows ) ) {
+											continue;
+											}
+
 										echo "<option value='".$pubs[$i][0]."_".$firstPage[0][0]."_".$firstPage[0][1]."' ";
 											if( $_GET['code'] == $pubs[$i][10] && $_GET['id'] == $pubs[$i][0] )
 												echo "selected";

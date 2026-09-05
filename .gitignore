@@ -41,15 +41,16 @@ switchReports/*
 *.log
 *.tmp
 
-# Per-issue/per-publication XML snapshots in client/xml/ - regenerated on
-# every issue or Adhoc-publication create/modify/status-change and pushed
-# to Switch. MariaDB is the ground truth, these are disposable outbound
-# artifacts. Naming isn't consistent enough to pattern-match (Regular
-# issues: {magCode}_{issueCode}.xml: Adhoc publications: just {code}.xml,
-# no underscore) so this whitelists the two files that ARE meant to be
-# tracked instead of trying to exclude every generated variant.
+# client/xml/ - PMD (Publications_Master_Data, i.e. pmd.xml) plus per-issue/
+# per-publication XML snapshots. All of it, pmd.xml included, is a generated
+# imprint of the DB - PMD was invented 15+ years ago as a workaround for
+# Enfocus Switch not being able to talk to a DB directly, not as config. Per
+# the project owner (2026-09-05): it must follow the exact same
+# never-tracked policy as the DB and the other client/ media directories
+# above, not be treated as source. (An earlier version of this file
+# deliberately whitelisted pmd.xml as an exception to this - that was wrong;
+# don't re-add it.) Only re-generateXML.php (actual code) stays tracked.
 client/xml/*
-!client/xml/pmd.xml
 !client/xml/re-generateXML.php
 
 # R3 (PDF rendering) binary + ICC profile bundle - a licensed third-party tool,

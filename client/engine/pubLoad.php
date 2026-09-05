@@ -121,12 +121,23 @@ if( $_GET['op'] == 'load_publications' ) {
 			$color = "";
 			$alter = 0;
 			$pub = sql_get( 'publications', 'magazine_id="'.$magazines[$i][0].'" AND code="'.$cur.'" ', '*' );
-			if( $pub[0][0] == '' ) {
+			if( ( $pub[0][0] ?? '' ) == '' ) {
 				$pub = sql_get( 'publications', 'magazine_id="'.$magazines[$i][0].'" ORDER BY `deadline` DESC', '*' );
-				$cur = $pub[0][10];
+				$cur = $pub[0][10] ?? '';
 				$alter = 1;
-				} 
-			$status = $pub[0][12];
+				}
+			// A magazine with zero publications ever created under it (a real,
+			// not-hypothetical state - 9 of 37 real magazines on this box have
+			// none) leaves $pub empty even after the fallback above, so
+			// $pub[0][10]/[12] etc. below were all reading an undefined index -
+			// reproduced live 2026-09-05 loading the create_magazine listing.
+			// Treat it the same as any other "no current issue" magazine
+			// rather than warning on every field read from a row that isn't
+			// there.
+			if( empty( $pub[0][0] ) ) {
+				$cur = '';
+				}
+			$status = $pub[0][12] ?? '';
 			
 			switch( $status ) {
 				case 'current':
@@ -150,7 +161,7 @@ if( $_GET['op'] == 'load_publications' ) {
 					$color = "#3399FF";
 					break;
 				}
-			$management = getPubButtons( $status, $pub[0], $process, $rights );
+			$management = getPubButtons( $status, $pub[0] ?? array(), $process, $rights );
 			$publications = sql_get( 'publications', 'magazine_id="'.$magazines[$i][0].'" AND code="'.$cur.'" ORDER BY `code` DESC', '*' );
 			$publications2 = sql_get( 'publications', 'magazine_id="'.$magazines[$i][0].'" AND code!="'.$cur.'" ORDER BY `code` DESC', '*' );
 			if( $status == 'current' ) $status = 'active';
@@ -171,7 +182,7 @@ if( $_GET['op'] == 'load_publications' ) {
 					else $onclick = '';
 					}
 				
-				$current = $debug;
+				$current = "";
 				$current .= "<div ".$onclick." style='cursor: pointer; float:left; width: 100px;'>";
 				
 				if( $alter == 0 )
@@ -219,7 +230,7 @@ if( $_GET['op'] == 'load_publications' ) {
 					elseif( $hour == 1 ) { $hour = sprintf( $lang["timeline"]["hour"], $hour ); }
 					else $hour = sprintf( $lang["timeline"]["hours"], $hour );
 					
-					$current .= "<div class='pubDeadline pubExtraInfo'>".$day."".( ( $day != "" && $hour != "" ) ? "," : "" )." ".$hour."".$dbg."&nbsp;</div>";			
+					$current .= "<div class='pubDeadline pubExtraInfo'>".$day."".( ( $day != "" && $hour != "" ) ? "," : "" )." ".$hour."&nbsp;</div>";
 					}
 				else {
 					$current .= "<div class='pubDeadline pubExtraInfo'>&nbsp;</div>";
@@ -258,10 +269,10 @@ if( $_GET['op'] == 'load_publications' ) {
 				$current .= "<div id='' class='pubStatus' style='float:left; margin-left: 5px; width: 105px; height: 1px;'></div>";
 				$current .= "<div id='' class='pubStatus' style='float:left; margin-left: 5px; width: 100px; height: 1px;'></div>";
 				$current .= "<div class='pubDeadline pubExtraInfo'>&nbsp;</div>";
-				$current .= "<div id='".$pub[0][0]."_client' class='pubExtraInfo pubClient' style='float:left; margin-left: 5px; width: ".$pubwidth."px; height: 1px;'>".$client."</div>";
-				$current .= "<div id='".$pub[0][0]."_type' class='pubExtraInfo pubType' style='float:left; margin-left: 5px; width: 70px;'>".$magazines[$i][10]."</div>";
-				$current .= "<div id='".$pub[0][0]."_workflow' class='pubExtraInfo pubWorkflow' style='float:left; margin-left: 5px; width: 65px; height: 1px;'>".$process."</div>";				
-				$current .= "<div id='".$pub[0][0]."_pn' class='pubExtraInfo pubPn' style='float:left; margin-left: 5px; width: 35px;'>".$lang["pn"][$pn]."</div>";
+				$current .= "<div id='".( $pub[0][0] ?? '' )."_client' class='pubExtraInfo pubClient' style='float:left; margin-left: 5px; width: ".$pubwidth."px; height: 1px;'>".$client."</div>";
+				$current .= "<div id='".( $pub[0][0] ?? '' )."_type' class='pubExtraInfo pubType' style='float:left; margin-left: 5px; width: 70px;'>".$magazines[$i][10]."</div>";
+				$current .= "<div id='".( $pub[0][0] ?? '' )."_workflow' class='pubExtraInfo pubWorkflow' style='float:left; margin-left: 5px; width: 65px; height: 1px;'>".$process."</div>";
+				$current .= "<div id='".( $pub[0][0] ?? '' )."_pn' class='pubExtraInfo pubPn' style='float:left; margin-left: 5px; width: 35px;'>".$lang["pn"][$pn]."</div>";
 				$current .= "</div>";				
 				}		
 

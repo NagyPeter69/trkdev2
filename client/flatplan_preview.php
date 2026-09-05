@@ -71,6 +71,18 @@ if( $hybridFP ) {
 	$_GET['alter'] = "FIN";
 	}
 
+// Resize and Auto workflows have no page-approval capability (same gate
+// menu.php already uses to hide the Flatplan/Pages/Planner nav links for
+// them) - build a magazine-code -> Workflow lookup once here so the job
+// switcher dropdown below can skip them too.
+$workflowByCode = array();
+foreach( $wfXpath as $wfTemp ) {
+	for( $wfJ = 0; $wfJ < count( $wfTemp->Item ); $wfJ++ ) {
+		$workflowByCode[ (string) $wfTemp->Item[$wfJ]->Code ] = (string) $wfTemp->Item[$wfJ]->Workflow;
+		}
+	}
+$noApprovalWorkflows = array( 'Resize', 'Auto' );
+
 // A job with FlatplanStages==1 has only one flatplan - the fin bit some
 // of its pages carry (e.g. ads are conventionally submitted FIN while
 // editorial pages arrive NOR - see page_pdf-handler.php's $stages1
@@ -488,6 +500,14 @@ setTimeout( fpHideInitOverlay, 35000 );
 					
 					for( $i = 0; $i < count( $pubs ); $i++ ) {
 						$magazine = sql_get( 'magazines', 'id="'.$pubs[$i][2].'"', 'code, type' );
+
+						// This dropdown's whole purpose is jumping to another job's
+						// Pages/approval view - Resize and Auto jobs have no such view
+						// (menu.php's $noApprovalWorkflow gate), so don't offer them
+						// as a switch target here.
+						if( in_array( $workflowByCode[ $magazine[0][0] ] ?? '', $noApprovalWorkflows ) ) {
+							continue;
+							}
 
 						echo "<option value='".$pubs[$i][0]."_".$firstPage[0][0]."_".$firstPage[0][1]."' ";
 						if( $_GET['code'] == $pubs[$i][10] && $_GET['id'] == $pubs[$i][0] )
