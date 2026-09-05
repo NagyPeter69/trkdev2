@@ -1,4 +1,16 @@
 <?PHP
+
+// This is an inbound Switch webhook, not a browser session - Switch has no
+// Tracker login, so the equivalent check here is verifying the request
+// actually comes from the known Switch host rather than a session (see
+// client/plugins/pubsApply.php's 2026-09-05 fix for the session-based
+// version used everywhere a browser session applies). Confirmed live this
+// session: before this, ANYONE reaching this URL could forge a Switch
+// event (fake page approvals, fake uploads) with no verification at all.
+if( ( $_SERVER['REMOTE_ADDR'] ?? '' ) !== '192.168.1.8' ) {
+	http_response_code( 403 );
+	exit;
+	}
 $mag = sql_aget( "magazines", "code='".$_POST["jobCode"]."'", "*" );
 $pub = sql_aget( "publications", "magazine_id='".$mag[0]["id"]."' AND code='".$_POST["issue"]."'", "*" );
 $pack = sql_aget( "assets", "pub_id='".$pub[0]["id"]."' AND name='".$_POST["description"].".indd'", "*" );

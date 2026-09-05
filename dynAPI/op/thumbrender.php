@@ -12,8 +12,14 @@ $img = "thumb_".time().".jpg";
 $response = array();
 
 if( !empty( $_FILES["file"]["name"][0]["file"] ) ) {
-	$filename = $_FILES["file"]["name"][0]["file"];
-	if( move_uploaded_file( $_FILES["file"]["tmp_name"][0]["file"], $_FILES["file"]["name"][0]["file"] ) ) {
+	// The upload's destination path used to be the client-supplied original
+	// filename verbatim, with no extension enforced and no character
+	// sanitization - an uploaded file named e.g. "shell.php" would land
+	// directly in this web-servable directory, executable over HTTP.
+	// Generate a safe, server-controlled name instead (this is always a PDF
+	// import regardless of what the client claims the file is named).
+	$filename = "upload_".uniqid().".pdf";
+	if( move_uploaded_file( $_FILES["file"]["tmp_name"][0]["file"], $filename ) ) {
 		$pdf = new dynapdf();
 		include('config.inc.php');
 		$pdf->CreateNewPDF(NULL);
@@ -47,8 +53,8 @@ if( !empty( $_FILES["file"]["name"][0]["file"] ) ) {
 		
 		unlink( "./rendered/".$img );
 		unlink( $fname );
-		if( !empty( $_FILES["file"]["name"][0]["file"] ) ) {
-			unlink( $_FILES["file"]["name"][0]["file"] );
+		if( !empty( $filename ) ) {
+			unlink( $filename );
 			}
 		}
 	else {

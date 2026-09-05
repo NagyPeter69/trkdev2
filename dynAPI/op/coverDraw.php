@@ -51,11 +51,17 @@ if( $data["drawmark"] == "yes" ) {
 	$markDraw = true;
 	}
 
+// The upload's destination path used to be the client-supplied original
+// filename verbatim, with no extension enforced and no character
+// sanitization - an uploaded file named e.g. "shell.php" would land
+// directly in this web-servable directory, executable over HTTP.
+// Generate a safe, server-controlled name instead (this is always a PDF
+// import regardless of what the client claims the file is named).
 $filename = "";
 if( !empty( $_FILES["file"]["name"][0]["file"] ) ) {
-	$filename = $_FILES["file"]["name"][0]["file"];
+	$filename = "upload_".uniqid().".pdf";
 	//file_put_contents( $filename, base64_decode( $data["fileContent"] ) );
-	if( move_uploaded_file( $_FILES["file"]["tmp_name"][0]["file"], $_FILES["file"]["name"][0]["file"] ) ) {
+	if( move_uploaded_file( $_FILES["file"]["tmp_name"][0]["file"], $filename ) ) {
 		include( "coverDraw_.php" );
 		}
 	else {

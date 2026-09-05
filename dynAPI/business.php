@@ -2,18 +2,24 @@
 header('Content-type: text/html; charset=UTF-8');
 include( "../engine.php" );
 
-file_put_contents( "raw_".$_POST["filename"].".pdf", $_POST["pdf"] );
+// filename was written to disk with no sanitization at all (full path
+// traversal via ../ sequences, on top of the missing-auth issue tracked
+// separately) - restrict to a safe character set before using it in a
+// path, regardless of who ends up allowed to call this endpoint.
+$safeFilename = preg_replace( '/[^A-Za-z0-9_-]/', '', $_POST["filename"] ?? '' );
+$safePicExt = preg_replace( '/[^A-Za-z0-9]/', '', $_POST["pic_ext"] ?? '' );
+file_put_contents( "raw_".$safeFilename.".pdf", $_POST["pdf"] );
 
 $pdf = new dynapdf();
 include('../config.inc.php');
-$pdf->CreateNewPDF( "rendered/".$_POST["filename"].".pdf" );			
+$pdf->CreateNewPDF( "rendered/".$safeFilename.".pdf" );			
 
 $pdf->SetImportFlags(dynapdf::ifImportAll | dynapdf::ifImportAsPage);
 $pdf->SetImportFlags2(dynapdf::if2UseProxy);
 $pdf->SetPDFVersion( 10 );	
 $pdf->SetPageCoords(dynapdf::pcTopDown);
 	
-$pdf->OpenImportFile( "raw_".$_POST["filename"].".pdf", dynapdf::ptOpen, NULL);
+$pdf->OpenImportFile( "raw_".$safeFilename.".pdf", dynapdf::ptOpen, NULL);
 $pdf->AddFontSearchPath( "fonts" , false );
 
 $corr1x = 2;
@@ -28,11 +34,11 @@ $pdf->Append();
 		if( $_POST["pic"] != "" ) {
 			$pdf->BeginLayer($oc2);
 			$pdf->SetColorSpace( 1 );
-			file_put_contents( "raw_img.".$_POST["pic_ext"], $_POST["pic"] );
+			file_put_contents( "raw_img.".$safePicExt, $_POST["pic"] );
 			
 			$width = $pdf->GetPageWidth() - coord(208 +$corr1x);			
 			$pdf->SetPageCoords(dynapdf::pcBottomUp);
-			$pdf->InsertImageEx( coord(34.43 +$corr1x), coord(-3 +$corr1x), coord(67.13 +$corr1x), 0, "raw_img.".$_POST["pic_ext"], 1 );
+			$pdf->InsertImageEx( coord(34.43 +$corr1x), coord(-3 +$corr1x), coord(67.13 +$corr1x), 0, "raw_img.".$safePicExt, 1 );
 			$pdf->EndLayer();
 			}
 			
@@ -77,10 +83,10 @@ $pdf->Append();
 		$pdf->EndLayer();
 $pdf->EndPage();
 $pdf->CloseImportFile();
-$pdf->RenderPageToImage(1, "rendered/".$_POST["filename"].".png", 200, 0, 0, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmPNG);
+$pdf->RenderPageToImage(1, "rendered/".$safeFilename.".png", 200, 0, 0, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmPNG);
 $pdf->CloseFile();
-unlink( "raw_".$_POST["filename"].".pdf" );
+unlink( "raw_".$safeFilename.".pdf" );
 if( $_POST["pic"] != "" ) {
-	unlink( "raw_img.".$_POST["pic_ext"] );
+	unlink( "raw_img.".$safePicExt );
 	}
 ?>

@@ -236,8 +236,8 @@ if( $pages <= 1 ) {
 	
 	//unlink( "./rendered/".$img );
 	//unlink( $fname );
-	if( !empty( $_FILES["file"]["name"][0]["file"] ) ) {
-		unlink( $_FILES["file"]["name"][0]["file"] );
+	if( !empty( $filename ) ) {
+		unlink( $filename );
 		}
 	}
 
