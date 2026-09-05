@@ -22,6 +22,22 @@
 			}
 		}
 
+	// None of this file's 16 sub== handlers (create/modify/delete a magazine
+	// or publication, change its workflow/color/FTP/job settings, etc.)
+	// checked authentication before running - a request with no session, or
+	// one pointing at an already-deleted account, still fully executed
+	// every DB write, real outbound email, and real Switch push each one
+	// makes. Confirmed live 2026-09-05: a request with an expired/missing
+	// session cookie still created a real magazine, publication, and account,
+	// and sent a real notification email. One gate here, before any sub is
+	// dispatched, closes all 16 at once rather than patching each
+	// individually - matches the shape of error response menuApply()'s JS
+	// already expects ($result[0] as an array of field names to highlight).
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
+
 	if( $_GET["sub"] == "getUsers" ) {
 		$pub = sql_aget( "publishers", "name='".$_GET["publisher"]."'", "*" );
 		$u = sql_aget( "accounts", "publisher='".$pub[0]["id"]."' OR `group`='2'", "*" );
