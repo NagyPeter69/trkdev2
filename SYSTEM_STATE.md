@@ -563,6 +563,30 @@ rather than the network layer blocking everything and the app layer being the on
 narrowing it down. Do not widen either layer without checking with the project owner
 first.
 
+**This entire TestCo-only restriction is conditional on `TRKDEV_ENVIRONMENT=dev`** (see
+`IS_DEV_ENVIRONMENT` in `engine/constans.php`) — everything in this paragraph describes what
+holds whenever that's the case (this machine or any future clone of it), not a permanent
+property of the codebase. **Current state on this machine, confirmed 2026-09-06**:
+`TRKDEV_ENVIRONMENT=production` (see "Environment-identity consolidation" under "Deploying to
+production" below), so both `switchClientAllowed()`/`switchBulkSyncAllowed()` are unconditional
+no-ops (every client goes through, not just TestCo) — and the **network-layer block described
+above is not currently in place either**: `iptables -L`/`nft list ruleset` show every chain
+(input/forward/output) at policy `accept` with zero rules, and `/etc/nftables.conf` (the
+persisted config `nftables.service` loads at boot) defines that same empty ruleset, dated
+2026-09-05 18:00 — a deliberate change that has correctly survived the reboot since, not
+something that failed to persist. Both layers being open is the expected state for a genuine
+production box (every real client, Colorcom included, needs to reach Switch normally) — **if
+you ever find this machine (or a clone) back on `TRKDEV_ENVIRONMENT=dev`, re-apply both layers
+described in this section** rather than assuming production's current openness is itself the
+template to copy.
+
+**Switch's actual address**: `192.168.1.8:51088` (`SWITCHLOGINURL`/`SWITCHURL` in
+`engine/switchconstant.php`, hardcoded literal, not `getenv()`-backed like the credentials in
+"Access / credentials reference" below) — fixed/static for the time being, per the project
+owner, 2026-09-06. If this ever changes, `switchconstant.php` is the one place to update; the
+various `*-handler.php` comments about "the gateway at 10.10.30.250" concern *inbound* traffic
+routing, a separate thing from this outbound address.
+
 (An earlier version of this document briefly - and incorrectly - described this as an
 unexplained safety-boundary regression, written before being told about the intentional
 partial lift; corrected here once that context was provided. A later version then
@@ -647,6 +671,41 @@ one call site:**
    null-means-retryable-failure convention `switch_sync_worker.php` already used for a genuine
    curl failure, so a transient "file not written yet" race retries normally instead of taking
    the whole worker down.
+
+### Package uploads silently never reached Switch, post-cutover (found/fixed 2026-09-06)
+
+Reported live: creating a publication/issue for **Colorcom** (a real client) correctly reached
+Switch, but a package uploaded for it via the Upload View (`?page=filetransfer`) never arrived,
+with no visible error - the upload itself reported success.
+
+Root cause: `client/engine/fileupload_ajax.php`'s upload-completion step doesn't call
+`SwitchASend()` in-process - it fires a fire-and-forget self-call via `systemCurl()` (a
+backgrounded shell `curl`, output discarded) to its own `client/engine/switch/async_send.php`,
+which then calls `SwitchASend()`. That target URL was built as `"http://".URL."/..."` - fine
+back when `URL` (`/var/www/server_constans.php`) didn't resolve to this exact box, but now that
+it correctly does (see "Environment-identity consolidation" below), the self-call connects
+directly to this machine's own address rather than hairpinning out through the gateway. Since
+`async_send.php` is written as an inbound Switch webhook and only accepts requests from the
+gateway's NAT address (`10.10.30.250`, see its own comment), it 403'd this self-call every time
+- confirmed directly in the nginx access log, same second as the failed upload: the browser's
+own `POST fileupload_ajax.php` came from `10.10.30.250` (via the gateway, as normal) while the
+self-call to `async_send.php` came from `10.10.30.60` (this box) and got a `403`. The uploaded
+file itself was never lost - it sat untouched in `client/uploads/blob/chunk/<tempdir>/`, since
+nothing downstream of the 403 ever touched it.
+
+**Fixed**: `fileupload_ajax.php`'s self-call now targets `http://127.0.0.1/...` explicitly
+rather than the public hostname, removing the dependency on however `URL` happens to resolve;
+`async_send.php`'s IP check now accepts both `10.10.30.250` (real external Switch/gateway
+traffic) and `127.0.0.1` (this legitimate same-box trigger) - an external caller can never
+spoof `127.0.0.1` as their actual source IP over a real connection, so this doesn't weaken the
+check against genuine forgery. **Verified live** by having the reporting user retry the exact
+upload that had failed; confirmed reaching Switch afterward.
+
+**Not verified via a synthetic test call** - `switchClientAllowed()`/`switchBulkSyncAllowed()`
+are unconditional no-ops now that this box is production (see above), so *any* request past
+`async_send.php`'s IP check goes straight through to a real, live POST to production Switch.
+Rather than risk a garbage-data call to the real external system just to test the fix, the
+verification above used the user's own real, already-intended retry instead.
 
 ### PMD file ownership (2026-07-27 incident)
 

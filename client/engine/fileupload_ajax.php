@@ -261,7 +261,20 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 				"Content-Type: multipart/form-data",
 				);
 			
-			$url = "http://".URL."/client/engine/switch/async_send.php";
+			// Target 127.0.0.1 directly rather than "http://".URL - this is a
+			// same-box self-call (fire-and-forget via systemCurl(), not a real
+			// external request), and routing it through the public hostname
+			// makes it depend entirely on how that hostname happens to resolve
+			// (DNS, /etc/hosts) - if it resolves to this box's own LAN address
+			// (as it correctly does now, post-cutover) the request arrives with
+			// REMOTE_ADDR=<this box's own IP>, which async_send.php's inbound-
+			// Switch-webhook IP check (correctly) doesn't recognize, so the
+			// actual Switch send silently never happens. Confirmed live
+			// 2026-09-06: nginx access log showed this exact call reaching
+			// async_send.php from 10.10.30.60 and getting a 403. 127.0.0.1 is
+			// unambiguous regardless of what URL resolves to, and matches the
+			// second address now allowlisted in async_send.php's own check.
+			$url = "http://127.0.0.1/client/engine/switch/async_send.php";
 			systemCurl( $url, $data, $headers=null, $check_ssl=true);
 			}
 		

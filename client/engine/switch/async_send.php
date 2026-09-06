@@ -17,7 +17,16 @@
 // it does NOT actually distinguish Switch from any other request that
 // reaches this server. Revisit once the network side stops masquerading
 // Switch's traffic or adds a forwarding header.
-if( ( $_SERVER['REMOTE_ADDR'] ?? '' ) !== '10.10.30.250' ) {
+// 127.0.0.1 added 2026-09-06: client/engine/fileupload_ajax.php's package-
+// upload completion fires a same-box self-call here (systemCurl(), fire-
+// and-forget, not a real external request) to trigger the actual Switch
+// send without blocking the upload response on it. That self-call now
+// targets 127.0.0.1 directly (see its own comment) rather than the public
+// hostname, so it always arrives as this exact address regardless of DNS/
+// /etc/hosts - unlike the gateway-NAT'd address below, a real external
+// caller can never spoof 127.0.0.1 as their source over an actual TCP
+// connection, so this doesn't weaken the check against external forgery.
+if( !in_array( $_SERVER['REMOTE_ADDR'] ?? '', array( '10.10.30.250', '127.0.0.1' ), true ) ) {
 	http_response_code( 403 );
 	exit;
 	}
