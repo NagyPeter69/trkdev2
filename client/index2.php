@@ -3,8 +3,6 @@
 <?php 
 session_start();
 
-//if( $_COOKIE["intra_user"] !=  "1" ) die();
-
 include_once('../engine/connect.php');
 
 include_once('../engine/engine.php');
@@ -23,10 +21,10 @@ if( $_GET['page'] == 'logout' ) {
 	}
 
 if( $_GET["hash"] != "" ) {
-	$check = sql_get( "hotlinks", "hashtag='".$_GET["hash"]."'", "*" );
+	$check = getValidHotlink( $_GET["hash"] );
 	if( $check[0][0] != "" ) {
 		$_SESSION["standalone_visitor"] = "1";
-		$_SESSION["visitor_lang"] = $check[0][12];
+		$_SESSION["visitor_lang"] = $check[0][11];
 		
 		if( $_GET["page"] == "" ) {
 			header( 'Location: ?page=vflatplan_preview&hash='.$_GET["hash"] );
@@ -116,12 +114,6 @@ elseif( isset($_POST['username'] ) && isset($_POST['password'] ) ) {
 			sql_update( 'accounts', 'logged_in=\'1\'', 'id=\''.$user[0][0].'\'' );
 			sql_update( 'accounts', 'lastlogin='.time().'', 'id=\''.$user[0][0].'\'' );
 
-
-			if( $_SESSION['intra_user'] == 1 ) {
-				$_SESSION['intra_user'] = 229;
-				$_COOKIE["intra_user"] = 229;
-				}
-
 			header( 'Location: ?page='.$user[0][9].'' );
 			}
 		else {
@@ -151,11 +143,6 @@ elseif( isset($_POST['username'] ) && isset($_POST['password'] ) ) {
 		securityAlert( $_POST['username'], $_POST['password'] );
 		}
 	}
-	}
-
-
-if( $_SESSION['intra_user'] == "1") {
-	//$_SESSION['intra_user'] = "351";
 	}
 
 
@@ -305,7 +292,7 @@ else $background = "#103d8b";
 		?>
 		</div>
 		
-		<?php if( ( $_SESSION['intra_user'] == "1" OR $_SESSION['intra_user'] == "7" ) && !isMobile() ) { ?>
+		<?php if( !empty( $rights['sys_log'] ) && !isMobile() ) { ?>
 			<div id="freespace">
 				<?php
 					$total = disk_total_space("/var/www/html/client");

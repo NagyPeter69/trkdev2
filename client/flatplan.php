@@ -672,7 +672,7 @@ $allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
      // FlatplanStages==1 job, $_GET['opt'] is force-blanked above and can
      // never equal "FIN", so without this the hotlink item would silently
      // never render for these jobs even for an admin with sendHotlink rights.
-     if( $user[0][0] == "1" && ( $_GET["opt"] == "FIN" || $stages1 ) && $rights["sendHotlink"] ) { ?>
+     if( ( $_GET["opt"] == "FIN" || $stages1 ) && $rights["sendHotlink"] ) { ?>
   	<hr style="padding: 0;">
   	<li data-action="hotlink"><?= $lang["flatplan"]["sendHotlink"] ?></li>
   <? } ?>

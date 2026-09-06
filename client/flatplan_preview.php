@@ -162,10 +162,6 @@ if( $_GET["part"] != "" ) {
 	$part = 'AND part="'.$_GET["part"].'"';
 	}
 
-if( $_SESSION['intra_user'] == "1") {
-	//var_dump( $magazine );
-	}
-	
 // Scoped by $part to match flatplan_reloadbg.php's equivalent $packs
 // query (the one that actually drives prev/next navigation after the
 // first AJAX reload) - this initial load was missing that scoping
@@ -228,9 +224,6 @@ if( $_GET['clk'] == '' or $_GET['p'] == '' ) {
 		}
 	//echo $condition;
 
-	if( $_SESSION['intra_user'] == "1") {
-		//var_dump( $condition );
-		}
 	$firstPage = sql_get( 'pageinfo', $condition, 'id,page' );
 
 	// Still nothing for the current stage/part - fall back to the

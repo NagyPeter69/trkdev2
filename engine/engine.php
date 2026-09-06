@@ -254,6 +254,23 @@ function clearRememberToken( $accountId ) {
 	sql_update( 'accounts', "remember_token=NULL", "id='".(int) $accountId."'" );
 	}
 
+// hotlinks.time_expire was collected at creation (hotlinkApply.php) and
+// validated only there - nothing ever rechecked it once the link existed,
+// so an "expired" review hotlink kept granting access forever regardless
+// of whether anyone had visited it before the expiry date. Every hash-based
+// entry point into `hotlinks` should go through this instead of a raw
+// sql_get(), so a lapsed link stops working the moment it lapses, not just
+// when someone happens to look at time_expire. Empty return means exactly
+// what "not found" already means to every caller (same shape as sql_get:
+// one numeric-indexed row, or none).
+function getValidHotlink( $hash ) {
+	$row = sql_get( 'hotlinks', 'hashtag="'.$hash.'"', '*' );
+	if( empty( $row[0][0] ) || $row[0][6] < time() ) {
+		return array();
+		}
+	return $row;
+	}
+
 // "Multiple Logins" enforcement. When a user with multiplelogin=0 logs in
 // again, the *previous* session was never actually invalidated anywhere -
 // logged_in/remember_token are per-account, not per-session, so the old

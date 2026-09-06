@@ -355,7 +355,7 @@ include_once('../../engine/engine.php');
 	// gate the same way here, once, for every op, rather than patching each
 	// individually. See client/plugins/pubsApply.php's 2026-09-05 fix for
 	// the session-based equivalent used everywhere else in this pass.
-	$vHotlink = sql_get( 'hotlinks', 'hashtag="'.( $_GET['hash'] ?? '' ).'" LIMIT 1', '*' );
+	$vHotlink = getValidHotlink( $_GET['hash'] ?? '' );
 	if( empty( $vHotlink[0][0] ) ) {
 		print json_encode( array( array( "Unauthorized" ) ) );
 		exit;

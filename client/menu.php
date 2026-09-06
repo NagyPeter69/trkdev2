@@ -77,19 +77,7 @@
 					echo "<li class='"; if( $_GET['page'] == 'advertisement' ) { echo 'selected'; } echo "'><a href='?page=advertisement'>".$lang['menu']['advertisement']."</a></li>";
 					}
 				//	}
-				
-				//if( URL == "trkdev.colorcom.hu" ) {
-				if( 0 ) {
-					if( $user[0][0] == "1" ) {
-						echo "<li class='planner "; if( $_GET['page'] == 'design' ) { echo 'selected'; } echo "'><a href='?page=design_wideview'>".$lang['menu']['design_wideview']."</a></li>";
-						}
-					
-					$showToDesign = array( "1", "7", "56", "44", "156", "23", "25", "24" );
-					if( in_array( $user[0][0], $showToDesign ) ) {
-						echo "<li class='planner "; if( $_GET['page'] == 'design' ) { echo 'selected'; } echo "'><a href='?page=design'>".$lang['menu']['design']."</a></li>";
-						}
-					}
-				
+
 				if( $user[0][11] != '' && !$noApprovalWorkflow ) {
 					echo "<li class='"; if( $_GET['page'] == 'flatplan' ) { echo 'selected'; } echo "'><a href='?page=flatplan'>".$lang['menu']['flatplan']."</a></li>";
 					}

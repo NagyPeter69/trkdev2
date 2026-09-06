@@ -1,6 +1,6 @@
 <?
 if( $_GET["hash"] != "" ) {
-	$check = sql_get( "hotlinks", "hashtag='".$_GET["hash"]."'", "*" );
+	$check = getValidHotlink( $_GET["hash"] );
 	if( $check[0][0] == "" ) {
 		header( 'Location: index.php' );
 		}
