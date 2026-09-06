@@ -1194,6 +1194,58 @@ this was verified on trkdev2 (2026-08-07, using real `test1user@colorcom.hu`/
 `test2user@colorcom.hu` mailboxes via IMAP against `mail.colorcom.hu`) — don't just trust the
 config file was edited correctly.
 
+### Environment-identity consolidation, post-cutover (2026-09-06)
+
+**Heads up for a fresh reader**: the cutover this section and "Machines involved"/"Deploying to
+production" above still describe as future work has, in fact, already happened — this machine
+(hostname `trk`, `trk.colorcom.hu`) is the post-cutover production box, not a separate
+not-yet-built target. See `PRODUCTION_MIGRATION_RUNBOOK.md` for the authoritative account of
+that event; the sections above haven't been rewritten to reflect it yet, only patched around
+the edges (this one included).
+
+The cutover renamed this box to `trk.colorcom.hu` and lifted the TestCo-only Switch
+restriction on the web-request path — but `TRKDEV_ENVIRONMENT` turned out to live in **two
+separately-maintained places** that had silently drifted apart: `www.conf`'s
+`env[TRKDEV_ENVIRONMENT]` was hardcoded to `production` (so every php-fpm-served request was
+already unrestricted), while `/etc/trkdev-db.env` — sourced fresh by every cron invocation,
+including `client/cron/switch_sync_worker.php` (see "The Enfocus Switch integration" above) —
+still said `dev`. Net effect: the **async Switch queue worker was still silently restricting
+to TestCo** while the synchronous web path had already opened up — a live inconsistency, not a
+hypothetical one. Found while removing a stale TestCo test publication (`RegFullEU`/`PRFE`)
+and confirmed directly: non-TestCo jobs were already going through via the web path, contrary
+to what the stale `.env` value implied.
+
+**Fixed** by making `/etc/trkdev-db.env` the single file either consumer ever needs to read:
+- New systemd drop-in `/etc/systemd/system/php8.4-fpm.service.d/override.conf`
+  (`EnvironmentFile=/etc/trkdev-db.env`) makes php-fpm's master process load it at start.
+- `/etc/php/8.4/fpm/pool.d/www.conf`'s 7 `env[VAR]` lines (`TRKDEV_DB_PASSWORD`,
+  `TRKDEV_ENVIRONMENT`, `TRKDEV_MAIL_PASSWORD`, `TRKDEV_MAIL_WF_PASSWORD`, `TRKDEV_R3_TOKEN`,
+  `TRKDEV_SWITCH_PASSWORD`, `TRKDEV_DYNAPDF_LICENSE_KEY`) changed from hardcoded literals to
+  `env[VAR] = $VAR` pull-throughs — FPM now reads each from its own inherited process
+  environment (the file above) instead of maintaining a second, unsynced copy.
+- Cron already sourced the file directly (`bash -c 'set -a; source /etc/trkdev-db.env; ...'`,
+  see "Cron jobs" above) — unchanged, now genuinely the same source php-fpm reads too.
+- Verified end-to-end via a temporary probe script hit over the real nginx→php-fpm path
+  (deleted immediately after use, not left behind): all 7 vars present with correct lengths,
+  `TRKDEV_ENVIRONMENT=production` confirmed live, not just in the config file. A raw
+  `/proc/<pid>/environ` read was tried first and came back empty despite the file loading
+  correctly (`systemctl cat` showed the drop-in merged) — apparently some ptrace/hidepid
+  restriction on this box, not an actual problem with the fix; the live-request probe is the
+  reliable way to check this, not that file.
+
+Two more stale-identity leftovers from the same cutover, fixed alongside this:
+- `/etc/hosts` still mapped `trk.colorcom.hu` to `10.10.30.63` (this box's address at cutover
+  time) instead of its current `10.10.30.60` (reassigned since) — corrected.
+- `/etc/nginx/sites-enabled/trkdev`'s `server_name` on both server blocks still said
+  `trkdev2.colorcom.hu trkdev2` (the pre-cutover dev hostname) — changed to
+  `trk.colorcom.hu trk`, config validated (`nginx -t`) and reloaded. Harmless in practice
+  (`default_server` on both blocks meant it answered any Host header regardless), but
+  misleading if ever read as the source of truth for this box's identity.
+
+**Not yet independently re-verified**: the iptables-level Switch-connectivity restriction
+mentioned in "The Enfocus Switch integration" above — this pass only reconciled the
+`TRKDEV_ENVIRONMENT`-gated application-layer check, not the separate network-layer rule.
+
 ### Known schema deltas vs. production — non-exhaustive, a real diff is still required
 
 Per [[production_release_plan]] (stated by the project owner 2026-08-02): copying prod's
