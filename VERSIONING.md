@@ -16,8 +16,8 @@ here means "changes what a deploy of this app needs to handle," not "breaks a pu
 
 ## It's automatic — you don't edit VERSION by hand
 
-`bin/git-hooks/post-commit` runs `bin/bump-version.sh` after every commit, which bumps
-`VERSION` based on that commit's message:
+`bin/git-hooks/commit-msg` runs `bin/bump-version.sh` against the commit message you're
+about to create, which bumps `VERSION` based on it:
 
 | Commit message looks like...                          | Bump  |
 |---------------------------------------------------------|-------|
@@ -36,18 +36,31 @@ VERSION` before committing — the hook only bumps when *it* changes the file, s
 edit made in the same commit is left alone the next time the hook runs (it bumps from
 whatever's currently on disk, so your manual value becomes the new baseline).
 
-`engine/build_info.php` (`APP_VERSION`/`APP_BUILD`/`APP_BUILD_DATE`, shown at the bottom
-of the hamburger menu, admin-only) regenerates from `VERSION` + the current commit right
-after the bump, same as it always has.
+A `commit-msg` hook runs *before* the commit object exists, which is what lets the bump
+land inside the very commit that triggered it (see below) - unlike `engine/build_info.php`,
+which still regenerates in `post-commit` afterward, same as it always has.
 
-## The one thing to know: it lands as an uncommitted change
+## The one thing to know: engine/build_info.php still lands as an uncommitted change
 
-Like `engine/build_info.php` already did before this, the bump modifies `VERSION` in the
-working tree but doesn't fold itself into the commit that triggered it (a `post-commit`
-hook runs after the commit already exists — that's simpler and safer than rewriting the
-commit you just made). It just rides along, uncommitted, until your next commit picks it
-up — no action needed unless you're about to switch branches or stash, in which case
-commit or stash it first like any other pending change.
+`VERSION` itself no longer trails - `bin/git-hooks/commit-msg` runs before the commit is
+created and stages its bump (`git add VERSION`), so the new number is committed atomically
+with your actual change, same commit, nothing left dangling.
+
+`engine/build_info.php` (`APP_VERSION`/`APP_BUILD`/`APP_BUILD_DATE`, shown at the bottom of
+the hamburger menu, admin-only) is the one exception, and structurally can't be fixed the
+same way: it embeds the actual commit hash, which doesn't exist yet at `commit-msg` time -
+only `post-commit` (after the commit object exists) can read the real one. So it still
+regenerates afterward and still rides along uncommitted until your next commit picks it up
+- no action needed unless you're about to switch branches or stash, in which case commit or
+stash it first like any other pending change. This is a much smaller residue than before
+(one purely cosmetic build-metadata file, not the version number itself), and it's the same
+lag this file already had even before VERSION bumping existed.
+
+**Fail-safe by design**: `bin/git-hooks/commit-msg` never blocks a commit, even if
+`bump-version.sh` itself has a bug - a `commit-msg` hook can abort the commit outright on a
+non-zero exit, which would be far worse than a stale version number, so the wrapper always
+exits 0 and just logs a warning on failure, falling back to `VERSION` being left as-is
+(exactly like it behaved before this hook existed).
 
 ## Setup
 

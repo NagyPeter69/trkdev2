@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Bumps VERSION based on the commit message being finalized, before the
+# commit object exists - so the new value lands IN this commit instead of
+# trailing it afterward as a separate uncommitted change (what the old
+# post-commit-based version of this did; see VERSIONING.md).
+#
+# Deliberately fail-safe: a bug in bin/bump-version.sh must never be able
+# to block a real commit from landing. This wrapper always exits 0 - on
+# any failure it just logs a warning and falls back to the old behavior
+# (VERSION stays as-is, picked up whenever it next changes), never worse
+# than that. This is why the actual bump logic lives in bump-version.sh
+# (which is free to fail fast and strict on its own) while this wrapper
+# is the one guaranteeing the commit itself is never at risk. Installed
+# via bin/install-git-hooks.sh.
+cd "$(git rev-parse --show-toplevel)" 2>/dev/null || exit 0
+
+if ! bin/bump-version.sh "$1"; then
+	echo "commit-msg hook: VERSION bump failed - committing without it (VERSION left unchanged, same as before this hook was added)" >&2
+	fi
+
+exit 0

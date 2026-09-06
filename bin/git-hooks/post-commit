@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Bumps VERSION per the commit that was just made, then keeps
-# engine/build_info.php (APP_VERSION/APP_BUILD/APP_BUILD_DATE) in sync with
-# it. Installed via bin/install-git-hooks.sh - see that file for how these
-# hooks get wired up. See VERSIONING.md for the bump policy.
+# Keeps engine/build_info.php (APP_VERSION/APP_BUILD/APP_BUILD_DATE) in
+# sync with the commit that was just made. Unlike VERSION's bump (moved to
+# bin/git-hooks/commit-msg - see VERSIONING.md), this can only run here:
+# it needs the actual commit hash, which doesn't exist until the commit
+# object is created, so it necessarily trails the commit it describes by
+# one - same as it always has. Installed via bin/install-git-hooks.sh.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-bin/bump-version.sh
 bin/update-build-info.sh
