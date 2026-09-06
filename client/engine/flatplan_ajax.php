@@ -2160,9 +2160,9 @@
 		}
 
 	if( $_GET['op'] == 'advert_preview_reloadbg' ) {
-		$user = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', '*' );	
+		$user = sql_get( 'accounts', 'id="'.( $_SESSION['intra_user'] ?? '' ).'"', '*' );
 		if( $_POST['switchTo'] != "" && $user[0][26] != 0  ) {
-			sql_update( 'accounts', 'cutBox="'.$_POST['switchTo'].'"', 'id="'.$_GET['intra_user'].'"' );
+			sql_update( 'accounts', 'cutBox="'.$_POST['switchTo'].'"', 'id="'.( $_SESSION['intra_user'] ?? '' ).'"' );
 			}
 
 		$preview = sql_get( 'ads', 'id=\''.$_GET['id'].'\'', '*' );
@@ -2197,12 +2197,12 @@
 		$file_name = strtoupper( $preview[0][2] ).'_'.$magazine[0][3].$issueSegment.'_'.$type;
 		$path = "advertisements/".$file_name.".pdf";
 
-		$user = sql_get( 'accounts', 'id="'.$_GET['intra_user'].'"', '*' );	
+		$user = sql_get( 'accounts', 'id="'.( $_SESSION['intra_user'] ?? '' ).'"', '*' );
 		$user[0][15] = "mediabox";
-			
+
 		$colors = $_POST['colors'];
-		
-		if( $user[0][14] == 'pair' && $_GET["p"]%2 == 1 && $_GET["p"] != 1 ) {
+
+		if( $user[0][14] == 'pair' && intval( $_GET["p"] ?? 0 )%2 == 1 && $_GET["p"] != 1 ) {
 			$_GET["p"]--;
 			}
 		$bgDPI = 72;
