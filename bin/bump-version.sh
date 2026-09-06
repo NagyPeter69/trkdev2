@@ -1,33 +1,27 @@
 #!/usr/bin/env bash
-# Bumps VERSION based on the commit message about to be committed, passed
-# as $1 - the path git's commit-msg hook gives us to the pending message
-# file (see bin/git-hooks/commit-msg, which calls this). Also stages the
-# bump (git add VERSION) so it lands IN the commit being created, instead
-# of trailing it afterward as a separate uncommitted change - a commit-msg
-# hook runs before the commit object exists, so anything staged here is
-# picked up by that commit. See VERSIONING.md for the bump rules this
-# encodes.
+# Bumps VERSION based on the commit message of the commit that was just
+# made (HEAD). Called from bin/git-hooks/post-commit, before
+# update-build-info.sh regenerates engine/build_info.php from the new
+# VERSION. See VERSIONING.md for the bump rules this encodes.
 #
-# Kept strict (set -e) deliberately: bin/git-hooks/commit-msg is the one
-# responsible for making sure a failure here can never block the actual
-# commit - this script should fail fast and loud rather than risk writing
-# a half-computed VERSION.
+# The bump lands in VERSION as an uncommitted working-tree change - same
+# lag engine/build_info.php already has (see VERSIONING.md). It rides
+# along in your next commit; there's no requirement to commit it on its
+# own.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-
-MSG_FILE="${1:?usage: bump-version.sh <commit-message-file>}"
 
 if [[ ! -f VERSION ]]; then
 	exit 0
 fi
 
 # Merge commits aren't feature work - leave VERSION alone.
-HEADER=$(head -n1 "$MSG_FILE")
+HEADER=$(git log -1 --format=%s)
 if [[ "$HEADER" == Merge\ * ]]; then
 	exit 0
 fi
 
-BODY=$(cat "$MSG_FILE")
+BODY=$(git log -1 --format=%B)
 
 MAJOR_RE='^[a-zA-Z]+(\([^)]*\))?!:'
 MINOR_RE='^(feat|feature)(\([^)]*\))?:'
@@ -48,5 +42,4 @@ esac
 
 NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 echo "$NEW_VERSION" > VERSION
-git add VERSION
 echo "VERSION bumped ($BUMP): -> ${NEW_VERSION}"
