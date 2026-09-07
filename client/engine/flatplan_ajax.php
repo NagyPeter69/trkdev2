@@ -2751,15 +2751,22 @@
 				$txt .= "</div>";
 				
 				if( $handout[0]["arrived"] == "1" ) {
-					$txt2 .= '<li onclick="downloadHandout(\''.$handout[0]["id"].'\')">'.$lang["flatplan"]["downloadh"].'</li>';
-					$check = str_replace( "handout", "stream", $handout[0]["filename"] );
-					if( is_file( TRKPATH."/handout/".$check ) ) {
-						$txt2 .= '<li onclick="viewhandout(\''.$check.'\')">'.$lang["flatplan"]["viewhandout"].'</li>';
-						}					
-					$txt2 .= '<li onclick="settingsPanel(\'hotlink_handout\', undefined, \''.$handout[0]["id"].'\'); $(\'#handoutBox\').hide(100);">'.$lang["flatplan"]["handouthotlink"].'</li>';
-					//if( $handout[0]["changed"] == 1 ) {
-						$txt2 .= '<li onclick="generateHandout()" style="margin-top: 4px;">'.$lang["flatplan"]["generatenewh"].'</li>';
-					//	}					
+					// A page delivered after this handout was generated flips
+					// "changed" to '1' (page_pdf-handler.php /
+					// page_pdf_teszt-handler.php) - the handout on disk no
+					// longer reflects the current flatplan, so downloading it,
+					// viewing it as a flipbook, or handing its hotlink out for
+					// review would show stale pages. Only "Refresh Handout"
+					// (re-generate) stays available in that case.
+					if( $handout[0]["changed"] != "1" ) {
+						$txt2 .= '<li onclick="downloadHandout(\''.$handout[0]["id"].'\')">'.$lang["flatplan"]["downloadh"].'</li>';
+						$check = str_replace( "handout", "stream", $handout[0]["filename"] );
+						if( is_file( TRKPATH."/handout/".$check ) ) {
+							$txt2 .= '<li onclick="viewhandout(\''.$check.'\')">'.$lang["flatplan"]["viewhandout"].'</li>';
+							}
+						$txt2 .= '<li onclick="settingsPanel(\'hotlink_handout\', undefined, \''.$handout[0]["id"].'\'); $(\'#handoutBox\').hide(100);">'.$lang["flatplan"]["handouthotlink"].'</li>';
+						}
+					$txt2 .= '<li onclick="generateHandout()" style="margin-top: 4px;">'.$lang["flatplan"]["generatenewh"].'</li>';
 					}
 				else {
 					$txt2 .= '<li onclick="generateHandout()" style="margin-top: 0px;">'.$lang["flatplan"]["generateh"].'</li>';

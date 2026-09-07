@@ -683,7 +683,7 @@ if( $go ) {
 					// European job where $_POST["part"] is empty.
 					$color = partDetect( $p_id[0][0], $page, "color", $_POST["part"] );
 					
-					$hand = sql_aget( "flatplan_handout", "pubid='".$p_id[0][0]."' order by id DESC", "*" );
+					$hand = sql_aget( "flatplan_handout", "pub_id='".$p_id[0][0]."' order by id DESC", "*" );
 					if( !empty( $hand[0]["id"] ) ) {
 						sql_update( "flatplan_handout", "changed='1'", "id='".$hand[0]["id"]."'" );
 						}
