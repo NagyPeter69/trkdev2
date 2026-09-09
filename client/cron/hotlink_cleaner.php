@@ -32,12 +32,25 @@ for( $i = 0; $i < count( $rows ); $i++ ) {
 //    - otherwise, fall back to the login account's own last-use date
 //      (not this row's creation date - a job can stay legitimately open
 //      for a long time) and only prune past a generous one-year mark.
+//
+// user_id='0' is not an orphan - it's assetApply.php's deliberate sentinel
+// for a Resend Download Link sent to a recipient with no accounts row at
+// all (see index2.php's hash handling, which sets intra_user=0 +
+// visitor_pub for exactly this case). `LEFT JOIN accounts u ON u.id =
+// a.user_id` can never match id='0', so the original `u.id IS NULL` check
+// treated every one of these as an orphaned account and deleted it on the
+// very next run after it was sent - discovered 2026-09-09 when a link
+// sent the day before had already been purged. There's no account here to
+// read a last-use date from, so fall back to the row's own creation time
+// for staleness instead, same one-year backstop.
 $cutoff = time() - ( 86400 * 365 );
 $rows = sql_aget(
 	"adhoc_hotlinks a
 		LEFT JOIN accounts u ON u.id = a.user_id
 		LEFT JOIN magazines m ON m.id = a.magazine_id",
-	"u.id IS NULL OR m.id IS NULL OR u.lastlogin < ".$cutoff,
+	"m.id IS NULL
+		OR ( a.user_id != '0' AND ( u.id IS NULL OR u.lastlogin < ".$cutoff." ) )
+		OR ( a.user_id = '0' AND a.time < ".$cutoff." )",
 	"a.id"
 	);
 for( $i = 0; $i < count( $rows ); $i++ ) {
