@@ -17,8 +17,11 @@ else {
 		}
 	}
 	
-if( !empty( $_SESSION["visitor_pub"] ) ) {
-	$tempPub = sql_get( 'publications', 'id="'.$_SESSION["visitor_pub"].'"', '*' );
+// Resend Download Link visitor (accounts.type='visitor', usertype='Temp') -
+// scoped to exactly the one publication set on the account at creation time
+// (assetApply.php's resend handler), not a separate session variable.
+if( $user[0][36] == "Temp" && $user[0][3] == "visitor" && !empty( $user[0][37] ) ) {
+	$tempPub = sql_get( 'publications', 'id="'.$user[0][37].'"', '*' );
 	$_GET['id'] = $tempPub[0][0];
 	$_GET['code'] = $tempPub[0][10];
 	}

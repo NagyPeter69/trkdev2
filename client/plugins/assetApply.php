@@ -40,14 +40,36 @@ if( $_GET["sub"] == "resend" ) {
 		if( count( $mails ) > 0 ) {
 			for( $i = 0; $i < count( $mails ); $i++ ) {
 				$hash = md5( "adhocuserdownload-".time()."-".$mails[$i] );
-				$user = sql_aget( "accounts", "email='".$mails[$i]."' AND showMagazines like '%".$mag[0]["id"]."%'", "*" );
-				
-				if( empty( $user[0]["id"] ) ) {
-					$user[0]["id"] = 0;
+				$recipient = sql_aget( "accounts", "email='".$mails[$i]."' AND showMagazines like '%".$mag[0]["id"]."%'", "*" );
+
+				if( empty( $recipient[0]["id"] ) ) {
+					// No account for this recipient - create a real, minimal one
+					// instead of the old user_id='0' sentinel. That sentinel broke
+					// every generic empty($user[0][0])-style auth gate and
+					// lastlogin-based cleanup query in the app (id=0 reads as
+					// "empty"/"orphaned" everywhere), causing two separate
+					// production bugs (assets_ajax.php Unauthorized, and
+					// hotlink_cleaner.php deleting the link overnight). Mirrors
+					// the existing temp-account shape used for job uploaders
+					// (see pubsApply.php's "unknown client" branch) but with its
+					// own type ('visitor', not 'adhoc' - this isn't an
+					// upload-capable temp user) and a dedicated, permission-free
+					// group ("AssetDownloadVisitor" - looked up by name, not a
+					// hardcoded id, since this data row must exist on every
+					// environment's own user_groups table; see SYSTEM_STATE.md)
+					// so a download-link recipient can't inherit that flow's
+					// elevated rights. temppubid scopes them to this one
+					// publication, read directly off the account by
+					// assets.php/assets_ajax.php - no separate session variable
+					// needed.
+					$visitorGroup = sql_aget( "user_groups", "name='AssetDownloadVisitor'", "id" );
+					$names = array( "name", "pass", "type", "publisher", "email", "full_name", "group", "usertype", "temppubid" );
+					$values = array( "", "", "visitor", "0", $mails[$i], "", $visitorGroup[0]["id"], "Temp", $pub[0]["id"] );
+					$recipient[0]["id"] = sql_add( "accounts", $names, $values );
 					}
 
 				$names = array( "user_id", "hash", "magazine_id", "email", "time", "redirecto", "pubid" );
-				$values = array( $user[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets", $pub[0]["id"] );
+				$values = array( $recipient[0]["id"], $hash, $pub[0]["magazine_id"], $mails[$i], time(), "page=assets", $pub[0]["id"] );
 				sql_add( "adhoc_hotlinks", $names, $values );
 					
 				$to = $mails[$i]."|".$mails[$i];

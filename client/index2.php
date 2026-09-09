@@ -36,15 +36,29 @@ if( $_GET["hash"] != "" ) {
 			$_SESSION['intra_user'] = $check[0][1];
 			issueRememberToken( $check[0][1] );
 			$_SESSION['intra_timer'] = time();
-			
-			
+
+			// Unlike username/password login, this hash-based path never
+			// updated logged_in/lastlogin - harmless for the account itself,
+			// but hotlink_cleaner.php's adhoc_hotlinks staleness check reads
+			// lastlogin as "last actually used", and a real accounts row that
+			// only ever authenticates this way (both this and the pre-existing
+			// type='adhoc' job-uploader flow) would otherwise have
+			// lastlogin='0' forever - looking permanently stale and getting
+			// its hotlink deleted the very first night after creation,
+			// regardless of how recently/actively it's used. Confirmed live:
+			// this was already silently happening to type='adhoc' accounts
+			// too, just masked until user_id='0' (a different bug) got fixed.
+			sql_update( "accounts", "logged_in='1', lastlogin='".time()."'", 'id=\''.$_SESSION['intra_user'].'\'' );
+
 			if( $check[0][6] == "page=assets" ) {
-				$_SESSION['visitor_pub'] = $check[0][7];
+				// Scoping to one publication now lives on the account itself
+				// (temppubid, set at account-creation time - see
+				// assetApply.php's resend handler) rather than a separate
+				// session variable, same as the existing adhoc/filetransfer
+				// temp-account pattern below.
 				header( 'Location: ?page=assets' );
 				}
 			else {
-				sql_update( "accounts", "logged_in='1'", 'id=\''.$_SESSION['intra_user'].'\'' );
-						
 				if( !empty( $check[0][6] ) ) {
 					header( 'Location: ?'.$check[0][6] );
 					die();

@@ -1430,6 +1430,69 @@ finished/live/archived-with-ads and Resize-workflow image packs) was copied for 
 above documents the on-disk path conventions discovered for each, so a future full migration
 knows what it's actually copying rather than rediscovering the directory layout from scratch.
 
+- `user_groups` row `name='AssetDownloadVisitor'` — new **data** row (no schema change),
+  2026-09-09: a permission-free rights group (every flag `0`), created for the "Resend
+  Download Link" external-recipient flow. `client/plugins/assetApply.php`'s `sub==resend`
+  handler looks it up **by name**, not a hardcoded id, specifically so this doesn't
+  silently break if a fresh environment's `user_groups` autoincrement assigns it a
+  different id - but the row itself still needs to exist on every environment (dev,
+  staging, prod) for that flow to work at all. See "Replacing the `user_id='0'`
+  sentinel" below for why this exists.
+
+### Replacing the `user_id='0'` sentinel (2026-09-09)
+
+The "Resend Download Link" flow (`client/plugins/assetApply.php`'s `sub==resend`) sends
+external recipients a hash-based link to view/download one publication's assets
+(`client/assets.php`, via `client/index2.php`'s `adhoc_hotlinks` hash resolution). When
+the recipient has no existing `accounts` row, this used to write `user_id='0'` into
+`adhoc_hotlinks` as a "no real account" sentinel. That caused two separate production
+bugs, both from the same mechanism: `id=0` breaks any `LEFT JOIN accounts` (no row has
+`id=0`, so it always looks orphaned) and any `empty($user[0][0])` gate (PHP's `empty()`
+treats `0` as empty, so even the row's own id column reads as "not there"):
+1. `client/engine/assets_ajax.php`'s blanket auth gate rejected every visitor session as
+   `Unauthorized` (fixed with an `$isVisitor` carve-out, commit `483f69f`).
+2. `client/cron/hotlink_cleaner.php`'s staleness query treated every `user_id='0'` row
+   as an orphaned account and deleted it the first midnight after creation, regardless
+   of age (fixed, commit `2408341`).
+
+Both were correct patches but bolted onto a design that fought the rest of the app's
+conventions. Fixed properly by reusing the shape the codebase already has for
+"temporary, job-scoped, real account with no password" - `accounts.type='adhoc'`
+(`client/plugins/pubsApply.php`, `client/plugins/userApply.php`, consumed via
+`accounts.temppubid` by `client/filetransfer.php`) - but as a **new, distinct**
+`type='visitor'` with a dedicated, permission-free `user_groups` row
+(`AssetDownloadVisitor`, see the schema-delta note above), not the existing `'adhoc'`
+type's `group=14` ("ArtDirectorElevated" - real ad-upload/approve/reject rights, correct
+for that flow's actual temp uploaders, wildly over-privileged for a download-only
+recipient). `accounts.temppubid` replaces the old bespoke `$_SESSION['visitor_pub']` for
+scoping to one publication - `assets.php`/`assets_ajax.php` read it directly off the
+account.
+
+**A real account row fixes the join/empty()/cleanup bugs but does not by itself limit
+what the recipient can do** - most of the ~28 blanket `if(empty($user[0][0]))
+Unauthorized` gates across `client/engine/*_ajax.php`/`client/plugins/*Apply.php` check
+only "is there an account row," not `user_groups` rights (confirmed: several of them
+build `$rights` but never read a single `$rights[...]` value before acting). The
+permission-free group is a backstop for whatever endpoints *do* check rights, but the
+real protection for this flow is `assets_ajax.php`'s explicit `$isVisitor` carve-out,
+kept intentionally rather than assumed-safe-because-empty-group. **This residual
+exposure already existed** for the pre-existing `type='adhoc'` accounts too (and worse
+there, since `group=14` has real permissions) - not something this change introduces,
+but worth hardening (checking specific rights, not just authentication, on those ~28
+endpoints) as a separate future project if it matters enough to prioritize.
+
+**Also found and fixed along the way**: hash-based login (`client/index2.php`'s
+`adhoc_hotlinks` branch) never updated `accounts.lastlogin` (only username/password
+login did). Since `hotlink_cleaner.php`'s staleness check reads `lastlogin` as "last
+actually used," any account that only ever authenticates via hash - both this new
+`'visitor'` type and the pre-existing `'adhoc'` type - would have `lastlogin='0'`
+forever, looking permanently stale and having its `adhoc_hotlinks` row deleted the very
+first night after creation regardless of how recently/actively it's used. Confirmed
+live this was already silently happening to `'adhoc'` accounts too, just masked until
+the `user_id='0'` bug above got fixed and exposed it. `index2.php` now updates
+`lastlogin` (and `logged_in`) on every hash-based login, matching what
+`hotlink_cleaner.php` already assumed.
+
 ## Full database schema
 
 See `db/schema.sql` in this repo — a `mariadb-dump --no-data` snapshot taken directly from

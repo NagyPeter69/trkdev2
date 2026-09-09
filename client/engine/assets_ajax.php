@@ -19,19 +19,21 @@ if( isset( $_SESSION['intra_user'] ) ) {
 // See client/plugins/pubsApply.php's 2026-09-05 fix - none of this file's
 // op== handlers checked authentication before running. Same fix applies
 // here, but this file also backs the "Resend Download Link" external asset
-// flow: assetApply.php's sub==resend stores an adhoc_hotlinks row with
-// user_id=0 for a recipient with no accounts row, and index2.php's hash
-// handling sets $_SESSION['intra_user']=0 + $_SESSION['visitor_pub'] for
-// that case (see client/assets.php, which already scopes its own render to
-// $_SESSION['visitor_pub']). A blanket accounts-row requirement broke every
-// externally-sent download link with "Unauthorized". Recognize that visitor
-// session here too, but keep it read-only and scoped to its own pub - see
-// the per-op checks below.
-$isVisitor = empty( $user[0][0] ) && !empty( $_SESSION['visitor_pub'] );
-if( empty( $user[0][0] ) && !$isVisitor ) {
+// flow: assetApply.php's sub==resend creates a real, scoped accounts row
+// (type='visitor', usertype='Temp', temppubid=<pub id>) for a recipient with
+// no account of their own, instead of the old user_id='0' sentinel that used
+// to break this exact gate (see git history - 483f69f). A real account has a
+// real, non-empty id, so the check below already lets it through; what still
+// needs an explicit carve-out is keeping this account read-only and scoped
+// to its own pub, since the group (19, "AssetDownloadVisitor") has no
+// permissions but most op== handlers here don't consult $rights at all - the
+// checks below are the only thing actually enforcing that scope.
+if( empty( $user[0][0] ) ) {
 	print json_encode( array( array( "Unauthorized" ) ) );
 	exit;
 	}
+
+$isVisitor = ( $user[0][36] == "Temp" && $user[0][3] == "visitor" );
 
 // Mutating ops and cross-pub browsing stay staff-only - a visitor is scoped
 // to exactly the one publication their link was sent for.
@@ -40,13 +42,13 @@ if( $isVisitor ) {
 		print json_encode( array( array( "Unauthorized" ) ) );
 		exit;
 		}
-	if( in_array( $_GET["op"], array( "loadAssets", "loadTypes" ) ) && $_GET["pub"] != $_SESSION['visitor_pub'] ) {
+	if( in_array( $_GET["op"], array( "loadAssets", "loadTypes" ) ) && $_GET["pub"] != $user[0][37] ) {
 		print json_encode( array( array( "Unauthorized" ) ) );
 		exit;
 		}
 	if( $_GET["op"] == "loadPack" ) {
 		$packOwner = sql_aget( "assets", "id='".$_GET["id"]."'", "*" );
-		if( $packOwner[0]["pub_id"] != $_SESSION['visitor_pub'] ) {
+		if( $packOwner[0]["pub_id"] != $user[0][37] ) {
 			print json_encode( array( array( "Unauthorized" ) ) );
 			exit;
 			}
