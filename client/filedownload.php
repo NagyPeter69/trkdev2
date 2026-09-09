@@ -209,6 +209,16 @@ if( $single ) {
 	header("Content-Type: application/octet-stream");
 	header("Content-Transfer-Encoding: Binary");
 	header("Content-disposition: attachment; filename=\"".$origname."\"");
+	// Without an explicit Content-Length, nginx has no way to know the
+	// response size in advance (readfile() streams it byte by byte) and
+	// falls back to chunked transfer-encoding for the whole download -
+	// see bin/98-mtu-probing.README.md's sibling investigation for why
+	// that matters here: the Sophos UTM reverse-proxies trk.colorcom.hu,
+	// and chunked responses measurably throttle through it regardless of
+	// the recipient's own connection quality. filesize() is safe here on
+	// PHP 8.4/x64 even for multi-GB files (verified: PHP's filesize()
+	// only truncated past 2GB on 32-bit builds, not 64-bit).
+	header("Content-Length: ".filesize( $path."/".$name ));
 	readfile( $path."/".$name );
 	}
 elseif( $entries !== null ) {
