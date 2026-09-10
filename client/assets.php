@@ -20,7 +20,8 @@ else {
 // Resend Download Link visitor (accounts.type='visitor', usertype='Temp') -
 // scoped to exactly the one publication set on the account at creation time
 // (assetApply.php's resend handler), not a separate session variable.
-if( $user[0][36] == "Temp" && $user[0][3] == "visitor" && !empty( $user[0][37] ) ) {
+$isVisitorDownload = ( $user[0][36] == "Temp" && $user[0][3] == "visitor" && !empty( $user[0][37] ) );
+if( $isVisitorDownload ) {
 	$tempPub = sql_get( 'publications', 'id="'.$user[0][37].'"', '*' );
 	$_GET['id'] = $tempPub[0][0];
 	$_GET['code'] = $tempPub[0][10];
@@ -32,6 +33,7 @@ if( $user[0][36] == "Temp" && $user[0][3] == "visitor" && !empty( $user[0][37] )
 	<table id="tabla" cellspacing="0" cellpadding="0" style="width: 100%; table-layout:fixed;"><tbody>
 		<tr>
 			<td class="fp_left" valign="top" style="position: relative; background: rgb(146, 146, 146); width: 229px;">
+				<? if( !$isVisitorDownload ) { ?>
 				<div class='top_menu' >
 					<div style="padding: 10px; text-align: left;">
 						<div style='float: left;'>
@@ -41,24 +43,24 @@ if( $user[0][36] == "Temp" && $user[0][3] == "visitor" && !empty( $user[0][37] )
 								if( empty( $_GET['code'] ) ) {
 									$magazine = sql_get( 'magazines', 'id="'.$pubs[0][2].'"', 'code, type' );
 									sql_update( 'accounts', 'actual="'.$magazine[0][0].'_'.$pubs[0][10].'"', 'id="'.$_SESSION['intra_user'].'"' );
-									
+
 									if( $magazine[0][1] !== "Adhoc" ) {
 										$_GET['id'] = $magazine[0][0];
 										$_GET['code'] = $pubs[0][10];
 										}
 									}
-									
+
 								for( $i = 0; $i < count( $pubs ); $i++ ) {
 									$magazine = sql_get( 'magazines', 'id="'.$pubs[$i][2].'"', 'code, type, name' );
 									if( empty( $_GET['id'] ) ) {
 										$_GET['id'] = $pubs[$i][0]."_".$firstPage[0][0]."_".$firstPage[0][1];
 										}
-										
+
 									echo "<option class='pub_opt' value='".$pubs[$i][0]."_".$firstPage[0][0]."_".$firstPage[0][1]."' ";
 										if( $usettings["id"] == $pubs[$i][0]."_".$firstPage[0][0]."_".$firstPage[0][1] ) {
 											echo "selected";
 											}
-											
+
 										elseif( empty( $usettings["id"] ) && $_GET['code'] == $pubs[$i][10] && $_GET['id'] == $pubs[$i][0] ) {
 											echo "selected";
 											}
@@ -70,6 +72,7 @@ if( $user[0][36] == "Temp" && $user[0][3] == "visitor" && !empty( $user[0][37] )
 
 					</div>
 				</div>
+				<? } ?>
 				
 				<!--
 				<div style='clear:both;'></div>
