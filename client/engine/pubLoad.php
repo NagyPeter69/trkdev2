@@ -386,7 +386,13 @@ if( $_GET['op'] == 'load_publications' ) {
 								$txt .= "</div>";
 								$submanagemenet = getPubButtons( $status, $publications2[$y], $process, $rights );
 								$hambsvg = file_get_contents( TRKPATH."/images/settingsGray.svg" );
-								$txt .= "<div class='pubSettingsDot' onclick=\"issueOperation({".$submanagemenet."}, '".$magazines[$i][3]."', '".$publications2[$y][10]."' )\"><div class='".$magazines[$i][3]."_".$publications2[$y][10]."' style='pointer-events: none;'>".$hambsvg."</div></div>";
+								// This row (.issueline) isn't wrapped in the flex .pub_info
+								// container the primary row uses, so .pubSettingsDot gets
+								// none of the align-items:center vertical centering it
+								// normally relies on - float it like its siblings here and
+								// nudge it down to center within the 30px row, or it
+								// collapses onto the next row instead of sitting in this one.
+								$txt .= "<div class='pubSettingsDot' style='float:left; margin-top:4px;' onclick=\"issueOperation({".$submanagemenet."}, '".$magazines[$i][3]."', '".$publications2[$y][10]."' )\"><div class='".$magazines[$i][3]."_".$publications2[$y][10]."' style='pointer-events: none;'>".$hambsvg."</div></div>";
 								// Width padded beyond the raw status text (e.g. the
 								// "archiving" status's own label is itself a
 								// compound "Archiving... [spinner]" string, not
