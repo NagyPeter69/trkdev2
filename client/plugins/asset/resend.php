@@ -14,6 +14,15 @@ foreach($xpath as $temp) {
 	}
 
 $mails = trim( $xml->Item[$i]->Mails );
+
+// Default the resend mail's language to the job's own defined language
+// (PMD XML Item->Language, 'HU'/'EN' - the same field jobsettings/pubsApply.php
+// read for the job's Language dropdown), not the hardcoded Hungarian the mail
+// body used to always use.
+$jobLang = strtolower( (string) $xml->Item[$i]->Language );
+if( !in_array( $jobLang, array( 'hu', 'en' ) ) ) {
+	$jobLang = 'en';
+	}
 ?>
 
 <form id='subForm' method='post' action=''>
@@ -28,7 +37,21 @@ $mails = trim( $xml->Item[$i]->Mails );
 				<td valign="top" align='left'>
 					<textarea id='Mails' name='Mails' style='width: 170px; height: 60px; resize: none;'><?= str_replace( ";", "\n", $mails ) ?></textarea>
 				</td>
-			</tr>		
+			</tr>
+			<tr>
+				<td valign="top" align='left' width='50%' height='28px'><?= $lang['settings']['language'] ?></td>
+				<td valign="top" align='left'>
+					<select name='lang' id='lang'>
+					<?
+					foreach( array( 'hu', 'en' ) as $key ) {
+						echo "<option value='".$key."'";
+						if( $jobLang == $key ) echo " selected";
+						echo ">".$lang["settings"][ $key ]."</option>";
+						}
+					?>
+					</select>
+				</td>
+			</tr>
 		</table>
 		
 		<table class='panelTable' cellspacing='0' cellpadding='0'>

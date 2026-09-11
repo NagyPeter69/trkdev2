@@ -60,6 +60,13 @@
 				"downloadall" => "Összes letöltése",
 				"resendlink" => "Letöltési link újraküldése",
 				"emails" => "E-mail címek",
+				"resend_mail_subject" => "%s - Colorcom Tracker feltöltés",
+				"resend_mail_body" => "Kedves %s,<br>
+				<br>
+				a(z) %s kiadványhoz új fájlok lettek feltöltve amit a következő linkre kattintva tekinthet meg: %s.<br>
+				<br>
+				Üdvözlettel:<br>
+				Colorcom Media",
 				),
 	
 			"filetransfer" => array(

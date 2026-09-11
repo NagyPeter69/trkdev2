@@ -5,7 +5,15 @@ include_once( '../../engine/connect.php' );
 include_once( '../../engine/engine.php' );
 include_once( '../../engine/xml_handler.php' );
 
-include_once('../lang/en.php');
+// Resend mail's language is chosen in the dialog (asset/resend.php), default
+// there is the job's own defined language (PMD Language field) - same
+// selectable-language pattern as hotlinkApply.php's sendhotlink/sendhandout.
+if( !empty( $_POST["lang"] ) && in_array( strtolower( $_POST["lang"] ), array( 'hu', 'en' ) ) ) {
+	include_once('../lang/'.strtolower( $_POST["lang"] ).'.php');
+	}
+else {
+	include_once('../lang/en.php');
+	}
 
 $rights = array();
 if( isset( $_SESSION['intra_user'] ) ) {
@@ -74,14 +82,9 @@ if( $_GET["sub"] == "resend" ) {
 					
 				$to = $mails[$i]."|".$mails[$i];
 				$link = "https://".URL."/index.php?hash=".$hash;
-				$subject = "".$mag[0]["name"]." - Colorcom Tracker feltöltés";
-				$body = "Kedves ".$mails[$i].",<br>
-				<br>
-				a(z) ".$mag[0]["name"]." kiadványhoz új fájlok lettek feltöltve amit a következő linkre kattintva tekinthet meg: <a href='".$link."'>".$link."</a>.<br>
-				<br>
-				Üdvözlettel:<br>
-				Colorcom Media";
-					
+				$subject = sprintf( $lang["assets"]["resend_mail_subject"], $mag[0]["name"] );
+				$body = sprintf( $lang["assets"]["resend_mail_body"], $mails[$i], $mag[0]["name"], "<a href='".$link."'>".$link."</a>" );
+
 				produkcioSendmail( $subject, $body, $to );
 				error_log( "visszatértem" );
 				}

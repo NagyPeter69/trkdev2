@@ -60,6 +60,13 @@
 				"downloadall" => "Download All",
 				"resendlink" => "Resend Download Link",
 				"emails" => "E-mail Addresses",
+				"resend_mail_subject" => "%s - Colorcom Tracker Upload",
+				"resend_mail_body" => "Dear %s,<br>
+				<br>
+				New files have been uploaded to %s, available at the following link: %s.<br>
+				<br>
+				Best regards,<br>
+				Colorcom Media",
 				),
 				
 			"filetransfer" => array(
