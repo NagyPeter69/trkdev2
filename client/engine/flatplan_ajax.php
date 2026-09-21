@@ -1793,7 +1793,37 @@
 						$leftPage = sql_aget( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND page="'.$i.'" AND issue="'.$issue[0][10].'" AND state="" AND fin="'.$fin.'" ORDER BY page ASC LIMIT 1', '*' );
 						$rightPage = sql_aget( 'pageinfo', '(type="ad" OR type="magazine") AND code="'.$magazine[0][3].'" AND page="'.($i+1).'" AND issue="'.$issue[0][10].'" AND state="" AND fin="'.$fin.'" ORDER BY page ASC LIMIT 1', '*' );
 						
-						if( ( $leftPage[0]["width"] ?? 0 ) > 1 ) {
+						// A page past the job's declared length ($length, from
+						// getPartsMaxPage()) is exempt from wide-page scaling by design -
+						// drawPage()'s own "if($page>$length){}" leaves it at the normal
+						// single-slot size no matter how wide the real image is (or how
+						// large pageinfo.width, set from Switch's pageWidth metadata, is).
+						// It always renders as a normal 1-slot box with its image fit
+						// proportionally inside - i.e. as a completely ordinary page, not
+						// a wide one. The "is this pair's page wide" checks below must
+						// require $length too, not just width>1, or an exempt page gets
+						// routed into the wide-pair rendering built for a genuinely
+						// wide-SCALED page - its own standalone wrapper div, sized and
+						// positioned to accommodate a real (variable, possibly large)
+						// image width via floated adjacency - for no reason, since it's
+						// rendering at completely normal size. That standalone-wrapper
+						// layout depends on both pages' wrappers establishing equivalent
+						// width/height for normal float stacking to line them up
+						// correctly, which breaks down for an exempt page (a plain,
+						// entirely absolutely-positioned wrapper collapses to 0 width/
+						// height, unlike a genuinely wide page's, which gets real size
+						// from its own real-width content) - chased across several
+						// rounds 2026-09-21 (ELDEC_2605 pages 196/197: dropped page 196
+						// entirely, then overlapping/jumbled numbers, then a persistent
+						// vertical misalignment, each fixed only to reveal the next -
+						// because the actual fix needed is simpler than all of that: an
+						// exempt page was never a "wide pair" to begin with, and belongs
+						// in the plain (neither-wide) branch below, unchanged, exactly
+						// like every other normal pair (which is also exactly how a
+						// same-situation exempt page with width==1, e.g. ELLE_2603's
+						// page 213, already rendered correctly all along - it never
+						// tripped either of these width>1 checks in the first place).
+						if( ( $leftPage[0]["width"] ?? 0 ) > 1 && $i <= $length ) {
 							if( $_GET['opt'] == 'FIN' ) {
 								$text .= "<div class='widePage' style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 									$text .= drawPage( $_GET['id'], $i, 'left', $i, "FIN" );
@@ -1811,14 +1841,37 @@
 								$text .= "</div>";
 								}
 							}
-						
-						elseif( ( $rightPage[0]["width"] ?? 0 ) > 1 ) {
+
+						elseif( ( $rightPage[0]["width"] ?? 0 ) > 1 && ( $i+1 ) <= $length ) {
+							// Mirror image of the leftPage-wide branch above ($i+1 wide
+							// instead of $i), and, like it, only reached for a genuinely
+							// in-length wide page - see the comment above both branches.
+							// Unlike that branch, $holderWidth (global, accumulated inside
+							// drawPage() to size the floated spacer div that closes out a
+							// row pair) must be drained between the two calls here: $i
+							// (drawn first, plain) never triggers its own spacer (even
+							// page numbers don't), so its width contribution would
+							// otherwise sit unconsumed and leak into $i+1's spacer,
+							// inflating it - and $i+1 here (unlike the leftPage-wide
+							// branch's second div) IS wrapped in `.widePage`, whose CSS
+							// partner (`.widePage .left_page{position:inherit}`,
+							// flatplan.css) pulls its thumbnail into normal flow, where
+							// that inflated spacer would push it out of position instead
+							// of sitting harmlessly behind an absolutely-positioned one.
 							if( $_GET['opt'] == 'FIN' ) {
+								$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+									$text .= drawPage( $_GET['id'], $i, 'left', $i, "FIN" );
+								$text .= "</div>";
+								$holderWidth = 0;
 								$text .= "<div class='widePage' style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 									$text .= drawPage( $_GET['id'], ($i+1), 'left', $i, "FIN" );
 								$text .= "</div>";
 								}
 							else {
+								$text .= "<div style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
+									$text .= drawPage( $_GET['id'], $i, 'left', $i );
+								$text .= "</div>";
+								$holderWidth = 0;
 								$text .= "<div class='widePage' style='position: relative; float: left; margin-top: 10px; margin-left: 10px; margin-bottom: 6px;'>";
 									$text .= drawPage( $_GET['id'], ($i+1), 'left', $i );
 								$text .= "</div>";

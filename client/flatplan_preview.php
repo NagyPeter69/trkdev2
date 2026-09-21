@@ -265,7 +265,7 @@ if( count( $pages ) == 0 ) {
 <link rel="stylesheet" href="https://malihu.github.io/custom-scrollbar/jquery.mCustomScrollbar.min.css" />
 <link rel="stylesheet" href="css/jquery-ui.css">
 <link rel="stylesheet" href="css/rangeslider.css">
-<link href="css/flatplan.css" rel="stylesheet" type="text/css" />
+<link href="css/flatplan.css?v=<?= filemtime( __DIR__.'/css/flatplan.css' ) ?>" rel="stylesheet" type="text/css" />
 <script src="https://malihu.github.io/custom-scrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
 <script type="text/javascript" src="js/preview3.js"></script>
 <script type="text/javascript" src="js/jquery.kinetic.js"></script>
