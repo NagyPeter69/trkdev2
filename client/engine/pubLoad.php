@@ -201,7 +201,14 @@ if( $_GET['op'] == 'load_publications' ) {
 					
 				$current .= "</div>";
 				$hambsvg = file_get_contents( TRKPATH."/images/settingsGray.svg" );
-				$current .= "<div class='pubSettingsDot' onclick=\"issueOperation({".$management."}, '".$magazines[$i][3]."', '".$cur."' )\" style='".(  ( $status == "approved" && $magazines[$i][10] == "Adhoc" ) ? "visibility: hidden;" : "" )."'><div class='".$magazines[$i][3]."_".$cur."' style='pointer-events: none;'>".$hambsvg."</div></div>";
+				// Adhoc+approved rows used to hide this dot unconditionally,
+				// on the assumption there was never anything in $management
+				// for that combination. getPubButtons()'s 'approved' case
+				// already offers "archive" for any Full/Hybrid workflow
+				// regardless of Adhoc/Regular type (gated on the
+				// archiveIssue right) - that assumption no longer holds, so
+				// only hide the dot when there's genuinely nothing to show.
+				$current .= "<div class='pubSettingsDot' onclick=\"issueOperation({".$management."}, '".$magazines[$i][3]."', '".$cur."' )\" style='".(  ( $status == "approved" && $magazines[$i][10] == "Adhoc" && trim( $management ) == "" ) ? "visibility: hidden;" : "" )."'><div class='".$magazines[$i][3]."_".$cur."' style='pointer-events: none;'>".$hambsvg."</div></div>";
 				// Width padded beyond the raw status text (e.g. the
 				// "archiving" status's own label is itself a compound
 				// "Archiving... [spinner]" string, not plain text - see
