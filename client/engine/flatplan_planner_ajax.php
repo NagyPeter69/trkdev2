@@ -106,7 +106,7 @@ function drawPlaceboardPage( $id, $page, $class, $i ) {
 					$txt .= '<div style="pointer-events: none; float:'.$class.'; margin-'.$class.': 4px;">'.str_pad( $page, 3, '0', STR_PAD_LEFT).'</div>';
 				$txt .= '</div>';*/
 				$txt .= '<div id="'.$page.'_thumb" state="" class="board-thumb '.( !empty( $check[0]["id"] ) ? "haveArticle " : "" ).'thumb '.$w.'" alter="0" page="'.$page.'" style="position: relative; z-index: 10; top: 0px; width: 81px; height: 99px; cursor: pointer; background-repeat:no-repeat; background-color: '.$csempecolor.';">';
-					include( '/var/www/intra/client/images/mixed_thumb/'.$check[0]["template"].'.php' );
+					if( ( $mixedTpl = mixedTemplateFile( 'thumb', $check[0]["template"] ) ) != '' ) include( $mixedTpl );
 				$txt .= '</div>';
 			$txt .= '</div>';
 			$txt .="<input type='checkbox' pageid='".$check[0]["id"]."' item='".$id."' sub='pasteboard' state='' ptype='mixed' name='pageSelector[]' value='".$page."' style='display: none;'>";			
@@ -332,7 +332,7 @@ function drawPlannerPage( $id, $page, $class, $i ) {
 					$txt .= '<div style="pointer-events: none; float:'.$class.'; margin-'.$class.': 4px;">'.str_pad( $page, 3, '0', STR_PAD_LEFT).'</div>';
 				$txt .= '</div>';
 				$txt .= '<div id="'.$page.'_thumb" state="" class="'.( !empty( $check[0]["id"] ) ? "haveArticle " : "" ).'thumb '.$w.'" alter="0" page="'.$page.'" style="position: relative; z-index: 10; top: 17px; width: 81px; height: 97px; cursor: pointer; background-repeat:no-repeat; background-color: '.$csempecolor.';">';
-					include( '/var/www/intra/client/images/mixed_thumb/'.$check[0]["template"].'.php' );
+					if( ( $mixedTpl = mixedTemplateFile( 'thumb', $check[0]["template"] ) ) != '' ) include( $mixedTpl );
 				$txt .= '</div>';
 			$txt .= '</div>';
 			$txt .="<input type='checkbox' pageid='".$check[0]["id"]."' item='".$id."' state='' ptype='mixed' name='pageSelector[]' value='".$page."' style='display: none;'>";			
@@ -1151,7 +1151,7 @@ if( $_GET['op'] == 'mixedModify' ) {
 	$pub = sql_aget( "publications", "id='".$article[0]["pub_id"]."'", "*" );
 	
 	$result2 = "<div>";
-		$result2 .= file_get_contents( "/var/www/intra/client/images/mixed_preview/".$article[0]["template"].".svg" );
+		$result2 .= ( ( $mixedTpl = mixedTemplateFile( "preview", $article[0]["template"] ) ) != "" ? file_get_contents( $mixedTpl ) : "" );
 	$result2 .= "</div>";
 	
 	
@@ -1359,7 +1359,7 @@ if( $_GET['op'] == 'mixedSelect' ) {
 	$db = $db[0];
 
 	$result2 = "<div>";
-		$result2 .= file_get_contents( "/var/www/intra/client/images/mixed_preview/".$_GET["layout"].".svg" );
+		$result2 .= ( ( $mixedTpl = mixedTemplateFile( "preview", $_GET["layout"] ) ) != "" ? file_get_contents( $mixedTpl ) : "" );
 	$result2 .= "</div>";
 	
 	$pub = sql_aget( "publications", "id='".$data["pubid"]."'", "*" );
@@ -1561,10 +1561,10 @@ if( $_GET['op'] == 'mixedSelect' ) {
 	}
 
 if( $_GET['op'] == 'loadlayout' ) {
-	$svg = load_dir_files( "/var/www/intra/client/images/mixed_preview", $_GET["parts"]."_" );
+	$svg = load_dir_files( TRKPATH."/images/mixed_preview", $_GET["parts"]."_" );
 	
 	for( $i = 0; $i < count( $svg ); $i++ ) {
-		$file = file_get_contents( "/var/www/intra/client/images/mixed_preview/".$svg[$i] );
+		$file = file_get_contents( TRKPATH."/images/mixed_preview/".$svg[$i] );
 		
 		$result .= "<div class='mixedLayout_tile'>
 				<div><img src='images/mixed_preview/".$svg[$i]."'></div>

@@ -958,11 +958,25 @@ Every remaining `$terminalPath = "/var/www/intra/client"` (plus `vflatplan_ajax.
   `client/vflatplan_preview.php`, `client/extrascripts/trimboxgen.php`, and `$baseDir` in
   `vflatplan_ajax.php`. Changed only so the bad value can't be copy-pasted again.
 
-**Still open, not `$terminalPath`, not audited**: literal `/var/www/intra/client/...` paths in
-`client/engine/flatplan_planner_ajax.php` and `client/engine/design_wideview_ajax.php` (includes
-and reads of `images/mixed_thumb/` / `images/mixed_preview/` templates), and
-`client/cron/advertisement.php:640-645` and `client/engine/switch/resubmit/page_pdf-handler.php:336-340`
-(PDF comparison paths plus a debug write to `tests/B-E.out`).
+The remaining literal `/var/www/intra/client/...` paths were fixed the same day; none is left in
+live code:
+- **Flatplan planner / design wideview** (`client/engine/flatplan_planner_ajax.php`,
+  `client/engine/design_wideview_ajax.php`): mixed-page templates are in
+  `client/images/mixed_thumb/*.php` (`include()`d) and `mixed_preview/*.svg`. The template name
+  comes from the DB, where `op=savehalfarticle` stores POST data unchecked, or straight from
+  `$_GET["layout"]`. Correcting just the directory would have turned a harmlessly broken
+  `include()` into a live local-file-include, so these calls now go through
+  `mixedTemplateFile()` in `engine/engine.php`. It accepts only `<digits>_<digits>` names that
+  exist on disk and returns '' otherwise. `op=loadlayout` only uses `TRKPATH`, because its
+  `$_GET["parts"]` just filters a directory listing. The feature is unused in production:
+  `flatplan_planner` has 0 rows and there are no access-log hits. The UI also offers a
+  template `3_7` that has no files; it now renders empty.
+- **AUTOCOMPARE in `client/cron/advertisement.php` and `client/engine/switch/resubmit/page_pdf-handler.php`**:
+  these are stale copies of the pre-rework compare block in `switch/page_pdf-handler.php`. They
+  now use real paths plus the live handler's `is_file($a) && is_file($b)` guard, so they can no
+  longer write an empty `lastdifference`. Neither can run: nothing invokes either script, and
+  `advertisement.php` uses a `$dirFiles` that is never assigned. Nothing reads
+  `pageinfo.lastdifference` anyway.
 
 ### Boot-time render-mode detection (2026-08-27)
 

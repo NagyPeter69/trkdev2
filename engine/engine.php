@@ -5657,6 +5657,18 @@ function load_dirs( $path ) {
 	}
 
 
+// Resolves a flatplan-planner mixed-page template name ("2_1", "3_4", ...) to
+// its file under client/images/mixed_thumb/ (.php, include()d) or
+// mixed_preview/ (.svg). The name is user-supplied (saved from POST data), so
+// anything that isn't strictly <digits>_<digits> is rejected rather than
+// being allowed to walk out of the template directory. Returns '' when the
+// name is invalid or no such template exists.
+function mixedTemplateFile( $kind, $name ) {
+	if( !preg_match( '/^[0-9]+_[0-9]+$/', (string)$name ) ) return '';
+	$file = TRKPATH.'/images/mixed_'.( $kind == 'thumb' ? 'thumb' : 'preview' ).'/'.$name.( $kind == 'thumb' ? '.php' : '.svg' );
+	return is_file( $file ) ? $file : '';
+	}
+
 function load_dir_files_one( $path, $name ) {
 	$files = array();
 	

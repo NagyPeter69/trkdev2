@@ -100,7 +100,7 @@ function drawPlaceboardPage( $id, $page, $class, $i ) {
 					$txt .= '<div style="pointer-events: none; float:'.$class.'; margin-'.$class.': 4px;">'.str_pad( $page, 3, '0', STR_PAD_LEFT).'</div>';
 				$txt .= '</div>';*/
 				$txt .= '<div id="'.$page.'_thumb" state="" class="board-thumb '.( !empty( $check[0]["id"] ) ? "haveArticle " : "" ).'thumb '.$w.'" alter="0" page="'.$page.'" style="position: relative; z-index: 10; top: 0px; width: 100%; height: 100%; cursor: pointer; background-repeat:no-repeat; background-color: '.$csempecolor.';">';
-					include( '/var/www/intra/client/images/mixed_thumb/'.$check[0]["template"].'.php' );
+					if( ( $mixedTpl = mixedTemplateFile( 'thumb', $check[0]["template"] ) ) != '' ) include( $mixedTpl );
 				$txt .= '</div>';
 			$txt .= '</div>';
 			$txt .="<input type='checkbox' pageid='".$check[0]["id"]."' item='".$id."' sub='pasteboard' state='' ptype='mixed' name='pageSelector[]' value='".$page."' style='display: none;'>";			
@@ -326,7 +326,7 @@ function drawPlannerPage( $id, $page, $class, $i ) {
 					$txt .= '<div style="pointer-events: none; float:'.$class.'; margin-'.$class.': 4px;">'.str_pad( $page, 3, '0', STR_PAD_LEFT).'</div>';
 				$txt .= '</div>';
 				$txt .= '<div id="'.$page.'_thumb" state="" class="'.( !empty( $check[0]["id"] ) ? "haveArticle " : "" ).'thumb '.$w.'" alter="0" page="'.$page.'" style="position: relative; z-index: 10; top: 17px; width: 81px; height: 97px; cursor: pointer; background-repeat:no-repeat; background-color: '.$csempecolor.';">';
-					include( '/var/www/intra/client/images/mixed_thumb/'.$check[0]["template"].'.php' );
+					if( ( $mixedTpl = mixedTemplateFile( 'thumb', $check[0]["template"] ) ) != '' ) include( $mixedTpl );
 				$txt .= '</div>';
 			$txt .= '</div>';
 			$txt .="<input type='checkbox' pageid='".$check[0]["id"]."' item='".$id."' state='' ptype='mixed' name='pageSelector[]' value='".$page."' style='display: none;'>";			

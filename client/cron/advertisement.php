@@ -637,14 +637,17 @@
 										$values = array( '0', 'updatePage', $p_id[0][1], $p_id[0][2], $p_id[0][10], $pageNum, time(), $pT, $pageVersion );
 										sql_add( 'action_log', $names, $values );							
 										
-										$a = '/var/www/intra/client/message'.$dirFiles[$i].'/'.substr( $files[$y], 0, -4 ).'.pdf';
-										$b = '/var/www/intra/client/'.substr( $prevDir , 3 ).'/'.$oldFile.'.pdf';
+										$a = TRKPATH.'/message/'.substr( $files[$y], 0, -4 ).'.pdf';
+										$b = TRKPATH.'/'.substr( $prevDir , 3 ).'/'.$oldFile.'.pdf';
 										
-										echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
-										$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
-										file_put_contents( '/var/www/intra/client/tests/B-E.out', $end );
-										echo $end."<br>";
-										sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
+										// Same guard as switch/page_pdf-handler.php: only diff when both PDFs exist.
+										if( is_file( $a ) && is_file( $b ) ) {
+											echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
+											$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
+											file_put_contents( TRKPATH.'/tests/B-E.out', $end );
+											echo $end."<br>";
+											sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
+											}
 										}															
 									}
 								else {

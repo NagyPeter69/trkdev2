@@ -333,13 +333,16 @@ if( $go ) {
 						sql_add( 'action_log', $names, $values );							
 						
 						$a = substr( $file, 0, -4 ).'.pdf';
-						$b = '/var/www/intra/client/'.substr( $prevDir , 3 ).'/'.$oldFile.'.pdf';
+						$b = $prevDir.'/'.$oldFile.'.pdf';
 						
-						echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
-						$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
-						file_put_contents( '/var/www/intra/client/tests/B-E.out', $end );
-						echo $end."<br>";
-						sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
+						// Same guard as switch/page_pdf-handler.php: only diff when both PDFs exist.
+						if( is_file( $a ) && is_file( $b ) ) {
+							echo "<br>AUTOCOMPARE ".$a." ".$b."<br>";
+							$end = r3run( 'AUTOCOMPARE', array(), $a, $b );
+							file_put_contents( TRKPATH.'/tests/B-E.out', $end );
+							echo $end."<br>";
+							sql_update( 'pageinfo', 'lastdifference="'.$end.'"', 'id="'.$pageInfo[0][0].'"' );
+							}
 						}															
 					}
 				else {
