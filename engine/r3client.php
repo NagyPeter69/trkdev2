@@ -32,7 +32,7 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 // r3 from R3_LOCAL_DIR; the remote path must resolve them the same way rather
 // than against PHP's cwd.
 function r3_resolve_input_path($path) {
-	if ($path === null || $path === '' || $path[0] === '/') {
+	if (!is_string($path) || $path === '' || $path[0] === '/') {
 		return $path;
 	}
 	return R3_LOCAL_DIR.'/'.$path;

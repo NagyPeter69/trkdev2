@@ -940,9 +940,16 @@ first, so both modes agree. Separately, `client/advertisement_preview.php`'s spo
 lookup (`getColors()`/`getColorTitles()`) passed `"../../".$file[0]["Name"]`, which never
 pointed at a real file in either mode (resolves to `/var/www/html/advertisements/`, but ads live
 in `client/advertisements/`) — the Pantone list on the ad preview page was always empty. Now
-passes `realpath()` of the already-`is_file()`-checked name. `client/vflatplan_preview.php:465`
-has the same `"../../".$file[0]["Name"]` pattern and was **not** touched — unverified what
-`Name` holds there.
+passes `realpath()` of the already-`is_file()`-checked name. `client/vflatplan_preview.php`
+had the identical bug (`Name` is `packages/...`, relative to `client/`) and got the same fix;
+its AJAX side, `client/engine/vflatplan_ajax.php`, passed `$terminalPath."/".$file[0]["Path"]`
+with `$terminalPath = "/var/www/intra/client"` (a path from the old system that doesn't exist
+here) and now uses `TRKPATH`, like `flatplan_ajax.php` already did.
+
+`"/var/www/intra/client"` is still hard-coded as `$terminalPath` in `client/flatplan_preview.php`,
+`client/vtesztAjax.php`, `client/advertisement_preview.php`, `client/cron/switch_message_handler.php`
+and `client/extrascripts/trimboxgen.php`. Not audited; each may or may not actually use it
+for a file path.
 
 ### Boot-time render-mode detection (2026-08-27)
 

@@ -462,8 +462,8 @@ if( $next != 0 ) {
 	$next_link .= "&id=".$_GET['id']."&p=".$next."&clk=".$clk2;
 	}
 	
-$dcolors = getColors( "../../".$file[0]["Name"] );
-$dtitles = getColorTitles( "../../".$file[0]["Name"] );
+$dcolors = getColors( realpath( $file[0]["Name"] ) );
+$dtitles = getColorTitles( realpath( $file[0]["Name"] ) );
 ?>
 
 <div id='content_wrapper' style='position: absolute; left: 229px; overflow: hidden;'>

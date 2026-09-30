@@ -511,7 +511,7 @@ include_once('../../engine/engine.php');
 		$file = array();
 		$state = array();
 		$ver = array();
-		$terminalPath = "/var/www/intra/client";
+		$terminalPath = TRKPATH;
 		
 		for( $i = 0; $i < count( $pages ); $i++ ) {
 			$dir = "../packages/".$magazine[0][3]."/".$issue[0][10];
