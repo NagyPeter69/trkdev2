@@ -946,10 +946,23 @@ its AJAX side, `client/engine/vflatplan_ajax.php`, passed `$terminalPath."/".$fi
 with `$terminalPath = "/var/www/intra/client"` (a path from the old system that doesn't exist
 here) and now uses `TRKPATH`, like `flatplan_ajax.php` already did.
 
-`"/var/www/intra/client"` is still hard-coded as `$terminalPath` in `client/flatplan_preview.php`,
-`client/vtesztAjax.php`, `client/advertisement_preview.php`, `client/cron/switch_message_handler.php`
-and `client/extrascripts/trimboxgen.php`. Not audited; each may or may not actually use it
-for a file path.
+Every remaining `$terminalPath = "/var/www/intra/client"` (plus `vflatplan_ajax.php`'s
+`$baseDir`) now uses `TRKPATH` too. Audit result, 2026-09-30:
+- **Real uses, now fixed but neither currently reachable**: `client/vtesztAjax.php` (the R3 source
+  PDF for vflatplan zoom renders; the file answers "Unauthorized" to everything because nothing
+  sets `$_SESSION['standalone_user']`) and `client/cron/switch_message_handler.php` (rendered the
+  `_check.pdf` it had just written into `client/cron/` from `/var/www/intra/client/cron/`, so the
+  check JPEG, low-res overlay and final rename all came up empty; nothing invokes this script:
+  no cron entry, include or web hit).
+- **Dead assignments** (never read): `client/flatplan_preview.php`, `client/advertisement_preview.php`,
+  `client/vflatplan_preview.php`, `client/extrascripts/trimboxgen.php`, and `$baseDir` in
+  `vflatplan_ajax.php`. Changed only so the bad value can't be copy-pasted again.
+
+**Still open, not `$terminalPath`, not audited**: literal `/var/www/intra/client/...` paths in
+`client/engine/flatplan_planner_ajax.php` and `client/engine/design_wideview_ajax.php` (includes
+and reads of `images/mixed_thumb/` / `images/mixed_preview/` templates), and
+`client/cron/advertisement.php:640-645` and `client/engine/switch/resubmit/page_pdf-handler.php:336-340`
+(PDF comparison paths plus a debug write to `tests/B-E.out`).
 
 ### Boot-time render-mode detection (2026-08-27)
 

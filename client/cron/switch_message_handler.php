@@ -291,7 +291,7 @@
 						$pdf->AddOutputIntent( "/var/www/html/r3API/r3/".resolveIccProfileByName( "FOGRA_39" ) );
 						$pdf->CloseFile();
 
-						$terminalPath = "/var/www/intra/client";
+						$terminalPath = TRKPATH;
 
 						
 						$from_ = $terminalPath."/cron/".$file_name."_check.pdf";

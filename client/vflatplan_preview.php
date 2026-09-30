@@ -274,7 +274,7 @@ for( $i = 0; $i < count( $pages ); $i++ ) {
 		}	
 	}
 
-$terminalPath = "/var/www/intra/client";
+$terminalPath = TRKPATH;
 $postfix = $_SESSION['intra_user'];
 if( count( $pages ) > 1 ) {
 	$correctionBoxTemp = $user[0][15];

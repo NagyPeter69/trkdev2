@@ -342,7 +342,7 @@ if( is_file( $file_path ) ) {
 	$file[0]["Bottom"] = 0;
 	}
 
-$terminalPath = "/var/www/intra/client";
+$terminalPath = TRKPATH;
 $postfix = $_SESSION['intra_user'];
 
 $correctionBoxTemp = $user[0][15];

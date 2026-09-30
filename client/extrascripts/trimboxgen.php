@@ -19,7 +19,7 @@ function load( $dir ) {
 			else {
 				if( strpos( $file , ".pdf" ) ) {
 					echo "filename:" . $file . "<br>";
-					$terminalPath = "/var/www/intra/client";
+					$terminalPath = TRKPATH;
 					
 					$f[0]["Name"] = $dir."/".$file;
 					$f[0]["Path"] = substr( $dir, 3 )."/".$file;

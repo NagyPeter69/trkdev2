@@ -13,7 +13,7 @@ include_once('../../engine/engine.php');
 	
 	include_once( '../../engine/xml_handler.php' );
 	
-	$baseDir = "/var/www/intra/client";
+	$baseDir = TRKPATH;
 	
 	$rights = array();
 	if( isset( $_SESSION['standalone_user'] ) ) {
