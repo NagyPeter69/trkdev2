@@ -40,7 +40,12 @@
 
 	if( $_GET["sub"] == "getUsers" ) {
 		$pub = sql_aget( "publishers", "name='".$_GET["publisher"]."'", "*" );
-		$u = sql_aget( "accounts", "publisher='".$pub[0]["id"]."' OR `group`='2'", "*" );
+		// Only the client's own Art Director / ArtDirectorElevated (groups 6, 14)
+		// accounts. Not SuperUsers (they used to be included via "OR group=2",
+		// making the creator the default), and not job-scoped Temp accounts,
+		// which are per-job copies of a real account (linked_account_id) and
+		// showed the same person once per Adhoc job created.
+		$u = sql_aget( "accounts", "publisher='".intval( $pub[0]["id"] )."' AND `group` IN ('6','14') AND usertype!='Temp' ORDER BY full_name ASC", "*" );
 		$txt = "<select id='adhocUser' name='adhocUser'>";
 		for( $i = 0; $i < count( $u ); $i++ ) {
 			$txt .= "<option value='".$u[$i]["id"]."'>".$u[$i]["full_name"]."</option>";
@@ -1145,11 +1150,10 @@
 							
 							//$pubs = sql_get( 'publishers', '1 ORDER BY `name` ASC ', '*' );
 							$txt .= "<span class='userBox userSelect'>";
-								$u = sql_aget( "accounts", "publisher='".$pubs[0][0]."'", "*" );
+								// Populated by getUsers() once a client is picked; listing the
+								// first client's accounts here preselected an unrelated person.
 								$txt .= "<select id='adhocUser' name='adhocUser'>";
-									for( $i = 0; $i < count( $u ); $i++ ) {
-										$txt .= "<option value='".$u[$i]["id"]."'>".$u[$i]["full_name"]."</option>";
-										}
+									$txt .= "<option value='' selected disabled>--- Select Client first ---</option>";
 								$txt .= "</select>";
 							$txt .= "</span>";
 							}
