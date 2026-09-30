@@ -1140,19 +1140,19 @@ var winWidth = $(window).width()-20;
 var tdWidth = row2*200;
 
 function loadLog( method ) {
-	if( refresh || method == 'reload' ) {
+	if( ( refresh && !document.hidden ) || method == 'reload' ) {
 		$.ajax	({
 			url:"engine/loadLog.php?method="+method,
 			data: '',
 			dataType: 'json',
 			success:function( data ) {
 				$("#liveLog").html( data[0] );
-				setTimeout(function(){ loadLog('repeat'); }, 200);
+				setTimeout(function(){ loadLog('repeat'); }, 1500);
 				}
 			});
 		}
 	else {
-		setTimeout(function(){ loadLog('repeat'); }, 200);
+		setTimeout(function(){ loadLog('repeat'); }, 1500);
 		}
 	}
 

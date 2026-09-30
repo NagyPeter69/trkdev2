@@ -79,7 +79,7 @@
 		$result = array( $txt, $pn );
 		}
 		
-	if( $_GET["op"] == "getfreespace" ) {
+	if( $_GET["op"] == "getfreespace" && !empty( $rights['sys_log'] ) ) {
 		$total = disk_total_space("/var/www/html/client");
 		$bytes = disk_free_space("/var/www/html/client");
 		$si_prefix = array( 'B', 'KB', 'MB', 'GB', 'TB', 'EB', 'ZB', 'YB' );

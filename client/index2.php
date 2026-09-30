@@ -465,11 +465,12 @@ function getFreespace() {
 		dataType: 'json',
 		success:function( data ) {
 			$("#freespace").html( data );
-			setTimeout(function(){ getFreespace(); }, 1000);
+			setTimeout(function(){ getFreespace(); }, 60000);
 			}
 		});
 	}
-getFreespace();
+// The #freespace element is only rendered for accounts with the sys_log right
+if( $("#freespace").length ) { getFreespace(); }
 
 function setResponse() {
   $.ajax({
@@ -481,7 +482,7 @@ function setResponse() {
           window.top.location.reload();
           return;
           }
-        setTimeout(function(){ setResponse(); }, 1000);
+        setTimeout(function(){ setResponse(); }, 15000);
         }
 			});
   }
