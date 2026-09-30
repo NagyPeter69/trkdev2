@@ -39,5 +39,5 @@ function trkdev_render_mode() {
 
 define('R3_REMOTE_MODE', trkdev_render_mode() === 'remote');
 
-define('R3_REMOTE_URL', 'http://10.10.30.22/r3remote/run.php');
+define('R3_REMOTE_URL', 'http://10.10.30.23/r3remote/run.php');
 define('R3_REMOTE_TOKEN', getenv('TRKDEV_R3_TOKEN'));

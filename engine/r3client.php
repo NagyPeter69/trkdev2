@@ -1,8 +1,7 @@
 <?php
 // Single entry point for every r3 invocation across the app. Routes to
-// either the local r3 binary (correct in production - see
-// r3client_config.php) or the dedicated render-VM over HTTP (correct here
-// in dev).
+// either the local r3 binary (only on a genuine kvm64 CPU) or the dedicated
+// render node over HTTP (any other CPU) - see r3client_config.php.
 //
 // r3run() always returns the raw r3 output as a string - binary bytes for
 // RENDER/COMPARE (write it to a file yourself), text for GETDATA/MEASURE/
@@ -27,7 +26,21 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 	return r3run_local($mode, $params, $inputPath, $input2Path);
 }
 
+// Some legacy call sites still pass paths relative to the r3 directory (e.g.
+// "../../advertisements/x.pdf"), a leftover of the old "cd r3; ./r3 ..."
+// shell_exec() calls. r3run_local() resolves those naturally because it runs
+// r3 from R3_LOCAL_DIR; the remote path must resolve them the same way rather
+// than against PHP's cwd.
+function r3_resolve_input_path($path) {
+	if ($path === null || $path === '' || $path[0] === '/') {
+		return $path;
+	}
+	return R3_LOCAL_DIR.'/'.$path;
+}
+
 function r3run_remote($mode, $params, $inputPath, $input2Path = null) {
+	$inputPath = r3_resolve_input_path($inputPath);
+	$input2Path = r3_resolve_input_path($input2Path);
 	if (!is_file($inputPath)) {
 		error_log('r3run_remote: input file not found: '.$inputPath);
 		return '';

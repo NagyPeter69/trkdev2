@@ -865,8 +865,10 @@ interpreter pointed at `/usr/lib/cpuid.so`) — it's dead, unfinished exploratio
 should have been deleted; don't resume from it, the two-VM approach below superseded it
 entirely.
 
-**What's actually in place**: a second, dedicated **render-VM (10.10.30.22)** — an old
-Debian 8 / PHP 5.6 box kept running on `kvm64` — does nothing but real R3 rendering.
+**What's actually in place**: a second, dedicated **render-VM** — originally 10.10.30.22, an
+old Debian 8 / PHP 5.6 box kept running on `kvm64`, **replaced 2026-09-30 by the unified
+render node 10.10.30.23; see "Render node 10.10.30.23" below** — does nothing but real R3
+rendering.
 trkdev2 stays on Broadwell so Claude Code's own tooling keeps working, and every R3 call
 routes through `engine/r3client.php`'s single `r3run($mode, $params, $inputPath, ...)`
 entry point, which replaced ~29 inline `shell_exec('cd .../r3; ./r3 ...')` call sites
@@ -901,9 +903,46 @@ recovery watchdog and AJAX timeout are tuned per mode (15s local / 30s remote) r
 one flat ceiling, since a legitimately-slow remote round-trip shouldn't be mistaken for a
 lost response.
 
-**Moot in production**: production's own hardware is genuine kvm64, so none of this detour
-applies there — `r3run()` will simply always take the local path once this ships. See
-"Deploying to production" below.
+~~**Moot in production**: production's own hardware is genuine kvm64, so none of this detour
+applies there — `r3run()` will simply always take the local path once this ships.~~ **Wrong,
+corrected 2026-09-30**: TRK-PROD (10.10.30.60, trk.colorcom.hu) runs on a Broadwell vCPU,
+`/etc/trkdev-render-mode` reads `remote` there, and *all* production R3 work goes to the
+render node. See "Deploying to production" below.
+
+### Render node 10.10.30.23 (2026-09-30)
+
+A new, unified render node (**10.10.30.23**, Debian 13 trixie, `kvm64` vCPU) replaced both
+old render VMs — **10.10.30.22** (the R3 `r3remote/` box above) and **10.10.30.122** (only
+ever referenced by the `RENDERIP` constant in `engine/constans.php`, which has no users in
+live code — dead). It serves the same `/r3remote/run.php` endpoint with the same request
+contract and accepts the same `TRKDEV_R3_TOKEN`, so the cutover was a one-line change:
+`R3_REMOTE_URL` in `engine/r3client_config.php` now points at `http://10.10.30.23/r3remote/run.php`.
+It is the fallback for any host whose CPU is *not* kvm64; the local-vs-remote decision
+itself (`/etc/trkdev-render-mode`) is unchanged.
+
+Verified before switching: GETDATA + RENDER of a real JOY 2605 page produced a JPEG
+**byte-identical** (same sha256) to .22's output for the same input; after switching,
+`pdftoimage_test.php` over HTTP rendered via .23 (confirmed from the socket table), and the
+project owner confirmed Pages View working in live use. Rollback = revert that one line to
+`.22` (only while .22 still exists). DynaPDF is unaffected — still in-process on the web host.
+
+**Boot order matters**: the web host has no retry and a ~3s connect failure per render. On
+2026-09-27, after a full hypervisor restart, .60 came up before the render VM and every render
+for ~6 minutes produced a 0-byte JPEG plus an uncaught `ImagickException` in
+`client/tesztAjax.php`. Configure the hypervisor to start the render node before the web host.
+
+**Relative input paths in remote mode** (fixed same day): some legacy call sites pass R3 input
+paths relative to `r3API/r3/` (a leftover of the old `cd r3; ./r3 ...` shell_exec calls).
+`r3run_local()` resolves those naturally by running from `R3_LOCAL_DIR`, but `r3run_remote()`
+used to `is_file()` them against PHP's cwd and bail out before sending anything.
+`r3_resolve_input_path()` in `engine/r3client.php` now resolves them against `R3_LOCAL_DIR`
+first, so both modes agree. Separately, `client/advertisement_preview.php`'s spot-colour
+lookup (`getColors()`/`getColorTitles()`) passed `"../../".$file[0]["Name"]`, which never
+pointed at a real file in either mode (resolves to `/var/www/html/advertisements/`, but ads live
+in `client/advertisements/`) — the Pantone list on the ad preview page was always empty. Now
+passes `realpath()` of the already-`is_file()`-checked name. `client/vflatplan_preview.php:465`
+has the same `"../../".$file[0]["Name"]` pattern and was **not** touched — unverified what
+`Name` holds there.
 
 ### Boot-time render-mode detection (2026-08-27)
 

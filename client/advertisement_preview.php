@@ -376,8 +376,8 @@ $boxSize = array(
 	);
 
 	
-$dcolors = getColors( "../../".$file[0]["Name"] );
-$dtitles = getColorTitles( "../../".$file[0]["Name"] );
+$dcolors = getColors( realpath( $file[0]["Name"] ) );
+$dtitles = getColorTitles( realpath( $file[0]["Name"] ) );
 
 ?>
 <div id='content_wrapper' style='position: absolute; left: 435px; overflow: hidden;'>
