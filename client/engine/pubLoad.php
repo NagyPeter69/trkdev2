@@ -173,14 +173,15 @@ if( $_GET['op'] == 'load_publications' ) {
 				}
 			
 			if( strlen( $cur ) > 0 AND $cur != 'undefined' ) {
-				if( isMobile() ) {
+				// Status text opens the info page (timeline.php). The job code
+				// opens the Flatplan for Full/Hybrid jobs (the only workflows with
+				// PDF pages / a Flatplan) - stopped ones included - and the info
+				// page for every other workflow.
+				$infoclick = "onclick='window.location.href=\"?page=timeline&id=".$pub[0][0]."&code=".$cur."\"'";
+				if( $process != "Full" && $process != "Hybrid" )
+					$onclick = $infoclick;
+				else
 					$onclick = "onclick='window.location.href=\"?page=flatplan&id=".$pub[0][0]."\"'";
-					}
-				else {
-					if( $status != 'stopped' )
-						$onclick = "onclick='window.location.href=\"?page=timeline&id=".$pub[0][0]."&code=".$cur."\"'";
-					else $onclick = '';
-					}
 				
 				$current = "";
 				$current .= "<div ".$onclick." style='cursor: pointer; float:left; width: 100px;'>";
@@ -215,7 +216,7 @@ if( $_GET['op'] == 'load_publications' ) {
 				// lang/en.php) to leave room for the trailing spinner
 				// instead of it being squeezed flush against/past the
 				// column's edge.
-				$current .= "<div id='".$pub[0][0]."_status' class='pubStatus' style='float:left; margin-left: 5px; width: 140px; height: 1px;'>".$lang["publications"][$status]." ".( $pub[0][18] != 0 ? $ajax_flower : "" )."</div>";
+				$current .= "<div id='".$pub[0][0]."_status' ".$infoclick." class='pubStatus' style='cursor: pointer; float:left; margin-left: 5px; width: 140px; height: 1px;'>".$lang["publications"][$status]." ".( $pub[0][18] != 0 ? $ajax_flower : "" )."</div>";
 
 				$timeLeft = strtotime( $publications[0][11] )-time();
 				$day = $hour = "";
@@ -379,14 +380,13 @@ if( $_GET['op'] == 'load_publications' ) {
 							// row's status_color above (height + this padding used to
 							// total 32px against a 30px row).
 							$txt .= "padding-top:0px; padding-bottom:0px; cursor: pointer; float:left; height: 30px; width: 12px; background: ".$color2." !important;' class='status_color default2'>&nbsp;</div>";
-								if( isMobile() ) {
+								// Same split as the primary row above: code -> Flatplan
+								// (Full/Hybrid only, otherwise info page), status -> info page.
+								$infoclick = "onclick='window.location.href=\"?page=timeline&id=".$publications2[$y][0]."&code=".$publications2[$y][10]."\"'";
+								if( $process != "Full" && $process != "Hybrid" )
+									$onclick = $infoclick;
+								else
 									$onclick = "onclick='window.location.href=\"?page=flatplan&id=".$publications2[$y][0]."\"'";
-									}
-								else {
-									if( $status != 'stopped' )
-										$onclick = "onclick='window.location.href=\"?page=timeline&id=".$publications2[$y][0]."&code=".$publications2[$y][10]."\"'";
-									else $onclick = '';
-									}
 								
 								$txt .= "<div ".$onclick." class='issueName' style='margin-left: ".($namewidth+22)."px; cursor: pointer; float:left; line-height:30px; width: 100px; text-align: left;'>";
 									$txt .= $magazines[$i][3]."_".$publications2[$y][10];
@@ -406,7 +406,7 @@ if( $_GET['op'] == 'load_publications' ) {
 								// plain text - see lang/en.php) to leave room for
 								// the trailing spinner instead of it being
 								// squeezed flush against/past the column's edge.
-								$txt .= "<div  id='".$publications2[$y][0]."_status' class='pubStatus' style='float:left; margin-left: 5px; line-height:30px; text-align: left;  width: 140px;'>";
+								$txt .= "<div  id='".$publications2[$y][0]."_status' ".$infoclick." class='pubStatus' style='cursor: pointer; float:left; margin-left: 5px; line-height:30px; text-align: left;  width: 140px;'>";
 									if( $status == 'active' or $status == 'current' ) {
 										$txt .= $lang['publications']['active'];
 										}

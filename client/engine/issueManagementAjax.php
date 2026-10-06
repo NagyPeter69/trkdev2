@@ -39,6 +39,20 @@
 		$result = $txt;
 		}
 	
+	// Free-text memo on the job's info page (timeline.php). Colorcom staff
+	// only, same as the rest of that page's internal tooling (image list,
+	// CSV export).
+	if( $_GET['op'] == 'saveMemo' ) {
+		$result = "error";
+		$pubID = intval( $_POST["id"] ?? 0 );
+		if( $user[0][4] == "6" && $pubID > 0 ) {
+			$memo = mysqli_real_escape_string( $con, (string) ( $_POST["memo"] ?? "" ) );
+			if( sql_update( "publications", "memo='".$memo."'", "id='".$pubID."'" ) ) {
+				$result = "ok";
+				}
+			}
+		}
+
 	if( $_GET['op'] == 'addDeliver' ) {
 		$names = array( "pub_id", "date" );
 		$values = array( $_GET["pubid"], time() );
@@ -46,12 +60,23 @@
 		}
 	
 	if( $_GET['op'] == 'searcheIMG' ) {
-		$pics = sql_aget( "image_map", "pub_id='".$_GET["id"]."' ".( !empty( $_POST["string"] ) ? " AND name LIKE '%".$_POST["string"]."%'" : "" )." ORDER BY name ASC", "*" );
-		
+		$pics = sql_aget( "image_map", "pub_id='".intval( $_GET["id"] )."' ".( !empty( $_POST["string"] ) ? " AND name LIKE '%".mysqli_real_escape_string( $con, $_POST["string"] )."%'" : "" )." ORDER BY name ASC", "*" );
+
+		// timeline.php's table header adds a "Masked" column for every
+		// workflow except Full/Hybrid - the rows have to match it, and
+		// saveRetus() there reads this checkbox.
+		$imgPub = sql_aget( "publications", "id='".intval( $_GET["id"] )."'", "magazine_id" );
+		$imgMag = sql_aget( "magazines", "id='".( $imgPub[0]["magazine_id"] ?? 0 )."'", "code" );
+		$imgProcess = getProcess( $imgMag[0]["code"] ?? "" );
+		$showMask = ( $imgProcess != "Full" && $imgProcess != "Hybrid" );
+
 		$txt = "";
 		for( $i = 0; $i < count( $pics ); $i++ ) {
 			$txt .= "<tr>";
-				$txt .= "<td>".$pics[$i]["name"]."</td>";
+				$txt .= "<td>".htmlspecialchars( $pics[$i]["name"] )."</td>";
+				if( $showMask ) {
+					$txt .= "<td><input type='checkbox' id='".$pics[$i]["id"]."_maszk' value='1' ".( $pics[$i]["maszk"] == "1" ? "checked" : "" )."></td>";
+					}
 				$txt .= "<td>
 						<div style='float: left;'><input type='text' id='".$pics[$i]["id"]."_retus' name='".$pics[$i]["id"]."_retus' value='".$pics[$i]["retus"]."' style='width: 20px;'></div>
 						<div style='float: left; margin-left: 5px;'><i id='".$pics[$i]["id"]."_button' onclick='saveRetus( \"".$pics[$i]["id"]."\" )' class='fas fa-check-square' style='color: #059E00; font-size: 20px; cursor: pointer;'></i></div>
@@ -63,7 +88,9 @@
 		}
 	
 	if( $_GET['op'] == 'retusSave' ) {
-		sql_update( "image_map", "retus='".$_GET["value"]."'", "id='".$_GET["imgid"]."'" );
+		// mask is only sent when the row has a Masked checkbox (non-Full/Hybrid
+		// workflows) - otherwise leave whatever Switch reported untouched.
+		sql_update( "image_map", "retus='".intval( $_GET["value"] )."'".( isset( $_GET["mask"] ) ? ", maszk='".( intval( $_GET["mask"] ) ? 1 : 0 )."'" : "" ), "id='".intval( $_GET["imgid"] )."'" );
 		}
 			
 	if( $_GET['op'] == 'showerror' ) {

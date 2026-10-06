@@ -11,7 +11,7 @@ header("Cache-Control: private",false);
 error_log( "------- Flatplan Letöltés log -------" );
 error_log( "datum: ".time()." ( ".date( "Y-m-d H:i:s" )." )" );
 error_log( "userID: ".$_SESSION["intra_user"] );
-error_log( "file: ".$_GET['file'] );
+error_log( "file: ".( $_GET['file'] ?? $_GET['name'] ?? '' ) );
 error_log( "tipus: ".$_GET['type'] );
 
 if( $_GET['type'] == 'txt' ) {
@@ -20,8 +20,17 @@ if( $_GET['type'] == 'txt' ) {
 	}
 
 if( $_GET['type'] == 'csv' ) {
+	// CSV exports (timeline.php's "Segédlet letöltése") are Colorcom-staff
+	// only and always live in TRKPATH/csv - the file is looked up by bare
+	// name there rather than read from a path the browser sends.
+	$csvUser = !empty( $_SESSION["intra_user"] ) ? sql_get( 'accounts', 'id="'.intval( $_SESSION["intra_user"] ).'"', 'publisher' ) : array();
+	$csvFile = TRKPATH."/csv/".basename( (string) ( $_GET['name'] ?? '' ) );
+	if( ( $csvUser[0][0] ?? '' ) != "6" || substr( $csvFile, -4 ) != ".csv" || !is_file( $csvFile ) ) {
+		http_response_code( 404 );
+		exit;
+		}
 	header('Content-Type: text/csv');
-	$newname = $_GET['name'];
+	$newname = basename( $csvFile );
 	}
 	
 if( $_GET['type'] == 'jpg' ) {
@@ -74,16 +83,13 @@ header('Content-Disposition: attachment; filename="'.$newname.'"');
 header("Content-Transfer-Encoding: binary");
 
 if( $_GET['type'] == 'csv' ) {
-	
-	header('Content-Length: '.filesize( $_GET['file']) );
-	error_log( "Fizikai hely: ".$_GET['file'] );
-	error_log( "Letoltes (elvileg) elindult (itt minden rendben lezajlott)" );
-	error_log( "--------------------------------" );
-	
-	readfile( $_GET['file']);
+	header('Content-Length: '.filesize( $csvFile ) );
+	readfile( $csvFile );
 	}
 
-if( $_GET['type'] == 'txt' ) {
+// Was a separate if-chain, so a csv request also fell through to the final
+// else below (temp/ readfile + unlink of the same name).
+elseif( $_GET['type'] == 'txt' ) {
 	header('Content-Length: '.filesize( "plugins/".$_GET['file']) );
 	error_log( "Fizikai hely: plugins/".$_GET['file'] );
 	error_log( "Letoltes (elvileg) elindult (itt minden rendben lezajlott)" );

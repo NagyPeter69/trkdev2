@@ -51,11 +51,16 @@ if( $status == "success" ) {
 
 		$result = changeIssueStatus( $magazine[0][3]."_".$issue.".xml", "archived", $pub[0][0] );
 		
-		if( $result ) {
-			$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status' );
-			$values = array( '0', 'archiveIssue', $pub[0][1], $pub[0][2], $pub[0][10], '', time(), '' );
-			sql_add( 'action_log', $names, $values );
-			}		
+		// Logged whenever the status flips to archived, not only when the
+		// per-issue snapshot update succeeds - this entry is the archive
+		// completion time shown on the job's info page (timeline.php), and
+		// the status above has already changed either way.
+		if( !$result ) {
+			error_log( "archive_results-handler: changeIssueStatus failed for ".$magazine[0][3]."/".$issue." - archive still logged" );
+			}
+		$names = array( 'user', 'action', 'publisher', 'magazine', 'issue', 'target', 'date', 'status' );
+		$values = array( '0', 'archiveIssue', $pub[0][1], $pub[0][2], $pub[0][10], '', time(), '' );
+		sql_add( 'action_log', $names, $values );
 		}	
 	}
 	

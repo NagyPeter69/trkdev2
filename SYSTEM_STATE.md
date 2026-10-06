@@ -1429,6 +1429,10 @@ systematic comparison. Treat it as a sanity check, never as sufficient by itself
   actual XML-parsing logic (`extractPreflightIssues()` in `engine/preflightXml.php`) is a stub
   pending a real sample pdfToolbox XML report — the table/endpoint/UI plumbing all work today,
   but nothing populates it until that parser is finished.
+- `publications.memo` (`text DEFAULT NULL`) — new column, 2026-10-06: free-text staff memo on
+  the job info page (`client/timeline.php`, saved via `issueManagementAjax.php?op=saveMemo`,
+  Colorcom/publisher-6 only). Applied live on production (`nyomadake_intra`, trk.colorcom.hu)
+  the same day via `ALTER TABLE publications ADD COLUMN memo TEXT NULL DEFAULT NULL`.
 
 Before cutover: run an actual schema diff (`mariadb-dump --no-data` from production vs. this
 repo's `db/schema.sql`, or equivalent) and reconcile every difference deliberately — don't

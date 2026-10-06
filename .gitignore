@@ -106,3 +106,4 @@ client/engine/dyna/test.pdf
 # Scratch output from a manual r3API/getpdfbox.php test run (timestamp-
 # prefixed filename) - not source despite the directory name.
 r3API/source/
+client/csv/

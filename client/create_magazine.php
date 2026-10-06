@@ -20,10 +20,20 @@
 
 		
 	if( count( $pubs ) == 1 ) {
+		$singleType = $pubs[0][10];
 		$pubs = sql_get( "publications", "publisher_id='".$user[0][4]."' AND magazine_id='".$pubs[0][0]."'", "id, code" );
 
 		if( !empty( $pubs[0][0] ) ) {
-			header("Location: ?page=timeline&id=".$pubs[0][0]."&code=".$pubs[0][1] );
+			// Adhoc single-magazine accounts land on their upload page. This
+			// used to happen indirectly (timeline.php bounced every Adhoc job
+			// to filetransfer); timeline.php is now the info page for Adhoc
+			// jobs too, so the redirect lives here instead.
+			if( $singleType == "Adhoc" ) {
+				header("Location: ?page=filetransfer&id=".$pubs[0][0]."&type=pub" );
+				}
+			else {
+				header("Location: ?page=timeline&id=".$pubs[0][0]."&code=".$pubs[0][1] );
+				}
 			}
 		}
 

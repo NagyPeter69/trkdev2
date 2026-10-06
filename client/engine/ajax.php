@@ -120,14 +120,23 @@
 		$result = "ok";
 		}
 		
-	if( $_GET['op'] == 'downloadCSV' ) {
-		$pub = sql_aget( "publications", "id='".$_GET["pubid"]."'", "*" );
+	// "Segédlet letöltése" on the info page (timeline.php) - Colorcom staff
+	// only, same as the button itself. Rebuilt on every request: the old
+	// write-once cache kept serving whatever the first click produced even
+	// after more pages/proofs/retouch minutes came in. (It also never worked
+	// on this server at all - TRKPATH/csv/ didn't exist, so the write failed
+	// silently and get_file.php had nothing to send.)
+	if( $_GET['op'] == 'downloadCSV' && ( $user[0][4] ?? '' ) == "6" ) {
+		$pub = sql_aget( "publications", "id='".intval( $_GET["pubid"] )."'", "*" );
 		$magazine = sql_aget( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
 		
 		$csvName = $magazine[0]["code"]."_".$pub[0]["code"].".csv";
 		$csvPath = TRKPATH."/csv/".$csvName;
+		if( !is_dir( TRKPATH."/csv" ) ) {
+			mkdir( TRKPATH."/csv", 0775 );
+			}
 		
-		if( !is_file( $csvPath ) ) {
+		if( true ) {
 			$hird = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND status='2' AND fin='1' AND issue='".$pub[0]["code"]."' AND type='ad' GROUP BY page", "*" );
 			$process = getProcess( $magazine[0]["code"] );
 			
@@ -135,8 +144,6 @@
 			$proof = 0;
 			$coverProof = 0;
 			$temp = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND issue='".$pub[0]["code"]."' AND proofCounter != '0'", "*" );
-			error_log( "DEBUG" );
-			error_log( count( $temp ) );
 			for( $i = 0; $i < count( $temp ); $i++ ) {
 				if( $temp[$i]["type"] == "ad" ) {
 					$adProof += $temp[$i]["proofCounter"];
@@ -151,7 +158,7 @@
 					}
 				}
 			
-			$adProofTemp = sql_aget( "pageinfo", "action='adProof' AND magazine='".$pub[0]["magazine_id"]."' AND issue='".$pub[0]["code"]."' ", "*" );
+			$adProofTemp = sql_aget( "action_log", "action='adProof' AND magazine='".$pub[0]["magazine_id"]."' AND issue='".$pub[0]["code"]."' ", "*" );
 			$adProof += count( $adProofTemp );
 			
 			$csv = "";
@@ -202,10 +209,12 @@
 				}
 				
 			$csv = iconv( "UTF-8", "UTF-16", $csv );
-			file_put_contents( TRKPATH."/csv/".$magazine[0]["code"]."_".$pub[0]["code"].".csv" , $csv );
+			file_put_contents( $csvPath, $csv );
 			}
 			
-		$result = array( $csvPath, $csvName );	
+		// Only the file name goes back to the browser; get_file.php resolves
+		// it inside TRKPATH/csv itself instead of trusting a client-sent path.
+		$result = array( "", $csvName );
 		}
 
 	if( $_GET['op'] == 'uploadparamchange' ) {

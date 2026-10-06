@@ -4428,6 +4428,10 @@ function getPubButtons ( $status, $issue, $process, $rights ) {
 				$management[] = "delete";
 			break;
 		case 'archived':
+			// Re-archiving an already archived job is deliberate (project
+			// owner, 2026-10-06): the Switch archive process is fragile - it
+			// sometimes fails or produces bad output, and clients sometimes
+			// ask for a different archive. Don't remove this option.
 			if( $rights['archiveIssue'] && ( $process == "Full" or $process == "Hybrid" ) )
 				$management[] = "archive";
 			if( $rights['delIssue'] && $magazine[0][1] == "Regular" )

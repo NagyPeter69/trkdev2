@@ -709,6 +709,7 @@ CREATE TABLE `publications` (
   `owner` int(11) NOT NULL DEFAULT 0,
   `user` int(11) NOT NULL DEFAULT 0,
   `clientType` varchar(1000) NOT NULL DEFAULT 'known',
+  `memo` text DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
