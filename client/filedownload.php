@@ -1,6 +1,19 @@
 <?php
 ini_set('default_charset', 'utf-8');
 
+// 2026-10-06: no login was required - anyone could fetch job files,
+// preflight reports, asset packs and archives by numeric id. External asset
+// recipients log in through their adhoc hotlink (index2.php gives them a
+// real intra_user session), so a session is required here too. The session
+// is closed straight away: these downloads can run for many minutes and
+// would otherwise hold the session lock, blocking the user's other requests.
+session_start();
+if( empty( $_SESSION['intra_user'] ) ) {
+	http_response_code( 403 );
+	exit;
+	}
+session_write_close();
+
 include_once('../engine/connect.php');
 include_once('lang/en.php');
 include_once('../engine/engine.php');

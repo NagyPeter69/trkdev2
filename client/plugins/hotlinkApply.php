@@ -16,6 +16,13 @@ if( empty( $user[0][0] ) ) {
 	exit;
 	}
 
+// Hotlink review and handout/flipbook links are switched off (see
+// HOTLINK_REVIEW_ENABLED in engine/engine.php) - refuse to create any.
+if( !HOTLINK_REVIEW_ENABLED && in_array( $_GET["sub"] ?? "", array( "sendhandout", "sendhotlink" ) ) ) {
+	print json_encode( array( array( "Disabled" ) ) );
+	exit;
+	}
+
 if( $_GET["sub"] == "sendhandout" ) {
 	$error = array();
 	parse_str($_POST["settings"], $_POST["settings"]);

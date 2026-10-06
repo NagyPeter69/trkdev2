@@ -15,10 +15,19 @@ jQuery(document).ready(function(){
 </script>   
 <? 
 
+if( ( $_GET["hash"] ?? "" ) == "" ) {
+	echo "<script>window.top.location.href = 'index.php';</script>";
+	return;
+	}
 if( $_GET["hash"] != "" ) {
 	$check = getValidHotlink( $_GET["hash"] );
 	if( $check[0][0] == "" ) {
-		header( 'Location: index.php' );
+		// header() can't redirect here - index2.php has already sent
+		// output - so the page used to carry on rendering for an invalid
+		// link. Stop instead (hotlink review is switched off, see
+		// HOTLINK_REVIEW_ENABLED in engine/engine.php).
+		echo "<script>window.top.location.href = 'index.php';</script>";
+		return;
 		}
 	
 	if( $check[0][8] ) {
@@ -99,7 +108,7 @@ $approvers = explode( ",", $job[0][18] );
 			<li data-action="proof"><?= $lang["flatplan"]["proof"] ?></li>
 		<? } ?>
 
-		<? if( $rights["sendHotlink"] ) { ?>
+		<? if( HOTLINK_REVIEW_ENABLED && $rights["sendHotlink"] ) { ?>
 			<hr style="padding: 0;">
 			<li data-action="hotlink"><?= $lang["flatplan"]["sendHotlink"] ?></li>
 	  	<? } ?>

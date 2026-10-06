@@ -1,8 +1,17 @@
 <?
+if( ( $_GET["hash"] ?? "" ) == "" ) {
+	echo "<script>window.top.location.href = 'index.php';</script>";
+	return;
+	}
 if( $_GET["hash"] != "" ) {
 	$check = getValidHotlink( $_GET["hash"] );
 	if( $check[0][0] == "" ) {
-		header( 'Location: index.php' );
+		// header() can't redirect here - index2.php has already sent
+		// output - so the page used to carry on rendering for an invalid
+		// link. Stop instead (hotlink review is switched off, see
+		// HOTLINK_REVIEW_ENABLED in engine/engine.php).
+		echo "<script>window.top.location.href = 'index.php';</script>";
+		return;
 		}
 	$job = sql_get( 'publications', 'id="'.$check[0][1].'"', '*' );
 	$_GET['id'] = $job[0][0];

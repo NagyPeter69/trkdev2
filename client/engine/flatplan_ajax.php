@@ -2813,11 +2813,10 @@
 					// (re-generate) stays available in that case.
 					if( $handout[0]["changed"] != "1" ) {
 						$txt2 .= '<li onclick="downloadHandout(\''.$handout[0]["id"].'\')">'.$lang["flatplan"]["downloadh"].'</li>';
-						$check = str_replace( "handout", "stream", $handout[0]["filename"] );
-						if( is_file( TRKPATH."/handout/".$check ) ) {
-							$txt2 .= '<li onclick="viewhandout(\''.$check.'\')">'.$lang["flatplan"]["viewhandout"].'</li>';
-							}
-						$txt2 .= '<li onclick="settingsPanel(\'hotlink_handout\', undefined, \''.$handout[0]["id"].'\'); $(\'#handoutBox\').hide(100);">'.$lang["flatplan"]["handouthotlink"].'</li>';
+						// "View Flipbook" and "send handout link" were removed
+						// 2026-10-06: the flipbook viewer was discarded (security),
+						// and the send-link panel's two link types were that
+						// flipbook and a client/handout.php that never existed.
 						}
 					$txt2 .= '<li onclick="generateHandout()" style="margin-top: 4px;">'.$lang["flatplan"]["generatenewh"].'</li>';
 					}

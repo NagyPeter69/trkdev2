@@ -3,6 +3,15 @@
 
 	include_once( 'connect.php' );
 	include_once( 'engine.php' );
+
+	// 2026-10-06: legacy root-level admin helper (pmd.php / magazines.php)
+	// with no authentication and raw $_GET values in its SQL - an
+	// unauthenticated SQL injection. Same session gate as client/engine/*.
+	session_start();
+	if( empty( $_SESSION['intra_user'] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
+		}
 	
 	if( $_GET['op'] == 'loadFTP' ) {			
 		$xml2 = simplexml_load_file( '../client/xml/Output_Details.xml' );						

@@ -672,7 +672,8 @@ $allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
      // FlatplanStages==1 job, $_GET['opt'] is force-blanked above and can
      // never equal "FIN", so without this the hotlink item would silently
      // never render for these jobs even for an admin with sendHotlink rights.
-     if( ( $_GET["opt"] == "FIN" || $stages1 ) && $rights["sendHotlink"] ) { ?>
+     // HOTLINK_REVIEW_ENABLED: hotlink review is switched off (engine/engine.php).
+     if( HOTLINK_REVIEW_ENABLED && ( $_GET["opt"] == "FIN" || $stages1 ) && $rights["sendHotlink"] ) { ?>
   	<hr style="padding: 0;">
   	<li data-action="hotlink"><?= $lang["flatplan"]["sendHotlink"] ?></li>
   <? } ?>
@@ -702,11 +703,6 @@ $allowedOpt = ( count( $check) > 0 ? "FIN" : "" );
 
 <script>
 var process = "<?= $process ?>";
-
-function viewhandout( file ) {
-	$('#handoutBox').hide(100);
-	window.open("book.php?file="+file+"&id=<?= $pub[0][0] ?>");
-	}
 
 if( process == "Full" ) {
 	// Cache the last-rendered HTML for each and only touch the DOM when the

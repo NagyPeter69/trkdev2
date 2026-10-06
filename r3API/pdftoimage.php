@@ -1,4 +1,14 @@
 <?php
+// 2026-10-06: these r3API HTTP endpoints are a leftover - Tracker itself
+// renders through r3run() (engine/r3client.php), nothing calls these over
+// HTTP - and they accepted uploads/paths from anyone (api.php kept the
+// uploaded file name inside a web-reachable folder: remote code execution).
+// Local/CLI use only.
+if( PHP_SAPI !== 'cli' && !in_array( $_SERVER['REMOTE_ADDR'] ?? '', array( '127.0.0.1', '::1' ), true ) ) {
+	http_response_code( 403 );
+	exit;
+	}
+?><?php
 header('Content-type: text/html; charset=UTF-8');
 include( "../engine.php" );
 require_once( "/var/www/html/engine/r3client.php" );

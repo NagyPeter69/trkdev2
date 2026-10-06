@@ -568,23 +568,53 @@ Found via direct code reading and confirmed against real data, not theoretical:
   `vpreview_rightPanel`) only call `vflatplan_ajax.php`, `preview_ajax.php`, `commentAjax.php`,
   `compare.php`, `dragupload.php`; adhoc-hash users get a real `intra_user` session in
   `index2.php`; `set_password`/login don't call it. `cancelupload` already required a session.
-- **Still open, found during the above (not fixed):**
-  - Root-level `engine/ajax.php` (used by `pmd.php`, `magazines.php`, root `timeline.php`) has
-    no `session_start()` or gate at all — same class of bug, different file.
-  - Hotlink visitors' PDF/JPG download menu in `vflatplan.php` (shown when the hotlink's
-    download flag is set) has been dead since 2026-09-05: `download_ajax.php` is session-gated,
-    and a hotlink visitor has only `standalone_visitor`, no `intra_user`. If that's restored, it
-    needs a hotlinks-hash check in `download_ajax.php` (like `vflatplan_ajax.php`'s) **and**
-    `get_file.php`'s gate widened for the temp types.
-  - `client/plugins/flipbook/index.php` echoes `$_GET["file"]` unescaped into JS (reflected XSS
-    via `book.php?file=`); the PDF itself is fetched client-side, so no server-side read.
-  - `engine/engine.php` `imageList()` (~line 862) counts ad proofs from `pageinfo` with
-    `action='adProof' AND magazine=...` — those columns only exist in `action_log` (written by
-    `client/engine/adAjax.php`). The query errors, `sql_aget()` returns `[]`, so the ad-proof
-    figure in the stopped-issue/invoicing mail has silently never included `action_log` proofs.
-    Same bug was fixed in `client/engine/ajax.php` `downloadCSV` on 2026-10-06. Not changed
-    yet because it changes billed counts; as of 2026-10-06 only 2 `adProof` rows exist
-    (1 issue, Aug 2026), so the real-world delta is small.
+- **Follow-up sweep, 2026-10-06 (same day)** — every web-reachable PHP file that reads request
+  input without a login check was triaged (nginx exposes everything under the webroot except
+  dotfiles). Fixed:
+  - **Hotlink review switched off** at the project owner's request (rarely if ever used; a
+    better implementation may come later): `HOTLINK_REVIEW_ENABLED = false` in
+    `engine/engine.php` makes `getValidHotlink()` accept nothing, so `index2.php`,
+    `vflatplan.php`, `vflatplan_preview.php` and `vflatplan_ajax.php` refuse every hotlink;
+    leftover `standalone_visitor` sessions are cleared; the "send hotlink" menu entries are
+    hidden and `hotlinkApply.php` refuses `sendhotlink`/`sendhandout`. `vflatplan*.php` also
+    stop rendering on an invalid/missing link (their `header('Location')` never worked -
+    index2.php has already sent output). `adhoc_hotlinks` (Adhoc/asset upload-link login) is a
+    different mechanism and still works.
+  - **Flipbook discarded**: `client/book.php` and `client/plugins/flipbook/` (reflected XSS)
+    deleted; the handout menu's "View Flipbook" and "send handout link" entries removed (the
+    latter's two link types were the flipbook and a `client/handout.php` that never existed).
+    Staff handout PDF download is unchanged.
+  - `client/engine/compare.php` (page compare): no auth, user id from the query string,
+    renders any path in the request and writes to `"r3/".$_GET['to']` - session-gated, user id
+    from the session, output names stripped to `[A-Za-z0-9_-]`, input files confined to
+    TRKPATH + pdf/jpg.
+  - `client/imgviewer.php`: unauthenticated `readfile()`+`unlink()` of any path - session-gated,
+    confined to `temp/*.jpg`.
+  - `client/filedownload.php`: job files / preflight reports / asset packs / archives by id with
+    no login - session-gated (`session_write_close()` right away so multi-GB downloads don't hold
+    the session lock; external asset recipients get a real session via their adhoc hotlink).
+  - Root `engine/ajax.php` (legacy pmd.php/magazines.php helper): unauthenticated SQL injection
+    - session-gated.
+  - `r3API/*.php` HTTP endpoints (unused - rendering goes through `r3run()`): `api.php` accepted
+    uploads from anyone into web-reachable `r3API/source/` keeping the client's file name
+    (remote code execution), `pdftoimage.php` wrote to a client-chosen path - all now
+    CLI/localhost only.
+  - Deleted as dead + dangerous: `client/asdf.php` (debug POST dumper writing to a
+    client-chosen file name), `client/blob.php` + `client/fetchupload.php` (unused upload test
+    harness - unauthenticated chunked upload into web-reachable `uploads/` with client-chosen
+    dir/file names), `client/engine/switch/resubmit/` (debug copy of a Switch webhook without
+    the IP check).
+  - Checked the writable data dirs (uploads, temp, handout, csv, advertisements,
+    flatplan_uploads, message, r3API/source+rendered, switchReports, engine/dyna) for planted
+    `.php`/`.phtml`/`.phar` files: none.
+  - Still open: `engine/engine.php` `imageList()` (~line 862) counts ad proofs from
+    `pageinfo` with `action='adProof' AND magazine=...` - those columns only exist in
+    `action_log`, so the stopped-issue/invoicing mail's ad-proof figure never included them
+    (only 2 such rows exist as of 2026-10-06). Not changed because it alters billed counts.
+    Also not addressed: logged-in users can generally reach other clients' jobs by id
+    (ownership isn't checked in most endpoints) and most SQL is built by concatenation; the
+    root-level legacy admin pages (`create_user.php`, `magazines.php`, `pmd.php`, `menu.php`,
+    `timeline.php`) are dead (nothing includes them, they fatal on direct access).
 
 **Not done, and worth knowing about**: the entire `sql_*` DB layer (`sql_get`, `sql_add`,
 `sql_update`, `sql_delete` in `engine.php`) builds every query via raw string concatenation

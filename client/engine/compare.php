@@ -8,6 +8,34 @@ include_once('../lang/en.php');
 	
 include_once( '../../engine/xml_handler.php' );
 
+// 2026-10-06: this endpoint had no authentication, took the user id from
+// the query string, rendered whatever PDF path the request named
+// ($_POST['file']['Name'] / loadbg's $_POST['file'] / loaddiff's a & b) and
+// wrote its output to "r3/".$_GET['to'] - unauthenticated arbitrary file
+// read (as an image) plus a path-traversal write. Now: real session only
+// (the hotlink-visitor caller, vpreview_rightPanel.php, is switched off),
+// user id from the session, output names stripped to [A-Za-z0-9_-], and
+// every input file confined to TRKPATH with a pdf/jpg extension.
+session_start();
+if( empty( $_SESSION['intra_user'] ) ) {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
+$_GET['intra_user'] = (string) intval( $_SESSION['intra_user'] );
+unset( $_GET['visitor'] );
+session_write_close();
+$_GET['to'] = preg_replace( '/[^A-Za-z0-9_-]/', '', (string) ( $_GET['to'] ?? '' ) );
+$_GET['state'] = preg_replace( '/[^A-Za-z0-9_-]/', '', (string) ( $_GET['state'] ?? '' ) );
+
+function compareInputAllowed( $path ) {
+	$real = realpath( (string) $path );
+	return $real !== false && strpos( $real, TRKPATH.'/' ) === 0 && preg_match( '/\.(pdf|jpe?g)$/i', $real );
+	}
+function compareDeny() {
+	print json_encode( array( array( "Unauthorized" ) ) );
+	exit;
+	}
+
 function pixel__( $num, $_zoom = '' ) {
 	global $zoom;
 	if( $_zoom == '' ) $_zoom = $zoom;
@@ -58,6 +86,7 @@ if( $_GET['op'] == "loaddiff" ) {
 	$terminalPath = "/var/www/html/client";
 	$a = $terminalPath."/".substr( $_GET["a"], 3 );
 	$b = $terminalPath."/".substr( $_GET["b"], 3 );
+	if( !compareInputAllowed( $a ) || !compareInputAllowed( $b ) ) compareDeny();
 	$trimbox = $_POST["trimbox"];
 	$cropbox = $_POST["cropbox"];
 	
@@ -119,6 +148,7 @@ if( $_GET['op'] == 'render' ) {
 		}
 	
 	$from = $_POST['file']['Name'];
+	if( !compareInputAllowed( $from ) ) compareDeny();
 	$to = $_GET["to"]."_".$_GET['intra_user'].".jpg";
 	$sizes = $_POST['positions'];
 
@@ -199,6 +229,7 @@ if( $_GET['op'] == 'loadbg' ) {
 	$pages = 1;
 	
 	$file2 = $_POST["file"];
+	if( !compareInputAllowed( $file2 ) ) compareDeny();
 	
 	if( is_file( $file2 ) ) {
 		$file[0]["Name"] = TRKPATH."/".str_replace("../", "", $file2);

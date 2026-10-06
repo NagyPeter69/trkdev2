@@ -263,7 +263,18 @@ function clearRememberToken( $accountId ) {
 // when someone happens to look at time_expire. Empty return means exactly
 // what "not found" already means to every caller (same shape as sql_get:
 // one numeric-indexed row, or none).
+// Hotlink review (external, login-free Flatplan review links - the hotlinks
+// table, vflatplan.php / vflatplan_preview.php) is switched off as of
+// 2026-10-06 at the project owner's request: rarely if ever used, and every
+// login-free path is attack surface. With this false no hotlink validates,
+// so index2.php, vflatplan*.php and vflatplan_ajax.php all refuse them, and
+// the "send hotlink" UI is hidden. A better implementation may replace it
+// later. (Unrelated: adhoc_hotlinks - the Adhoc/asset upload-link login -
+// is a different table and still works.)
+define( "HOTLINK_REVIEW_ENABLED", false );
+
 function getValidHotlink( $hash ) {
+	if( !HOTLINK_REVIEW_ENABLED ) return array();
 	$row = sql_get( 'hotlinks', 'hashtag="'.$hash.'"', '*' );
 	if( empty( $row[0][0] ) || $row[0][6] < time() ) {
 		return array();

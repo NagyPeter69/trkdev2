@@ -20,6 +20,12 @@ if( $_GET['page'] == 'logout' ) {
 	echo "<script>window.parent.location = 'https://".URL."';</script>";
 	}
 
+// Hotlink review is switched off (see HOTLINK_REVIEW_ENABLED in
+// engine/engine.php) - clear any visitor session left over from before.
+if( !HOTLINK_REVIEW_ENABLED ) {
+	unset( $_SESSION["standalone_visitor"], $_SESSION["visitor_lang"] );
+	}
+
 if( $_GET["hash"] != "" ) {
 	$check = getValidHotlink( $_GET["hash"] );
 	if( $check[0][0] != "" ) {
