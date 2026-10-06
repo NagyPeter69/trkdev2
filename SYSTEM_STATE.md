@@ -607,10 +607,11 @@ Found via direct code reading and confirmed against real data, not theoretical:
   - Checked the writable data dirs (uploads, temp, handout, csv, advertisements,
     flatplan_uploads, message, r3API/source+rendered, switchReports, engine/dyna) for planted
     `.php`/`.phtml`/`.phar` files: none.
-  - Still open: `engine/engine.php` `imageList()` (~line 862) counts ad proofs from
-    `pageinfo` with `action='adProof' AND magazine=...` - those columns only exist in
-    `action_log`, so the stopped-issue/invoicing mail's ad-proof figure never included them
-    (only 2 such rows exist as of 2026-10-06). Not changed because it alters billed counts.
+  - `engine/engine.php` `imageList()` (feeds the approval invoicing mail via
+    `invoicingTESZT()` and the stopped-issue mail) counted logged ad proofs from `pageinfo`
+    instead of `action_log`, so they never reached either mail - fixed 2026-10-06 (DM_2609:
+    15 -> 17 ad proofs). Same function also echoed `$pubID` into approveIssue/stopIssue's JSON
+    replies (removed).
     Also not addressed: logged-in users can generally reach other clients' jobs by id
     (ownership isn't checked in most endpoints) and most SQL is built by concatenation; the
     root-level legacy admin pages (`create_user.php`, `magazines.php`, `pmd.php`, `menu.php`,

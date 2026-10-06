@@ -844,7 +844,9 @@ function getProcess( $magCode ) {
 	}
 
 function imageList( $pubID ) {
-	echo $pubID."<br>";
+	// (A leftover debug echo of $pubID used to sit here - it leaked into the
+	// JSON replies of approveIssue/stopIssue in issueManagementAjax.php.)
+	$txt = $csv = "";
 	$pub = sql_aget( "publications", "id='".$pubID."'", "*" );
 	$magazine = sql_aget( "magazines", "id='".$pub[0]["magazine_id"]."'", "*" );
 	$hird = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND status='2' AND fin='1' AND issue='".$pub[0]["code"]."' AND type='ad' GROUP BY page", "*" );
@@ -870,7 +872,12 @@ function imageList( $pubID ) {
 			}
 		}
 
-	$adProofTemp = sql_aget( "pageinfo", "action='adProof' AND magazine='".$pub[0]["magazine_id"]."' AND issue='".$pub[0]["code"]."' ", "*" );
+	// Ad proofs ordered from the Adverts View are logged in action_log
+	// (client/engine/adAjax.php) - this used to query pageinfo, which has no
+	// action/magazine columns, so the query failed and these never reached
+	// the invoicing / stopped-issue mails. Same fix as the info page's CSV
+	// export (client/engine/ajax.php downloadCSV), 2026-10-06.
+	$adProofTemp = sql_aget( "action_log", "action='adProof' AND magazine='".$pub[0]["magazine_id"]."' AND issue='".$pub[0]["code"]."' ", "*" );
 	$adProof += count( $adProofTemp );
 	
 	if( $process == "Full" or $process == "Hybrid" ) {
