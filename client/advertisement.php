@@ -261,7 +261,7 @@ else {
 							<table collspan="0" rowspan="0">
 								<tr>
 									<td align="left"><?= $lang['ads']['new_ad_name'] ?></td>
-									<td align="left"><input type="text" onkeyup="removeSpace( this )" onchange="removeSpace( this )" onkeypress="return alpha(event, allow_in)" maxlength="16" name="job_code" id="job_code"></td>
+									<td align="left"><input type="text" oninput="removeSpace( this )" onkeyup="removeSpace( this )" onchange="removeSpace( this )" onkeypress="return alpha(event, allow_in)" maxlength="16" name="job_code" id="job_code"></td>
 								</tr>
 								<tr>
 									<td align="left"><?= $lang['ads']['new_ad_size'] ?></td>
@@ -324,10 +324,14 @@ else {
 </ul>
 
 <script>
+// Ad names may only contain letters and digits (no spaces, dashes,
+// colons...). alpha() already filters typed keys; this also cleans pasted
+// or autofilled text. It used to remove only the first space.
+// ad_upload.php enforces the same rule on the server.
 function removeSpace( obj ) {
 	var temp = $( obj ).val();
-	temp = temp.replace(" ", "");
-	$( obj ).val( temp );
+	var clean = temp.replace( /[^A-Za-z0-9]/g, "" );
+	if( clean != temp ) $( obj ).val( clean );
 	}
 	
 function adExtra( type ) {

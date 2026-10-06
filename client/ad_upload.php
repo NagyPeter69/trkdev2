@@ -5,6 +5,22 @@
 	include_once('../engine/xml_handler.php');
 	include_once( "engine/switchAPI.php" );
 
+	// 2026-10-06: no login was required to upload an advert.
+	if( empty( $_SESSION['intra_user'] ) ) {
+		echo 'A feltöltés sikertelen.-0';
+		exit;
+		}
+
+	// Ad names: letters and digits only (no spaces, dashes, colons...) - the
+	// name becomes part of the file names Switch and the Adverts View build
+	// (advertisements/NAME_CODE_ISSUE_TYPE.xml). Same rule as the Name
+	// field's filter in advertisement.php, enforced here so it can't be
+	// bypassed.
+	if( !preg_match( '/^[A-Za-z0-9]+$/', (string) ( $_POST['job_code'] ?? '' ) ) ) {
+		echo 'Érvénytelen név: csak betűk és számok használhatók.-0';
+		exit;
+		}
+
 	
 	$_FILES["file"]['name'] = letter_change( $_FILES["file"]['name'] );	
 	
