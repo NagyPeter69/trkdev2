@@ -537,6 +537,54 @@ Found via direct code reading and confirmed against real data, not theoretical:
   (`accounts.remember_token`); presenting the cookie proves nothing unless it matches.
   Revoked on logout. `engine.php`: `issueRememberToken()` / `resolveRememberToken()` /
   `clearRememberToken()`.
+- **`client/get_file.php`: unauthenticated arbitrary file read + delete (fixed 2026-10-06)** —
+  the download endpoint had no auth check at all and built every path straight from the query
+  string (`"temp/".$_GET['file']`, `"plugins/".$_GET['file']`, ...), then `readfile()`'d it and,
+  in the `one`/`txt`/default branches, `unlink()`'d it. `?type=one&file=../../engine/connect.php`
+  would have served the DB config and then deleted it, as www-data, with no login. The 2026-09-05
+  auth-gap remediation missed it because it isn't named `*Ajax.php`/`*Apply.php`. Fix:
+  - Session gate before anything runs (plain 403, it's an iframe download target, not JSON).
+    **`handout` is deliberately exempt**: it only ever serves the file named by a
+    `flatplan_handout` row (`id` now `intval()`'d), and logs `Visitor` for anonymous downloads,
+    same as `book.php`'s public flipbook link. Today its only caller is staff-side
+    `flatplan.php`; the emailed "downloadpdf" handout link points at `client/handout.php`,
+    which doesn't exist (pre-existing, not touched).
+  - Every branch resolves its file via `getFileConfined()`: `basename()` + `realpath()` must
+    land directly in the branch's own directory, no dotfiles/subdirs, and only the extensions
+    its producer writes — `one`/`multi`/`jpg`/default: `temp/*.pdf|*.zip` (from
+    `download_ajax.php`); `txt`: `plugins/tracker_syslog_*.txt` only (from `logsApply.php` —
+    confining to `plugins/` alone would still have let any logged-in user download *and delete*
+    `pubsApply.php` etc.); `handout`: `handout/*.pdf`. `csv` keeps its own 2026-10-06 check
+    (staff-only, `TRKPATH/csv`). Anything else → 404.
+  - Verified on a worktree test server against the real DB: unauthenticated and
+    hotlink-visitor-only sessions get 403 for every non-handout type; logged-in traversal attempts
+    (`../../engine/connect.php`, `../canary.pdf`, `%2e%2e%2f`, `txt` of `pubsApply.php`, temp
+    subdirs) all 404 with the targets still on disk; legitimate `one`/`multi`/`jpg`/default/`txt`
+    downloads still serve the right bytes and still clean up after themselves; handout serves
+    byte-identical PDF.
+- **`client/engine/ajax.php` had no session gate (fixed 2026-10-06)** — same `[["Unauthorized"]]`
+  gate as the 2026-09-05 `*Ajax.php` fixes, before the `op==` dispatch. Checked no op is meant
+  for logged-out users first: the hotlink pages (`vflatplan`, `vflatplan_preview`,
+  `vpreview_rightPanel`) only call `vflatplan_ajax.php`, `preview_ajax.php`, `commentAjax.php`,
+  `compare.php`, `dragupload.php`; adhoc-hash users get a real `intra_user` session in
+  `index2.php`; `set_password`/login don't call it. `cancelupload` already required a session.
+- **Still open, found during the above (not fixed):**
+  - Root-level `engine/ajax.php` (used by `pmd.php`, `magazines.php`, root `timeline.php`) has
+    no `session_start()` or gate at all — same class of bug, different file.
+  - Hotlink visitors' PDF/JPG download menu in `vflatplan.php` (shown when the hotlink's
+    download flag is set) has been dead since 2026-09-05: `download_ajax.php` is session-gated,
+    and a hotlink visitor has only `standalone_visitor`, no `intra_user`. If that's restored, it
+    needs a hotlinks-hash check in `download_ajax.php` (like `vflatplan_ajax.php`'s) **and**
+    `get_file.php`'s gate widened for the temp types.
+  - `client/plugins/flipbook/index.php` echoes `$_GET["file"]` unescaped into JS (reflected XSS
+    via `book.php?file=`); the PDF itself is fetched client-side, so no server-side read.
+  - `engine/engine.php` `imageList()` (~line 862) counts ad proofs from `pageinfo` with
+    `action='adProof' AND magazine=...` — those columns only exist in `action_log` (written by
+    `client/engine/adAjax.php`). The query errors, `sql_aget()` returns `[]`, so the ad-proof
+    figure in the stopped-issue/invoicing mail has silently never included `action_log` proofs.
+    Same bug was fixed in `client/engine/ajax.php` `downloadCSV` on 2026-10-06. Not changed
+    yet because it changes billed counts; as of 2026-10-06 only 2 `adProof` rows exist
+    (1 issue, Aug 2026), so the real-world delta is small.
 
 **Not done, and worth knowing about**: the entire `sql_*` DB layer (`sql_get`, `sql_add`,
 `sql_update`, `sql_delete` in `engine.php`) builds every query via raw string concatenation

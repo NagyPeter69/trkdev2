@@ -19,7 +19,17 @@
 		include_once('../lang/'.$user[0][17].'.php');	
 		}
 	else {
-		include_once('../lang/en.php');	
+		include_once('../lang/en.php');
+		}
+
+	// Same fix as client/engine/issueManagementAjax.php's 2026-09-05 gate -
+	// this file was missed then and dispatched every op== unauthenticated.
+	// No op here is meant for logged-out visitors: hotlink pages
+	// (vflatplan/vflatplan_preview) only use vflatplan_ajax.php and friends,
+	// and adhoc-hash users get a real intra_user session in index2.php.
+	if( empty( $user[0][0] ) ) {
+		print json_encode( array( array( "Unauthorized" ) ) );
+		exit;
 		}
 
 	if( $_GET["op"] == "filetransfer_loadtypes" ) {
