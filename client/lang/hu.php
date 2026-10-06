@@ -230,7 +230,7 @@
 				"openrequest" => 'Oldalak nyitott kérésekkel',
 				"rejectedpages" => 'Visszautasított oldalak',
 				"adsflatplan" => 'Hirdetések az oldalsorban',
-				"adswaiting" => 'Foglalt pozíciók',
+				"adswaiting" => 'Sikeresen preflightolt hirdetések',
 				"adsmissing" => 'Hiányzó hirdetések',
 				"deadline" => 'Határidő',
 				"dltime" => '%u. %s %u %u:%u %s',

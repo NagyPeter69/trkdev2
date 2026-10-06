@@ -4573,6 +4573,49 @@ function delTree($dir) {
 // "263"): the character immediately after the code is always either the
 // literal "_archived" suffix or a literal "__" separator, never anything
 // else.
+// Header state of one ad tile in the Adverts View (client/engine/ajax.php
+// op=load_adverts), from the same inputs and rules it uses: ads.status
+// ($ad[6]), ads.uploaded ($ad[8]) and Switch's preflight XML(s) in
+// client/advertisements/. Returns:
+//   'finished' - blue header: preflight OK and uploaded to the Flatplan, or
+//                force-uploaded (status 4)
+//   'accepted' - green header: preflight OK, not in the Flatplan yet
+//   'rejected' - red header: preflight failed
+//   'forced'   - dark green: preflight overridden, upload pending (status 0)
+//   'checking' - gray: preflight still running
+// Used by the job info page (client/timeline.php). If load_adverts' rules
+// change, change them here too.
+function adPreflightState( $ad, $magazineCode, $pubCode ) {
+	$status = $ad[6];
+	if( $status == 0 ) return 'forced';
+	if( $status <= 1 ) return 'checking';
+	if( $status == 4 ) return 'finished';
+
+	switch( $ad[3] ) {
+		case '1/1': $type = 'F'; break;
+		case '2/1': $type = 'D'; break;
+		default:    $type = 'P'; break;
+		}
+	// Adhoc jobs' code has no separate issue segment (see load_adverts).
+	$issueSegment = ( $magazineCode == $pubCode ) ? '' : '_'.$pubCode;
+	$path = TRKPATH.'/advertisements/'.strtoupper( $ad[2].'_'.$magazineCode.$issueSegment.'_'.$type );
+
+	$sides = ( $type == 'D' ) ? array( 'L.xml', 'R.xml' ) : array( '.xml' );
+	foreach( $sides as $side ) {
+		if( !is_file( $path.$side ) ) return 'rejected';
+		$xml = @simplexml_load_file( $path.$side );
+		if( $xml === false ) return 'rejected';
+		if( (string) $xml->results[0]->size != 'size_ok' || (string) $xml->results[0]->lowres != 'false' || (string) $xml->results[0]->fontmissing != 'false' ) {
+			return 'rejected';
+			}
+		}
+
+	// Preflight OK: blue once ads.uploaded holds anything other than the
+	// in-progress/empty/error markers load_adverts treats as not uploaded.
+	if( in_array( $ad[8], array( 'Removing', 'Feltöltés alatt', '', 'error' ), true ) ) return 'accepted';
+	return 'finished';
+	}
+
 function findArchivePath( $magazineCode, $issueCode ) {
 	$prefix = ( $magazineCode == $issueCode ) ? $magazineCode : $magazineCode.'_'.$issueCode;
 

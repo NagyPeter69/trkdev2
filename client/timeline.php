@@ -502,23 +502,32 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 										</td>
 										<td height="21px;" width="40px" align='right'>
 											<b><?
-											// Counted from the job's Final flatplan itself (pageinfo
-											// fin=1), not flatplan_planner: the planner only holds ad
-											// slots booked in advance, which most jobs never use, so
-											// these read 0 for jobs whose flatplan was full (e.g.
-											// EVA_2603: 20 ads, 181 filled positions). Positions are
-											// (part, page) pairs - American-numbered parts each restart
-											// at page 1.
+											// Same states as the Adverts View's tile headers (see
+											// adPreflightState() in engine/engine.php): "Ads Preflighted"
+											// counts every ad that passed preflight (green + blue
+											// headers), "Advertisements in Flatplan" the ones of those
+											// already uploaded to the Flatplan (blue headers).
 											$percents = array();
-											$fpSlots = sql_aget( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$pubf[0][10]."' AND fin='1' AND type IN ('ad','magazine')", "COUNT(DISTINCT part, page) AS c" );
-											$filled = intval( $fpSlots[0]["c"] ?? 0 );
-											$fpAds = sql_aget( "pageinfo", "code='".$magazine[0][3]."' AND issue='".$pubf[0][10]."' AND fin='1' AND type='ad'", "COUNT(DISTINCT part, page) AS c" );
-											$ads = intval( $fpAds[0]["c"] ?? 0 );
-											$fpTotal = max( intval( $pubf[0][6] ), $filled );
+											$adsPreflighted = $ads = 0;
+											$adRows = sql_get( 'ads', "pub_id='".intval( $pubf[0][0] )."' AND name!=''", '*' );
+											foreach( $adRows as $adRow ) {
+												$adState = adPreflightState( $adRow, $magazine[0][3], $pubf[0][10] );
+												if( $adState == 'accepted' || $adState == 'finished' ) $adsPreflighted++;
+												if( $adState == 'finished' ) $ads++;
+												}
 											echo $ads;
 											?></b>
 										</td>
-										<td height="21px;" width="100px" align='right'>&nbsp;</td>
+										<td height="21px;" width="100px" align='right'>
+											<b><?
+											// Share of the preflighted ads already in the Flatplan.
+											// Guarded: on PHP 8 a division by zero here used to cut the
+											// page off (second pie, history, image list, all scripts).
+											$percent = ( $adsPreflighted > 0 ? intval( $ads / $adsPreflighted * 100 ) : 0 );
+											$percents[] = $percent;
+											echo $percent." %";
+											?></b>
+										</td>
 									</tr>
 									<tr>
 										<td height="21px;">
@@ -526,28 +535,16 @@ $time = iconv('ISO-8859-2', 'UTF-8', strftime( "%Y. %B %e. %A, %H:%M" , $time ) 
 											<div style='float:left;'><?= $lang["timeline"]["adswaiting"] ?></div>
 										</td>
 										<td height="21px;" width="40px" align='right'>
-											<b><?
-											
-											echo $filled;
-											?></b>
+											<b><?= $adsPreflighted ?></b>
 										</td>
-										<td height="21px;" width="100px" align='right'>
-											<b><?
-											// Guarded: on PHP 8 a division by zero here used to cut the
-											// page off (second pie, history, image list, all scripts).
-											$percent = ( $fpTotal > 0 ? intval( $filled / $fpTotal * 100 ) : 0 );
-											
-											$percents[] = $percent;										
-											echo $percent." %";
-											?></b>
-										</td>
+										<td height="21px;" width="100px" align='right'>&nbsp;</td>
 									</tr>
 								</table>
 							</div>
 
 							<div style='float:right;'>
-								<?php // Ads (orange) and the other filled positions (yellow) out of all flatplan positions; empty positions stay gray ?>
-								<div id='fpPie' class='fpBorder' style='<?= ( $fpTotal > 0 ? timelinePieStyle( array( $ads / $fpTotal * 100, ( $filled - $ads ) / $fpTotal * 100 ), array( '254, 144, 1', '254, 184, 0' ) ) : "" ) ?>'></div>		
+								<?php // Of the preflighted ads: in the Flatplan (orange) vs. not yet (yellow) ?>
+								<div id='fpPie' class='fpBorder' style='<?= ( $adsPreflighted > 0 ? timelinePieStyle( array( $ads / $adsPreflighted * 100, ( $adsPreflighted - $ads ) / $adsPreflighted * 100 ), array( '254, 144, 1', '254, 184, 0' ) ) : "" ) ?>'></div>		
 							</div>
 						</div>
 					</div>

@@ -92,7 +92,7 @@
 							"openrequest" => 'Pages With Open Requests',
 							"rejectedpages" => 'Rejected Pages',
 							"adsflatplan" => 'Advertisements in Flatplan',
-							"adswaiting" => 'Slots Filled',
+							"adswaiting" => 'Ads Preflighted',
 							"adsmissing" => 'Advertisements Missing',
 							"deadline" => 'Frist',
 							"dltime" => '%u. %s %u %u:%u %s',
