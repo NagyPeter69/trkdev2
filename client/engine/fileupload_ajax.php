@@ -257,25 +257,16 @@ if( move_uploaded_file($tmp_name, $target_chunk_file.$num) ) {
 				"file_name" => $_FILES["file"]['name']
 				);
 
-			$headers = array(
-				"Content-Type: multipart/form-data",
-				);
-			
-			// Target 127.0.0.1 directly rather than "http://".URL - this is a
-			// same-box self-call (fire-and-forget via systemCurl(), not a real
-			// external request), and routing it through the public hostname
-			// makes it depend entirely on how that hostname happens to resolve
-			// (DNS, /etc/hosts) - if it resolves to this box's own LAN address
-			// (as it correctly does now, post-cutover) the request arrives with
-			// REMOTE_ADDR=<this box's own IP>, which async_send.php's inbound-
-			// Switch-webhook IP check (correctly) doesn't recognize, so the
-			// actual Switch send silently never happens. Confirmed live
-			// 2026-09-06: nginx access log showed this exact call reaching
-			// async_send.php from 10.10.30.60 and getting a 403. 127.0.0.1 is
-			// unambiguous regardless of what URL resolves to, and matches the
-			// second address now allowlisted in async_send.php's own check.
-			$url = "http://127.0.0.1/client/engine/switch/async_send.php";
-			systemCurl( $url, $data, $headers=null, $check_ssl=true);
+			// Hand the Switch send to a detached CLI process so the upload
+			// response doesn't wait on it. It used to be a fire-and-forget
+			// HTTP self-call to switch/async_send.php, but that ran inside
+			// php-fpm (killed after 300s) with a hardcoded 15s curl timeout,
+			// so every package over a few GB silently never reached Switch
+			// (TWR95 2026-09-15, FUB31 2026-10-07). See async_send_cli.php.
+			// The job travels base64-encoded through escapeshellarg() - the
+			// old path pasted the raw JSON, file name included, into a
+			// single-quoted shell string.
+			exec( 'php '.escapeshellarg( __DIR__.'/switch/async_send_cli.php' ).' '.escapeshellarg( base64_encode( json_encode( $data ) ) ).' > /dev/null 2>&1 &' );
 			}
 		
 		if( !empty( $code ) && !empty( $pub[0]["code"] ) ) {

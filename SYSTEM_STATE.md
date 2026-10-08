@@ -786,6 +786,32 @@ are unconditional no-ops now that this box is production (see above), so *any* r
 Rather than risk a garbage-data call to the real external system just to test the fix, the
 verification above used the user's own real, already-intended retry instead.
 
+**Superseded 2026-10-08 - `async_send.php` removed.** Packages over a few GB were still
+silently lost: `SwitchASend()` had a hardcoded 15s total curl timeout (TWR95 5.4GB on
+2026-09-15, FUB31 8.6GB on 2026-10-07 - both cut off at exactly 15s, both delivered manually),
+and even with a bigger curl timeout the self-call ran inside the `www` FPM pool
+(`request_terminate_timeout=300s`). Now:
+- `fileupload_ajax.php` spawns `client/engine/switch/async_send_cli.php` as a detached CLI
+  process (`exec(... &)`, job passed base64 through `escapeshellarg()`), so there is no request
+  time limit. It inherits the `TRKDEV_*` env from the FPM worker, same as the bulk-approve
+  `switch_sync_worker.php` kick.
+- `SwitchASend()`'s timeout is sized from the file (`SwitchUploadTimeout()`: 120s + size at a
+  20MB/s floor - 30GB ~ 28 min, 63GB ~ 56 min), and it now checks `curl_exec()`'s result and
+  Switch's `status` instead of indexing a possibly-null response.
+- The CLI retries a failed send 3 more times (after 1m/5m/15m) and logs every outcome -
+  `SwitchASend ok`/`failed`, `GAVE UP ... deliver manually` - to
+  **`/var/log/trk-switch-send.log`** (www-data:adm 0640, rotated by
+  `/etc/logrotate.d/trk-switch-send`). Not in the nginx error log any more.
+- `async_send.php` is gone: its `10.10.30.250` allowlist entry is the gateway NAT address, so
+  any outside caller could have it POST an arbitrary server file (caller-chosen path/name) to
+  Switch; and `systemCurl()` pasted the raw JSON (uploaded file name included) into a
+  single-quoted shell string, so a `'` in a file name could inject shell commands.
+- Still true: Upload History (`filetransfer_log`) is written before the send and carries no
+  Switch status - check the log above when someone says an upload "didn't arrive".
+- Verified against a local fake Switch (1GB at a throttled ~50MB/s = 22s, past the old cap;
+  rejection -> retry; forced curl timeout -> clear error; traversal/odd names rejected). No
+  synthetic call to real Switch (TestCo has no jobs); first real large upload is the live test.
+
 ### PMD file ownership (2026-07-27 incident)
 
 `client/xml/pmd.xml` is the single local source of truth this whole integration reads from

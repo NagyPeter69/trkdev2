@@ -124,7 +124,19 @@ function SwitchLogin() {
 	return $response;
 	}
 
-function SwitchASend( $datas, $file = "" ) {
+// Total curl timeout for pushing a file of $bytes to Switch. Used to be a
+// flat 15s, which silently cut off every package bigger than a few GB
+// mid-transfer (TWR95 5.4GB on 2026-09-15, FUB31 8.6GB on 2026-10-07) -
+// 20-30GB ZIPs are routine in prepress. Sized against a deliberately
+// pessimistic 20MB/s floor (measured LAN throughput is ~115MB/s) plus a
+// fixed margin for Switch to accept/answer, so a 30GB ZIP gets ~27 min.
+// Only safe to use from a context with no request time limit of its own -
+// see client/engine/switch/async_send_cli.php.
+function SwitchUploadTimeout( $bytes ) {
+	return 120 + (int) ceil( max( 0, (int) $bytes ) / ( 20 * 1024 * 1024 ) );
+	}
+
+function SwitchASend( $datas, $file = "", $totalTimeout = null ) {
 	global $token;
 
 	if( !switchClientAllowed( $datas ) ) {
@@ -139,8 +151,16 @@ function SwitchASend( $datas, $file = "" ) {
 	
 	error_log( $file );
 	
+	if( !is_file( $file ) ) {
+		error_log( "SwitchASend failed: file not found: ".$file );
+		return array( false, "Error. Please try later." );
+		}
+
 	$size = filesize( $file );	
 	$mime = mime_content_type( realpath( $file ) );
+	if( $totalTimeout === null ) {
+		$totalTimeout = SwitchUploadTimeout( $size );
+		}
 	
 	$headers = array(
 		"Authorization: ".$token."",
@@ -181,7 +201,7 @@ function SwitchASend( $datas, $file = "" ) {
 		 
 	$ch = curl_init();
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-	curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+	curl_setopt($ch, CURLOPT_TIMEOUT, $totalTimeout);
 	curl_setopt($ch, CURLOPT_URL, SWITCHURL );
 	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers );
 	curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST" );
@@ -196,12 +216,27 @@ function SwitchASend( $datas, $file = "" ) {
 	// this file, which have this line commented out for the same reason.
 	//curl_setopt($ch, CURLOPT_SAFE_UPLOAD, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+	$started = microtime( true );
 	$response = curl_exec ($ch);
+	$elapsed = round( microtime( true ) - $started, 1 );
+	
+	// A failed transfer used to surface only as an "array offset on null"
+	// warning from indexing the undecoded response - say what happened.
+	if( $response === false ) {
+		error_log( "SwitchASend failed: ".$doc_name." (".($datas["Code"] ?? '').") - curl error ".curl_errno( $ch ).": ".curl_error( $ch )." after ".$elapsed."s, sent ".curl_getinfo( $ch, CURLINFO_SIZE_UPLOAD )." of ".$size." bytes (timeout ".$totalTimeout."s)" );
+		return array( false, "Error. Please try later." );
+		}
 	
 	error_log( $response );
 	$response = json_decode($response, true);
 	
-	return array( $response["status"], "Error. Please try later." );	
+	if( !is_array( $response ) || ( $response["status"] ?? false ) !== true ) {
+		error_log( "SwitchASend failed: ".$doc_name." (".($datas["Code"] ?? '').") - HTTP ".curl_getinfo( $ch, CURLINFO_HTTP_CODE ).", Switch did not confirm the job after ".$elapsed."s" );
+		return array( false, "Error. Please try later." );
+		}
+	
+	error_log( "SwitchASend ok: ".$doc_name." (".($datas["Code"] ?? '').") - ".$size." bytes in ".$elapsed."s, jobId ".($response["jobId"] ?? '') );
+	return array( true, "" );	
 	}
 
 function SwitchSend( $datas, $file = "" ) {
