@@ -228,7 +228,6 @@
 
 	if( $_GET['op'] == 'archiveIssue' ) {
 		$issue = sql_get( 'publications', 'id="'.$_GET['id'].'"', '*' );
-		$publisher = sql_get( 'publishers', 'id="'.$issue[0][1].'"', '*' );
 		$magazine = sql_get( 'magazines', 'id="'.$issue[0][2].'"', '*' );
 
 		// No per-job directory to pre-create here: Switch names and creates
@@ -243,7 +242,12 @@
 
 		$array = array(
 			"event" => "archive",
-			"client" => $publisher[0][1],
+			// Not publications.publisher_id directly: Adhoc jobs carry "0"
+			// there by convention (client is on publications.owner), so
+			// every Adhoc archive went to Switch with an empty "client" and
+			// the callback came back without its event/client fields -
+			// HYA19 stuck at "archiving" (2026-10-08). Same as deleteIssue.
+			"client" => resolveJobPublisherName( $magazine[0][3] ),
 			"jobCode" => $magazine[0][3],
 			"issue" => $issue[0][10],
 			"description" => $magazine[0][3].'_'.$issue[0][10],

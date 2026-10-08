@@ -29,10 +29,14 @@ $code = $_POST["jobCode"];
 $name = $_POST["description"];
 $issue = $_POST["issue"];
 
-$publisher = sql_get( 'publishers', 'name="'.$publisher.'"', '*' );
 $magazine = sql_get( 'magazines', 'code="'.$code.'"', '*' );
-	
-$pub = sql_get( 'publications', 'publisher_id="'.$publisher[0][0].'" AND magazine_id="'.$magazine[0][0].'" AND code="'.$issue.'"', '*' );
+
+// Looked up by magazine + issue code only, not by the "client" name Switch
+// echoes back: magazine codes are unique, and Adhoc jobs carry
+// publisher_id="0" (client on publications.owner), so a publisher-name
+// match never found them - and when Switch sends "client" empty there's
+// nothing to match on at all.
+$pub = sql_get( 'publications', 'magazine_id="'.$magazine[0][0].'" AND code="'.$issue.'"', '*' );
 
 if( $status == "success" ) {
 	if( $pub[0][0] != "" ) {
@@ -49,7 +53,14 @@ if( $status == "success" ) {
 			error_log( "CRITICAL: archive_results-handler received success for ".$magazine[0][3]."/".$issue." but no matching folder was found under ".ARCHIVE_PATH."." );
 			}
 
-		$result = changeIssueStatus( $magazine[0][3]."_".$issue.".xml", "archived", $pub[0][0] );
+		// Adhoc snapshots are named after the code alone (same rule as
+		// archiveIssue in issueManagementAjax.php).
+		if( $magazine[0][10] == "Adhoc" ) {
+			$result = changeIssueStatus( $issue.".xml", "archived", $pub[0][0] );
+			}
+		else {
+			$result = changeIssueStatus( $magazine[0][3]."_".$issue.".xml", "archived", $pub[0][0] );
+			}
 		
 		// Logged whenever the status flips to archived, not only when the
 		// per-issue snapshot update succeeds - this entry is the archive
