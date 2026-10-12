@@ -43,14 +43,22 @@ for( $i = 0; $i < count( $rows ); $i++ ) {
 // sent the day before had already been purged. There's no account here to
 // read a last-use date from, so fall back to the row's own creation time
 // for staleness instead, same one-year backstop.
+//
+// Same goes for a real account that has never logged in yet
+// (lastlogin='0'): index2.php only sets lastlogin once the link is
+// clicked, so a freshly mailed Adhoc upload link counted as a year stale
+// and was deleted at the first midnight unless the recipient had already
+// used it - LET14/AAO02 lost theirs this way 2026-10-11, ~1h after the
+// mail went out. Fall back to the row's creation time here too.
 $cutoff = time() - ( 86400 * 365 );
 $rows = sql_aget(
 	"adhoc_hotlinks a
 		LEFT JOIN accounts u ON u.id = a.user_id
 		LEFT JOIN magazines m ON m.id = a.magazine_id",
 	"m.id IS NULL
-		OR ( a.user_id != '0' AND ( u.id IS NULL OR u.lastlogin < ".$cutoff." ) )
-		OR ( a.user_id = '0' AND a.time < ".$cutoff." )",
+		OR ( a.user_id != '0' AND u.id IS NULL )
+		OR ( a.user_id != '0' AND u.lastlogin > 0 AND u.lastlogin < ".$cutoff." )
+		OR ( ( a.user_id = '0' OR u.lastlogin = 0 ) AND a.time < ".$cutoff." )",
 	"a.id"
 	);
 for( $i = 0; $i < count( $rows ); $i++ ) {
