@@ -21,9 +21,139 @@ define('R3_LOCAL_DIR', '/var/www/html/r3API/r3');
 
 function r3run($mode, $params, $inputPath, $input2Path = null) {
 	if (R3_REMOTE_MODE) {
-		return r3run_remote($mode, $params, $inputPath, $input2Path);
+		$result = r3run_remote($mode, $params, $inputPath, $input2Path);
+	} else {
+		$result = r3run_local($mode, $params, $inputPath, $input2Path);
 	}
-	return r3run_local($mode, $params, $inputPath, $input2Path);
+	if ($mode === 'RENDER' && ($result === '' || $result === null || $result === false)) {
+		$result = r3_render_fallback($params, $inputPath);
+	}
+	return $result;
+}
+
+// DynaPDF stand-in for a failed R3 RENDER, so every caller (Flatplan
+// thumbnails, Pages View previews and zoom, ad thumbnails and check images)
+// still gets a JPEG when R3 can't render. Since the Proxmox 8.4 -> 9.2
+// upgrade on 2026-10-17, R3 on the render node rejects its hardware-bound
+// license ("INVALID LICENSE" from r3render) for RENDER and MEASURE, while
+// GETDATA still works - and R3's vendor can no longer issue a new license.
+//
+// Same contract as R3 RENDER: the region left/bottom/right/top in PDF
+// points relative to the CropBox's lower-left corner (all of this app's
+// stored pages have CropBox at 0,0), scaled to width x height pixels,
+// converted from the source profile (sprofile) to RGB. 'colors' is the
+// Pages View channel selection (first letters of the enabled toggles:
+// c, m, y, k, digits for spot colours); when it leaves out a process ink,
+// the page is rendered as CMYK, the unselected inks are blanked, and the
+// result is converted to sRGB. Spot colours can't be toggled here - they
+// are rendered into the process inks. Returns '' if DynaPDF fails too.
+function r3_render_fallback($params, $inputPath) {
+	if (!class_exists('dynapdf')) {
+		return '';
+	}
+	$inputPath = r3_resolve_input_path($inputPath);
+	$width = intval(round(floatval($params['width'] ?? 0)));
+	$height = intval(round(floatval($params['height'] ?? 0)));
+	if (!is_file($inputPath) || $width < 1 || $height < 1) {
+		error_log('r3_render_fallback: unusable input '.$inputPath.' ('.$width.'x'.$height.')');
+		return '';
+	}
+
+	$sprofile = R3_LOCAL_DIR.'/'.basename((string) ($params['sprofile'] ?? ''));
+	if (!is_file($sprofile)) {
+		$sprofile = R3_LOCAL_DIR.'/FOGRA_39.icc';
+	}
+	$colors = strtolower((string) ($params['colors'] ?? ''));
+	$blankInks = array();
+	if ($colors !== '') {
+		foreach (array('c', 'm', 'y', 'k') as $ink) {
+			if (strpos($colors, $ink) === false) {
+				$blankInks[] = $ink;
+			}
+		}
+	}
+
+	$pdf = new dynapdf();
+	include('/var/www/html/config.inc.php');
+	$pdf->CreateNewPDF(NULL);
+	$pdf->InitColorManagement(NULL, NULL, 1);
+	$pdf->SetImportFlags(dynapdf::ifImportAll | dynapdf::ifImportAsPage | dynapdf::ifDocInfo);
+	$pdf->SetImportFlags2(dynapdf::if2UseProxy);
+	$pdf->SetJPEGQuality(90);
+	if ($pdf->OpenImportFile($inputPath, dynapdf::ptOpen, NULL) < 0) {
+		$pdf->CloseFile();
+		error_log('r3_render_fallback: DynaPDF could not open '.$inputPath);
+		return '';
+	}
+	$pdf->ImportPDFFile(1, 1.0, 1.0);
+	$pdf->AddOutputIntent($sprofile);
+	$pdf->CloseImportFile();
+
+	$pdf->EditPage(1);
+		$origin = $pdf->GetBBox(dynapdf::pbCropBox);
+		if (empty($origin)) {
+			$origin = $pdf->GetBBox(dynapdf::pbMediaBox);
+		}
+		$x0 = empty($origin) ? 0 : $origin['Left'];
+		$y0 = empty($origin) ? 0 : $origin['Bottom'];
+		$pdf->SetBBox(dynapdf::pbCropBox,
+			$x0 + floatval($params['left']), $y0 + floatval($params['bottom']),
+			$x0 + floatval($params['right']), $y0 + floatval($params['top']));
+	$pdf->EndPage();
+
+	$tmp = tempnam(sys_get_temp_dir(), 'r3fb_');
+	if (empty($blankInks)) {
+		$pdf->RenderPageToImage(1, $tmp, 0, $width, $height, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmJPEG);
+	} else {
+		$pdf->RenderPageToImage(1, $tmp, 0, $width, $height, dynapdf::rfDefault, dynapdf::pxfCMYK, dynapdf::cfFlate, dynapdf::ifmTIFF);
+	}
+	$pdf->CloseFile();
+
+	$data = is_file($tmp) ? (string) file_get_contents($tmp) : '';
+	@unlink($tmp);
+
+	if ($data !== '' && !empty($blankInks)) {
+		// Blank the unselected inks in the CMYK raster, then let DynaPDF do
+		// the CMYK -> RGB conversion with the same output intent as the
+		// full-colour path above. (Imagick's own ICC conversion of DynaPDF's
+		// CMYK TIFF comes out as a colour negative.)
+		$cmykTmp = tempnam(sys_get_temp_dir(), 'r3fb_').'.tif';
+		$rgbTmp = tempnam(sys_get_temp_dir(), 'r3fb_');
+		try {
+			$channels = array('c' => Imagick::CHANNEL_CYAN, 'm' => Imagick::CHANNEL_MAGENTA, 'y' => Imagick::CHANNEL_YELLOW, 'k' => Imagick::CHANNEL_BLACK);
+			$im = new Imagick();
+			$im->readImageBlob($data);
+			foreach ($blankInks as $ink) {
+				$im->evaluateImage(Imagick::EVALUATE_SET, 0, $channels[$ink]);
+			}
+			$im->setImageFormat('tiff');
+			$im->writeImage($cmykTmp);
+			$im->clear();
+
+			$pdf = new dynapdf();
+			include('/var/www/html/config.inc.php');
+			$pdf->CreateNewPDF(NULL);
+			$pdf->SetBBox(dynapdf::pbMediaBox, 0, 0, $width, $height);
+			$pdf->InitColorManagement(NULL, NULL, 1);
+			$pdf->SetJPEGQuality(90);
+			$pdf->Append();
+			$pdf->InsertImageEx(0, 0, $width, $height, $cmykTmp, 1);
+			$pdf->EndPage();
+			$pdf->AddOutputIntent($sprofile);
+			$pdf->RenderPageToImage(1, $rgbTmp, 0, $width, $height, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmJPEG);
+			$pdf->CloseFile();
+			$data = is_file($rgbTmp) ? (string) file_get_contents($rgbTmp) : '';
+		} catch (Exception $e) {
+			error_log('r3_render_fallback: channel selection failed for '.$inputPath.': '.$e->getMessage());
+			$data = '';
+		}
+		@unlink($cmykTmp);
+		@unlink($rgbTmp);
+		@unlink(substr($cmykTmp, 0, -4));
+	}
+
+	error_log('r3_render_fallback: DynaPDF '.($data !== '' ? 'rendered '.strlen($data).' bytes' : 'FAILED').' for '.$inputPath.' ('.$width.'x'.$height.($blankInks ? ', without '.implode('', $blankInks) : '').')');
+	return $data;
 }
 
 // Some legacy call sites still pass paths relative to the r3 directory (e.g.
