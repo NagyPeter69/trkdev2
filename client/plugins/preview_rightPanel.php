@@ -2589,15 +2589,11 @@ function togglePantone( id ) {
 	  
 		$(".pagePreview").css( 'background-image', 'url()' );
 		disableZoom = true;
- 		$.ajax	({
-			url:"engine/flatplan_ajax.php?op=reloadbg&intra_user=<?= $_SESSION['intra_user'] ?>&id="+pub+"&pack_id="+pack_id+"&p="+page+"&alter="+PageType,
-			type: "POST",
-			data: { colors: colors },
-			dataType: 'json',
-			success:function( data ) {
-				$(".pagePreview").css( 'background-image', 'url('+data[0]+')' );
-				}
-			});
+		// rendering() (via placeBox) re-renders the visible page through
+		// tesztAjax.php with the new channel selection and clears
+		// disableZoom when it's done. This used to also POST to
+		// flatplan_ajax.php?op=reloadbg, an op that has never existed there:
+		// it answered null and its success handler threw on data[0].
 		setTimeout( function(){ placeBox('force'); }, 10 );
 		}
 	}
@@ -2620,15 +2616,8 @@ function toggleColor( color ) {
 
   		$(".pagePreview").css( 'background-image', 'url()' );
   		disableZoom = true;
-		$.ajax	({
-			url:"engine/flatplan_ajax.php?op=reloadbg&intra_user=<?= $_SESSION['intra_user'] ?>&id="+pub+"&pack_id="+pack_id+"&p="+page+"&alter="+PageType,
-			type: "POST",
-			data: { colors: colors },
-			dataType: 'json',
-			success:function( data ) {
-				$(".pagePreview").css( 'background-image', 'url('+data[0]+')' );
-				}
-			});
+		// Same as togglePantone(): the re-render below is what applies the
+		// new channel selection; the old op=reloadbg call here was dead.
 		setTimeout( function(){
 			placeBox('force');
 			if( compareMode == "on" ) {
