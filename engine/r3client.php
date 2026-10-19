@@ -91,21 +91,55 @@ function r3_render_fallback($params, $inputPath) {
 
 	$pdf->EditPage(1);
 		$origin = $pdf->GetBBox(dynapdf::pbCropBox);
+		$media = $pdf->GetBBox(dynapdf::pbMediaBox);
 		if (empty($origin)) {
-			$origin = $pdf->GetBBox(dynapdf::pbMediaBox);
+			$origin = $media;
 		}
 		$x0 = empty($origin) ? 0 : $origin['Left'];
 		$y0 = empty($origin) ? 0 : $origin['Bottom'];
-		$pdf->SetBBox(dynapdf::pbCropBox,
-			$x0 + floatval($params['left']), $y0 + floatval($params['bottom']),
-			$x0 + floatval($params['right']), $y0 + floatval($params['top']));
+		$left = $x0 + floatval($params['left']);
+		$bottom = $y0 + floatval($params['bottom']);
+		$right = $x0 + floatval($params['right']);
+		$top = $y0 + floatval($params['top']);
+
+		// Callers may ask for a region reaching past the page (tesztAjax.php
+		// adds 29pt beyond the right-hand page of a spread). R3 renders that
+		// part blank; DynaPDF clips the region to the MediaBox and would
+		// stretch what's left over the full width x height. So render only
+		// the part on the page, at the requested scale, and pad it back out
+		// with white below.
+		$scaleX = $width / max($right - $left, 0.001);
+		$scaleY = $height / max($top - $bottom, 0.001);
+		$clipL = $left; $clipB = $bottom; $clipR = $right; $clipT = $top;
+		if (!empty($media)) {
+			$clipL = max($left, $media['Left']);
+			$clipB = max($bottom, $media['Bottom']);
+			$clipR = min($right, $media['Right']);
+			$clipT = min($top, $media['Top']);
+		}
+		$renderW = max(1, intval(round(($clipR - $clipL) * $scaleX)));
+		$renderH = max(1, intval(round(($clipT - $clipB) * $scaleY)));
+		$offsetX = intval(round(($clipL - $left) * $scaleX));
+		$offsetY = intval(round(($top - $clipT) * $scaleY));
+		$pad = ($clipR <= $clipL || $clipT <= $clipB) ? null : ($renderW != $width || $renderH != $height);
+		if ($pad !== null) {
+			$pdf->SetBBox(dynapdf::pbCropBox, $clipL, $clipB, $clipR, $clipT);
+		}
 	$pdf->EndPage();
+
+	if ($pad === null) {
+		// Nothing of the page inside the requested region: R3 gives a
+		// blank image for that, so do the same.
+		$pdf->CloseFile();
+		error_log('r3_render_fallback: region outside the page for '.$inputPath.', returning a blank '.$width.'x'.$height);
+		return r3_fallback_canvas($width, $height, null, 0, 0);
+	}
 
 	$tmp = tempnam(sys_get_temp_dir(), 'r3fb_');
 	if (empty($blankInks)) {
-		$pdf->RenderPageToImage(1, $tmp, 0, $width, $height, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmJPEG);
+		$pdf->RenderPageToImage(1, $tmp, 0, $renderW, $renderH, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmJPEG);
 	} else {
-		$pdf->RenderPageToImage(1, $tmp, 0, $width, $height, dynapdf::rfDefault, dynapdf::pxfCMYK, dynapdf::cfFlate, dynapdf::ifmTIFF);
+		$pdf->RenderPageToImage(1, $tmp, 0, $renderW, $renderH, dynapdf::rfDefault, dynapdf::pxfCMYK, dynapdf::cfFlate, dynapdf::ifmTIFF);
 	}
 	$pdf->CloseFile();
 
@@ -133,14 +167,14 @@ function r3_render_fallback($params, $inputPath) {
 			$pdf = new dynapdf();
 			include('/var/www/html/config.inc.php');
 			$pdf->CreateNewPDF(NULL);
-			$pdf->SetBBox(dynapdf::pbMediaBox, 0, 0, $width, $height);
+			$pdf->SetBBox(dynapdf::pbMediaBox, 0, 0, $renderW, $renderH);
 			$pdf->InitColorManagement(NULL, NULL, 1);
 			$pdf->SetJPEGQuality(90);
 			$pdf->Append();
-			$pdf->InsertImageEx(0, 0, $width, $height, $cmykTmp, 1);
+			$pdf->InsertImageEx(0, 0, $renderW, $renderH, $cmykTmp, 1);
 			$pdf->EndPage();
 			$pdf->AddOutputIntent($sprofile);
-			$pdf->RenderPageToImage(1, $rgbTmp, 0, $width, $height, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmJPEG);
+			$pdf->RenderPageToImage(1, $rgbTmp, 0, $renderW, $renderH, dynapdf::rfDefault, dynapdf::pxfRGB, dynapdf::cfFlate, dynapdf::ifmJPEG);
 			$pdf->CloseFile();
 			$data = is_file($rgbTmp) ? (string) file_get_contents($rgbTmp) : '';
 		} catch (Exception $e) {
@@ -152,8 +186,35 @@ function r3_render_fallback($params, $inputPath) {
 		@unlink(substr($cmykTmp, 0, -4));
 	}
 
-	error_log('r3_render_fallback: DynaPDF '.($data !== '' ? 'rendered '.strlen($data).' bytes' : 'FAILED').' for '.$inputPath.' ('.$width.'x'.$height.($blankInks ? ', without '.implode('', $blankInks) : '').')');
+	if ($data !== '' && $pad) {
+		$data = r3_fallback_canvas($width, $height, $data, $offsetX, $offsetY);
+	}
+
+	error_log('r3_render_fallback: DynaPDF '.($data !== '' ? 'rendered '.strlen($data).' bytes' : 'FAILED').' for '.$inputPath.' ('.$width.'x'.$height.($pad ? ', page part '.$renderW.'x'.$renderH.' at '.$offsetX.','.$offsetY : '').($blankInks ? ', without '.implode('', $blankInks) : '').')');
 	return $data;
+}
+
+// A white width x height JPEG, with $jpeg (if given) placed at x/y - the
+// blank margin R3 leaves where a requested region runs past the page.
+function r3_fallback_canvas($width, $height, $jpeg, $x, $y) {
+	try {
+		$canvas = new Imagick();
+		$canvas->newImage($width, $height, new ImagickPixel('white'));
+		if ($jpeg !== null) {
+			$part = new Imagick();
+			$part->readImageBlob($jpeg);
+			$canvas->compositeImage($part, Imagick::COMPOSITE_OVER, $x, $y);
+			$part->clear();
+		}
+		$canvas->setImageFormat('jpeg');
+		$canvas->setImageCompressionQuality(90);
+		$data = $canvas->getImageBlob();
+		$canvas->clear();
+		return $data;
+	} catch (Exception $e) {
+		error_log('r3_render_fallback: padding failed: '.$e->getMessage());
+		return (string) $jpeg;
+	}
 }
 
 // Some legacy call sites still pass paths relative to the r3 directory (e.g.
