@@ -190,7 +190,10 @@ Colorcom Media";
 			exit;
 			}
 
-		$check = sql_aget( "accounts", "email='".$_POST[ "u_mail" ]."'", "*" );
+		// Temp rows are per-job Adhoc invite links, not real accounts - they are
+		// allowed to share an email with a real account (see userApply.php's
+		// linked_account_id), so they must not block registering that person.
+		$check = sql_aget( "accounts", "email='".$_POST[ "u_mail" ]."' AND usertype!='Temp'", "*" );
 		if( !empty( $check[0]["id"] ) ) {
 			$pub = sql_get( "publishers", "id='".$check[0]["publisher"]."'", "name" );
 			echo json_encode( array( array( false, sprintf( $lang["settings"]["error9"], $check[0]["id"], $pub[0][0] ?? $check[0]["publisher"] ) ) ) );
@@ -211,6 +214,9 @@ Colorcom Media";
 				$names = array( 'name', 'pass', 'publisher', 'group', 'email', 'full_name', 'showMagazines', 'pwset_token', 'pwset_expires' );
 				$values = array( $_POST['u_name'], password_hash( bin2hex( random_bytes( 32 ) ), PASSWORD_DEFAULT ), $_POST['u_publisher'], $_POST['u_type'], $_POST[ "u_mail" ], $_POST[ "u_fullname" ], $showMagazines, hash( 'sha256', $token ), time() + 172800 );
 				$id = sql_add( 'accounts', $names, $values );
+
+				// Point any earlier Adhoc invite rows for this email at the new account.
+				sql_update( "accounts", "linked_account_id='".$id."'", "email='".$_POST[ "u_mail" ]."' AND usertype='Temp' AND linked_account_id='0'" );
 
 				$names = array( 'user' );
 				$values = array( $id );
