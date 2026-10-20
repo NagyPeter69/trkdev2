@@ -1,5 +1,7 @@
 <?php
-// Single entry point for every r3 invocation across the app. Routes to
+// Single entry point for every r3 invocation across the app. RENDER,
+// GETDATA and MEASURE are handled locally by Ghostscript and DynaPDF since
+// R3 lost its license (see gs_renderer.php); COMPARE and AUTOCOMPARE go to
 // either the local r3 binary (only on a genuine kvm64 CPU) or the dedicated
 // render node over HTTP (any other CPU) - see r3client_config.php.
 //
@@ -16,27 +18,39 @@
 // r3 actually executes.
 
 require_once __DIR__.'/r3client_config.php';
+require_once __DIR__.'/gs_renderer.php';
 
 define('R3_LOCAL_DIR', '/var/www/html/r3API/r3');
 
 function r3run($mode, $params, $inputPath, $input2Path = null) {
+	// R3 can't RENDER or MEASURE any more (see gs_renderer.php), so those
+	// and GETDATA no longer go to it: Ghostscript renders (DynaPDF if that
+	// fails), DynaPDF reads the boxes and spot colours. Only COMPARE and
+	// AUTOCOMPARE still go to R3, and come back empty while it's down.
+	if ($mode === 'RENDER') {
+		return render_region($params, r3_resolve_input_path($inputPath));
+	}
+	if ($mode === 'GETDATA') {
+		return pdf_getdata(r3_resolve_input_path($inputPath));
+	}
+	if ($mode === 'MEASURE') {
+		// The full-page measurement (with d/r) lists the inks; a point
+		// measurement (the colour picker) can't be done without R3.
+		if (!isset($params['d'])) {
+			return '';
+		}
+		return pdf_measure(r3_resolve_input_path($inputPath), $params['tprofile'] ?? '');
+	}
 	if (R3_REMOTE_MODE) {
-		$result = r3run_remote($mode, $params, $inputPath, $input2Path);
-	} else {
-		$result = r3run_local($mode, $params, $inputPath, $input2Path);
+		return r3run_remote($mode, $params, $inputPath, $input2Path);
 	}
-	if ($mode === 'RENDER' && ($result === '' || $result === null || $result === false)) {
-		$result = r3_render_fallback($params, $inputPath);
-	}
-	return $result;
+	return r3run_local($mode, $params, $inputPath, $input2Path);
 }
 
-// DynaPDF stand-in for a failed R3 RENDER, so every caller (Flatplan
-// thumbnails, Pages View previews and zoom, ad thumbnails and check images)
-// still gets a JPEG when R3 can't render. Since the Proxmox 8.4 -> 9.2
-// upgrade on 2026-10-17, R3 on the render node rejects its hardware-bound
-// license ("INVALID LICENSE" from r3render) for RENDER and MEASURE, while
-// GETDATA still works - and R3's vendor can no longer issue a new license.
+// DynaPDF renderer, the backup when Ghostscript fails (render_region() in
+// gs_renderer.php), so every caller (Flatplan thumbnails, Pages View
+// previews and zoom, ad thumbnails and check images) still gets a JPEG.
+// It ignores overprint, see gs_renderer.php.
 //
 // Same contract as R3 RENDER: the region left/bottom/right/top in PDF
 // points relative to the CropBox's lower-left corner (all of this app's
@@ -52,8 +66,9 @@ function r3_render_fallback($params, $inputPath) {
 		return '';
 	}
 	$inputPath = r3_resolve_input_path($inputPath);
-	$width = intval(round(floatval($params['width'] ?? 0)));
-	$height = intval(round(floatval($params['height'] ?? 0)));
+	// Cut fractional sizes down, as R3 did (see gs_region()).
+	$width = intval(floatval($params['width'] ?? 0));
+	$height = intval(floatval($params['height'] ?? 0));
 	if (!is_file($inputPath) || $width < 1 || $height < 1) {
 		error_log('r3_render_fallback: unusable input '.$inputPath.' ('.$width.'x'.$height.')');
 		return '';

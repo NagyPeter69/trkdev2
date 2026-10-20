@@ -13,20 +13,24 @@
 //
 // This finds every pageinfo row of a job whose preview PDF is on disk but
 // whose preview JPG (or crop/trim JPEG) is missing or empty, and repeats
-// the same two calls the upload handler makes (which use DynaPDF when R3
-// RENDER fails). Dry run by default.
+// the same two calls the upload handler makes. --all re-renders every page
+// with a preview PDF, e.g. to replace previews made by an older renderer
+// (that also refreshes the stored boxes and spot colour list). Dry run by
+// default.
 //
 // Run it as www-data (the web app must be able to overwrite these files
 // later), with the DB/R3 environment loaded:
 //   sudo -u www-data bash -c 'set -a; . /etc/trkdev-db.env; set +a; php bin/rerender-thumbnails.php --job=GYL_2601'
 //   ... --job=GYL_2601 --apply
+//   ... --job=GYL_2601 --all --apply
 
-$opts = getopt( '', array( 'job:', 'apply' ) );
+$opts = getopt( '', array( 'job:', 'apply', 'all' ) );
 if( empty( $opts['job'] ) || !preg_match( '/^([A-Za-z0-9]+)_([A-Za-z0-9]+)$/', $opts['job'], $m ) ) {
-	fwrite( STDERR, "usage: rerender-thumbnails.php --job=CODE_ISSUE [--apply]\n" );
+	fwrite( STDERR, "usage: rerender-thumbnails.php --job=CODE_ISSUE [--all] [--apply]\n" );
 	exit( 1 );
 	}
 $apply = isset( $opts['apply'] );
+$all = isset( $opts['all'] );
 
 // The upload handler runs from here; thumbCreate2() writes its r3Thumb.txt
 // log into the cwd, so keep that where it has always been.
@@ -77,7 +81,7 @@ $todo = array();
 foreach( $rows as $row ) {
 	$pdf = previewPdfPath( $row );
 	if( $pdf == '' || !is_file( $pdf ) ) continue;
-	if( needsRender( $pdf ) ) $todo[] = array( $row, $pdf );
+	if( $all || needsRender( $pdf ) ) $todo[] = array( $row, $pdf );
 	}
 
 echo count( $todo )." of ".count( $rows )." pageinfo rows need a re-render".( $apply ? "" : " (dry run)" )."\n";
@@ -86,13 +90,12 @@ foreach( $todo as list( $row, $pdf ) ) {
 	}
 if( !$apply || empty( $todo ) ) exit( 0 );
 
-// If R3 RENDER is still failing, thumbCreate2() and PDF_prework() fall back
-// to DynaPDF on their own (dynaFallbackRender()), so no R3 check here.
 $failed = 0;
 foreach( $todo as list( $row, $pdf ) ) {
 	$color = partDetect( $issue[0]['id'], $row["page"], "color", $row["part"] );
 	thumbCreate2( $pdf, $row["width"], $color );
 	PDF_prework( $row["id"] );
+	clearstatcache();
 	$ok = !needsRender( $pdf );
 	if( !$ok ) $failed++;
 	echo ( $ok ? "  ok     " : "  FAILED " )."page ".$row["page"]." fin=".$row["fin"]."\n";
