@@ -1433,6 +1433,31 @@ var renderWatchdogTimer = null;
 // heavy page (100+ MB of image data) can take 20s or more.
 var RENDER_WATCHDOG_MS = 60000;
 
+// renderCounter counts the renders in flight; the spinner shows while it's
+// above 0. Always change it through these two: the watchdogs below reset it
+// to 0 while a slow render may still be running, and that render's own
+// decrement used to take it to -1 - after which every render only brought
+// it back to 0, so the spinner stayed hidden for the rest of the session
+// (seen when panning a zoomed view with the hand tool).
+function renderStarted() {
+	var n = parseInt( $("#renderCounter").val() );
+	if( isNaN( n ) || n < 0 ) n = 0;
+	$("#renderCounter").val( n+1 ).trigger("onchange");
+	// (Re)armed only here, when a render starts: loadingBar() runs every
+	// second via renderCounterCheck(), and arming it there kept pushing
+	// the deadline out so it never fired.
+	if( renderWatchdogTimer ) clearTimeout( renderWatchdogTimer );
+	renderWatchdogTimer = setTimeout(function() {
+		console.log( "render watchdog fired - renderCounter stuck at "+$("#renderCounter").val()+", forcing spinner off" );
+		renderWatchdogTimer = null;
+		$("#renderCounter").val( 0 ).trigger( "onchange" );
+		}, RENDER_WATCHDOG_MS );
+	}
+function renderFinished() {
+	var n = parseInt( $("#renderCounter").val() );
+	$("#renderCounter").val( ( isNaN( n ) || n <= 1 ) ? 0 : n-1 ).trigger("onchange");
+	}
+
 function loadingBar( val ) {
 	console.log( "Rendercounter: "+val );
 	if( parseInt( val ) > 0 ) {
@@ -1442,13 +1467,8 @@ function loadingBar( val ) {
 		$('select[name="comp_operation"]').prop('disabled', 'disabled');
 		$('#fake').addClass("ui-state-disabled");
 
-		if( renderWatchdogTimer ) clearTimeout( renderWatchdogTimer );
-		renderWatchdogTimer = setTimeout(function() {
-			console.log( "render watchdog fired - renderCounter stuck at "+$("#renderCounter").val()+", forcing spinner off" );
-			$("#renderCounter").val( 0 ).trigger( "onchange" );
-			}, RENDER_WATCHDOG_MS );
 		}
-	if( parseInt( val ) == 0 ) {
+	if( !( parseInt( val ) > 0 ) ) {
 		$("#loading").fadeOut( 100 );
 		$("#compRange").slider( "enable" );
 		$('select[name="comp_operation"]').prop('disabled', false);
@@ -1904,7 +1924,11 @@ setInterval( function() {
 		if( disableZoomWatchdogTicks >= 12 ) {
 			console.warn( "disableZoom watchdog: forcibly recovering after "+disableZoomWatchdogTicks+"s stuck. page="+page+" clk="+clk+" pack_id="+pack_id+" zoom="+zoom+" fpPages="+fpPages+" renderCounter="+$("#renderCounter").val() );
 			disableZoom = false;
-			$("#renderCounter").val( 0 ).trigger("onchange");
+			// Not resetting renderCounter here: a render can legitimately
+			// take longer than this (heavy pages, several queued pan
+			// renders), and zeroing the counter under it hid the spinner.
+			// The render watchdog (RENDER_WATCHDOG_MS) handles a counter
+			// stuck by a lost response.
 			$("#boxDraw").css( "display", "none" );
 			disableZoomWatchdogTicks = 0;
 			}
@@ -2115,7 +2139,7 @@ function rendering( command, newZoom ) {
 			}
 			
 			
-		$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )+1 ) ).trigger("onchange");
+		renderStarted();
 		var sendcolors = colors;
 
 		$(".pagePreview").fadeIn( 200 );		
@@ -2154,7 +2178,7 @@ function rendering( command, newZoom ) {
 						error:function( data ) {
 							console.log( "render fallback also failed - clearing renderCounter so the spinner doesn't stick" );
 							ajaxDisabled = false;
-							$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
+							renderFinished();
 							if( graphState == "magnify" ) {
 								$( "#zoomRange" ).slider( "option", { disabled: false } );
 								}
@@ -2208,7 +2232,7 @@ function rendering( command, newZoom ) {
 									});
 								loadedCommandBindings = true;
 								}
-							$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
+							renderFinished();
 							if( graphState == ""  ) {
 								 if( !mobile )
 									 $('#content_box').kinetic( 'attach' );
@@ -2279,7 +2303,7 @@ function rendering( command, newZoom ) {
 							});
 						loadedCommandBindings = true;
 						}
-					$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
+					renderFinished();
 					if( graphState == ""  ) {
 						 if( !mobile )
 							 $('#content_box').kinetic( 'attach' );
@@ -2324,7 +2348,7 @@ function rendering( command, newZoom ) {
 							});
 						loadedCommandBindings = true;
 						}
-					$("#renderCounter").val( ( parseInt( $("#renderCounter").val() )-1 ) ).trigger("onchange");
+					renderFinished();
 					if( graphState == ""  ) {
 						 $('#content_box').kinetic( 'attach' );
 						 }
