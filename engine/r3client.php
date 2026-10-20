@@ -22,11 +22,34 @@ require_once __DIR__.'/gs_renderer.php';
 
 define('R3_LOCAL_DIR', '/var/www/html/r3API/r3');
 
+// The render node mounts this host's TRK client/ tree over host-local NFS at
+// R3_SHARE_REMOTE (see the render node's run.php "path mode"). When an r3
+// input lives under R3_SHARE_LOCAL we send its path instead of uploading the
+// (often 100 MB+) PDF, and RENDER output is written into R3_SHARE_SCRATCH,
+// which is this host's own disk - so no upload and no base64. Falls back to
+// upload automatically when the input is elsewhere or the mount is down.
+define('R3_SHARE_LOCAL', '/var/www/html/client');
+define('R3_SHARE_REMOTE', '/mnt/trk');
+define('R3_SHARE_SCRATCH', '/var/www/html/client/r3shared');
+
 function r3run($mode, $params, $inputPath, $input2Path = null) {
-	// R3 can't RENDER or MEASURE any more (see gs_renderer.php), so those
-	// and GETDATA no longer go to it: Ghostscript renders (DynaPDF if that
-	// fails), DynaPDF reads the boxes and spot colours. Only COMPARE and
-	// AUTOCOMPARE still go to R3, and come back empty while it's down.
+	// R3-first again (restored 2026-10-20, once the render node's licence was
+	// fixed): the render node does RENDER/GETDATA/MEASURE/COMPARE. When it is
+	// unreachable or returns nothing, fall back to Ghostscript/DynaPDF for the
+	// modes that have a local equivalent (see gs_renderer.php) - the same
+	// fallback that kept previews coming while R3 was down, kept intact.
+	if (R3_REMOTE_MODE) {
+		$GLOBALS['r3_used_remote'] = true;
+		$out = r3run_remote($mode, $params, $inputPath, $input2Path);
+	} else {
+		$out = r3run_local($mode, $params, $inputPath, $input2Path);
+	}
+	if (is_string($out) && $out !== '') {
+		return $out;
+	}
+
+	// R3 gave nothing - the render shown now comes from here, not the node.
+	$GLOBALS['r3_used_remote'] = false;
 	if ($mode === 'RENDER') {
 		return render_region($params, r3_resolve_input_path($inputPath));
 	}
@@ -34,18 +57,15 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 		return pdf_getdata(r3_resolve_input_path($inputPath));
 	}
 	if ($mode === 'MEASURE') {
-		// The full-page measurement (with d/r) lists the inks; a point
-		// measurement (the colour picker) can't be done without R3.
+		// Full-page ink list (d/r) has a DynaPDF/GS equivalent; a point
+		// measurement (the colour picker) does not.
 		if (!isset($params['d'])) {
 			return '';
 		}
 		return pdf_measure(r3_resolve_input_path($inputPath), $params['tprofile'] ?? '');
 	}
-	if (R3_REMOTE_MODE) {
-		$GLOBALS['r3_used_remote'] = true;
-		return r3run_remote($mode, $params, $inputPath, $input2Path);
-	}
-	return r3run_local($mode, $params, $inputPath, $input2Path);
+	// COMPARE / AUTOCOMPARE: no local equivalent.
+	return is_string($out) ? $out : '';
 }
 
 // Whether any r3run() call in this request went to the render node over the
@@ -260,7 +280,112 @@ function r3run_remote($mode, $params, $inputPath, $input2Path = null) {
 		error_log('r3run_remote: input file not found: '.$inputPath);
 		return '';
 	}
+	if ($input2Path !== null && !is_file($input2Path)) {
+		error_log('r3run_remote: second input file not found: '.$input2Path);
+		return '';
+	}
 
+	// Fast lane: if the inputs sit on the shared mount, send paths instead of
+	// uploading. r3remote_pathmode() returns false to mean "mount/path
+	// unusable, upload instead"; any string (including '' on a real r3
+	// failure) is the final result.
+	$remoteIn = r3_share_translate($inputPath);
+	$remoteIn2 = ($input2Path === null) ? null : r3_share_translate($input2Path);
+	if ($remoteIn !== null && ($input2Path === null || $remoteIn2 !== null)) {
+		$res = r3remote_pathmode($mode, $params, $remoteIn, $remoteIn2);
+		if ($res !== false) {
+			return $res;
+		}
+	}
+
+	return r3remote_upload($mode, $params, $inputPath, $input2Path);
+}
+
+// Map a web-host path under R3_SHARE_LOCAL to the render node's view of it
+// (R3_SHARE_REMOTE); null when the file isn't on the shared tree.
+function r3_share_translate($path) {
+	if (!is_string($path) || $path === '') {
+		return null;
+	}
+	$rp = realpath($path);
+	if ($rp === false) {
+		return null;
+	}
+	if ($rp !== R3_SHARE_LOCAL && strpos($rp, R3_SHARE_LOCAL.'/') !== 0) {
+		return null;
+	}
+	return R3_SHARE_REMOTE.substr($rp, strlen(R3_SHARE_LOCAL));
+}
+
+// Path mode: the render node reads the input off the shared mount and, for
+// RENDER/COMPARE, writes the image into the shared tree (this host's own
+// disk), so there is no upload and no base64. Returns the output string, ''
+// on a genuine r3 failure (so r3run() can fall back to GS), or false to mean
+// "mount/path unusable, upload instead".
+function r3remote_pathmode($mode, $params, $remoteIn, $remoteIn2) {
+	$binary = ($mode === 'RENDER' || $mode === 'COMPARE');
+	$post = array(
+		'token' => R3_REMOTE_TOKEN,
+		'mode' => $mode,
+		'params' => json_encode($params),
+		'input_path' => $remoteIn,
+	);
+	if ($remoteIn2 !== null) {
+		$post['input_path2'] = $remoteIn2;
+	}
+	$localOut = null;
+	if ($binary) {
+		$name = 'out_'.bin2hex(random_bytes(8)).'.bin';
+		$localOut = R3_SHARE_SCRATCH.'/'.$name;
+		$post['output_path'] = R3_SHARE_REMOTE.'/r3shared/'.$name;
+	}
+
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, R3_REMOTE_URL);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_POST, true);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+	$response = curl_exec($ch);
+	$http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+	$cerr = curl_error($ch);
+	curl_close($ch);
+
+	if ($response === false) {
+		error_log('r3remote_pathmode: curl error: '.$cerr);
+		if ($localOut !== null) { @unlink($localOut); }
+		return false;
+	}
+	$decoded = json_decode($response, true);
+	if (!is_array($decoded) || empty($decoded['success'])) {
+		$err = is_array($decoded) ? (string) ($decoded['error'] ?? '') : '';
+		// Mount gone (503) or a path problem (400): retry as an upload.
+		if ($http === 503 || ($http === 400 && (strpos($err, 'path') !== false || strpos($err, 'not found') !== false || strpos($err, 'shared') !== false))) {
+			if ($localOut !== null) { @unlink($localOut); }
+			return false;
+		}
+		// Genuine r3 failure (e.g. 502): '' so r3run() falls back to GS.
+		error_log('r3remote_pathmode: render node failure ('.$http.'): '.substr((string) $response, 0, 200));
+		if ($localOut !== null) { @unlink($localOut); }
+		return '';
+	}
+
+	if ($binary) {
+		clearstatcache(true, $localOut);
+		if (!is_file($localOut) || filesize($localOut) === 0) {
+			error_log('r3remote_pathmode: output missing/empty '.$localOut);
+			@unlink($localOut);
+			return '';
+		}
+		$data = (string) file_get_contents($localOut);
+		@unlink($localOut);
+		return $data;
+	}
+	return base64_decode($decoded['data']);
+}
+
+function r3remote_upload($mode, $params, $inputPath, $input2Path = null) {
 	$post = array(
 		'token' => R3_REMOTE_TOKEN,
 		'mode' => $mode,
@@ -281,6 +406,7 @@ function r3run_remote($mode, $params, $inputPath, $input2Path = null) {
 	curl_setopt($ch, CURLOPT_POST, true);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
 	curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
 
 	$response = curl_exec($ch);
 	if ($response === false) {
