@@ -1401,15 +1401,13 @@ function selectAllText( el ) {
 	}
 
 // tesztAjax.php/vtesztAjax.php's response is [imgData, debug, isRemoteRender] -
-// isRemoteRender is r3_used_remote() (r3client.php): whether THIS request
-// actually went to the render node over the network. Toggling the
-// spinner's color on that (see #loading.remote-render in client.css) makes
-// a render taking noticeably longer read as "expected, it's over the
-// network" rather than "stalled". Page renders run on this server since
-// R3 lost its license (gs_renderer.php), so the spinner stays its normal
-// colour for them.
+// data[2] is r3_render_from_fallback() (r3client.php): true when the render
+// was served by the local Ghostscript/DynaPDF fallback instead of the render
+// node. Red spinner = fallback (R3 is down or struggling), grey = R3 did the
+// render. A silent health signal for the team - see #loading.fallback-render
+// in client.css.
 function updateRenderModeIndicator( data ) {
-	$("#loading").toggleClass( "remote-render", data[2] == true );
+	$("#loading").toggleClass( "fallback-render", data[2] == true );
 	}
 
 // Watchdog for a stuck spinner: renderCounter is incremented before every

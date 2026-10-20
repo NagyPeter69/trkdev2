@@ -373,5 +373,5 @@ if( !empty( $imgData ) && strpos( $imgData, 'base64,' ) !== false ) {
 		}
 	}
 
-print json_encode( array( $result, $debug, r3_used_remote() ) );
+print json_encode( array( $result, $debug, r3_render_from_fallback() ) );
 ?>

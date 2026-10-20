@@ -38,9 +38,11 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 	// unreachable or returns nothing, fall back to Ghostscript/DynaPDF for the
 	// modes that have a local equivalent (see gs_renderer.php) - the same
 	// fallback that kept previews coming while R3 was down, kept intact.
+	// Only go to the render node if it answers a quick health ping; otherwise
+	// fall back straight away, so a down node costs ~1s (the ping) instead of
+	// a long render-curl timeout. r3_node_healthy() is cached per request.
 	if (R3_REMOTE_MODE) {
-		$GLOBALS['r3_used_remote'] = true;
-		$out = r3run_remote($mode, $params, $inputPath, $input2Path);
+		$out = r3_node_healthy() ? r3run_remote($mode, $params, $inputPath, $input2Path) : '';
 	} else {
 		$out = r3run_local($mode, $params, $inputPath, $input2Path);
 	}
@@ -48,9 +50,11 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 		return $out;
 	}
 
-	// R3 gave nothing - the render shown now comes from here, not the node.
-	$GLOBALS['r3_used_remote'] = false;
+	// R3 gave nothing - fall back locally for the modes that can. A RENDER
+	// served from here sets the flag r3_render_from_fallback() reports, which
+	// turns the Pages View spinner red (grey = the render node did it).
 	if ($mode === 'RENDER') {
+		$GLOBALS['r3_render_fallback'] = true;
 		return render_region($params, r3_resolve_input_path($inputPath));
 	}
 	if ($mode === 'GETDATA') {
@@ -68,12 +72,40 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 	return is_string($out) ? $out : '';
 }
 
-// Whether any r3run() call in this request went to the render node over the
-// network. Pages View turns its render spinner red for those (see
-// updateRenderModeIndicator() in flatplan_preview.php); renders done here
-// on this server leave it at its normal colour.
-function r3_used_remote() {
-	return !empty($GLOBALS['r3_used_remote']);
+// True when a RENDER in this request fell back to the local Ghostscript/
+// DynaPDF path instead of the render node. The Pages View spinner turns red
+// on this and stays grey when R3 did the render (see updateRenderModeIndicator()
+// in flatplan_preview.php) - a silent "we're degraded" signal for the team.
+function r3_render_from_fallback() {
+	return !empty($GLOBALS['r3_render_fallback']);
+}
+
+// Quick liveness check of the render node before we send it work. Its /health
+// endpoint needs no auth and answers in a few ms host-local; cached per
+// request. When it is down, r3run() skips R3 and uses the local fallback at
+// once instead of waiting out the render curl timeout.
+function r3_node_healthy() {
+	static $ok = null;
+	if ($ok !== null) {
+		return $ok;
+	}
+	if (!R3_REMOTE_MODE) {
+		return $ok = true;
+	}
+	$p = parse_url(R3_REMOTE_URL);
+	$url = $p['scheme'].'://'.$p['host'].(isset($p['port']) ? ':'.$p['port'] : '').'/health';
+	$ch = curl_init($url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+	curl_exec($ch);
+	$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+	curl_close($ch);
+	$ok = ($code === 200);
+	if (!$ok) {
+		error_log('r3_node_healthy: render node not answering at '.$url.' (HTTP '.$code.') - using the local fallback');
+	}
+	return $ok;
 }
 
 // DynaPDF renderer, the backup when Ghostscript fails (render_region() in
@@ -345,7 +377,7 @@ function r3remote_pathmode($mode, $params, $remoteIn, $remoteIn2) {
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_POST, true);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-	curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 45);
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
 	$response = curl_exec($ch);
 	$http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -405,7 +437,7 @@ function r3remote_upload($mode, $params, $inputPath, $input2Path = null) {
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_POST, true);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-	curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 45);
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
 
 	$response = curl_exec($ch);

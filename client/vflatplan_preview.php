@@ -663,7 +663,7 @@ function selectAllText( el ) {
 // vtesztAjax.php's response is [imgData, debug, isRemoteRender] - see
 // updateRenderModeIndicator() in flatplan_preview.php for why.
 function updateRenderModeIndicator( data ) {
-	$("#loading").toggleClass( "remote-render", data[2] == true );
+	$("#loading").toggleClass( "fallback-render", data[2] == true );
 	}
 
 // See RENDER_WATCHDOG_MS in flatplan_preview.php for why this exists: a

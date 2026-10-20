@@ -1498,11 +1498,11 @@ animation-iteration-count:infinite;
 animation-direction:linear;
 }
 
-/* Shown instead of the default gray while a page render is being served by
-   the remote render-VM (see r3client_config.php) rather than local r3 -
-   round-trips over the network, so a render taking noticeably longer here
-   is expected, not a stall. */
-#loading.remote-render .blockG{
+/* Red instead of the default grey when a page render came from the local
+   Ghostscript/DynaPDF fallback instead of the render node (see
+   r3_render_from_fallback() in r3client.php) - a silent signal that R3 is
+   down or struggling. Grey means the render node did the render. */
+#loading.fallback-render .blockG{
 background-color:red;
 }
 
