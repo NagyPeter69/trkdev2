@@ -1401,11 +1401,13 @@ function selectAllText( el ) {
 	}
 
 // tesztAjax.php/vtesztAjax.php's response is [imgData, debug, isRemoteRender] -
-// isRemoteRender reflects r3client_config.php's live CPU-based local/remote
-// detection, i.e. whether THIS render was served by the render-VM over the
-// network rather than local r3. Toggling the spinner's color on that (see
-// #loading.remote-render in client.css) makes a render taking noticeably
-// longer read as "expected, it's over the network" rather than "stalled".
+// isRemoteRender is r3_used_remote() (r3client.php): whether THIS request
+// actually went to the render node over the network. Toggling the
+// spinner's color on that (see #loading.remote-render in client.css) makes
+// a render taking noticeably longer read as "expected, it's over the
+// network" rather than "stalled". Page renders run on this server since
+// R3 lost its license (gs_renderer.php), so the spinner stays its normal
+// colour for them.
 function updateRenderModeIndicator( data ) {
 	$("#loading").toggleClass( "remote-render", data[2] == true );
 	}
@@ -1427,10 +1429,9 @@ function updateRenderModeIndicator( data ) {
 // genuinely in progress rather than actually lost, hiding the spinner
 // before its real completion arrives.
 var renderWatchdogTimer = null;
-// Local r3 renders finish in seconds; remote ones add a network round-trip
-// (upload + queue + download) on top, so the remote ceiling needs headroom
-// the local one doesn't.
-var RENDER_WATCHDOG_MS = <?php echo R3_REMOTE_MODE ? 30000 : 15000; ?>;
+// Renders run on this server now (gs_renderer.php), but a zoom render of a
+// heavy page (100+ MB of image data) can take 20s or more.
+var RENDER_WATCHDOG_MS = 60000;
 
 function loadingBar( val ) {
 	console.log( "Rendercounter: "+val );

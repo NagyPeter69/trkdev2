@@ -272,5 +272,5 @@ else {
 $width = floatval( str_replace( ",", ".", $cbox[0]['Right'] ) ) - floatval( str_replace( ",", ".", $cbox[0]['Left'] ) );
 
 $result = $imgData;
-print json_encode( array( $result, $debug, R3_REMOTE_MODE ) );
+print json_encode( array( $result, $debug, r3_used_remote() ) );
 ?>

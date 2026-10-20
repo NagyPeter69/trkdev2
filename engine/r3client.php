@@ -42,9 +42,18 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 		return pdf_measure(r3_resolve_input_path($inputPath), $params['tprofile'] ?? '');
 	}
 	if (R3_REMOTE_MODE) {
+		$GLOBALS['r3_used_remote'] = true;
 		return r3run_remote($mode, $params, $inputPath, $input2Path);
 	}
 	return r3run_local($mode, $params, $inputPath, $input2Path);
+}
+
+// Whether any r3run() call in this request went to the render node over the
+// network. Pages View turns its render spinner red for those (see
+// updateRenderModeIndicator() in flatplan_preview.php); renders done here
+// on this server leave it at its normal colour.
+function r3_used_remote() {
+	return !empty($GLOBALS['r3_used_remote']);
 }
 
 // DynaPDF renderer, the backup when Ghostscript fails (render_region() in

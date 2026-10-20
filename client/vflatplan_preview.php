@@ -671,7 +671,7 @@ function updateRenderModeIndicator( data ) {
 // success/error handler, leaving renderCounter - and so the spinner - stuck
 // on indefinitely. This guarantees recovery regardless of cause.
 var renderWatchdogTimer = null;
-var RENDER_WATCHDOG_MS = <?php echo R3_REMOTE_MODE ? 30000 : 15000; ?>;
+var RENDER_WATCHDOG_MS = 60000;
 
 function loadingBar( val ) {
 	if( parseInt( val ) > 0 ) {

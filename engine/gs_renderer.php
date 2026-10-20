@@ -41,6 +41,7 @@ if (!defined('GS_BIN')) define('GS_BIN', '/usr/bin/gs');
 if (!defined('GS_TIMEOUT')) define('GS_TIMEOUT', 120);
 define('GS_PROFILE_DIR', '/var/www/html/r3API/r3');
 define('GS_RGB_PROFILE', GS_PROFILE_DIR.'/sRGB_Color_Space_Profile.icc');
+define('GS_SUPERSAMPLE_MAX_PIXELS', 25000000);
 
 // Ghostscript first, DynaPDF if Ghostscript fails. JPEG bytes, or '' if
 // both fail.
@@ -69,9 +70,15 @@ function gs_render($params, $inputPath) {
 		}
 	}
 
+	// Render at twice the size and let gs scale it down: its own
+	// anti-aliasing (AlphaBits=4) leaves visibly stepped text edges at zoom.
+	// Above GS_SUPERSAMPLE_MAX_PIXELS output pixels the 2x raster gets too
+	// big for this server's memory, so those render at 1x.
+	$scale = ($region['w'] * $region['h'] <= GS_SUPERSAMPLE_MAX_PIXELS) ? 2 : 1;
 	$tmp = tempnam(sys_get_temp_dir(), 'gsr_');
 	$args = array_merge(
-		gs_common_args($region, $sprofile, 1),
+		gs_common_args($region, $sprofile, $scale),
+		$scale > 1 ? array('-dDownScaleFactor='.$scale) : array(),
 		array('-sDEVICE=jpeg', '-dJPEGQ=90', '-sOutputFile='.$tmp),
 		gs_offset_args($region, $inputPath)
 	);

@@ -61,7 +61,7 @@ if( is_file( $renderCacheFile ) && filesize( $renderCacheFile ) > 0 ) {
 	$imgData = 'data:image/jpeg;base64,'.$imgData;
 	$debug = 'cached';
 	$result = $imgData;
-	print json_encode( array( $result, $debug, R3_REMOTE_MODE ) );
+	print json_encode( array( $result, $debug, false ) );
 	exit;
 	}
 
@@ -373,5 +373,5 @@ if( !empty( $imgData ) && strpos( $imgData, 'base64,' ) !== false ) {
 		}
 	}
 
-print json_encode( array( $result, $debug, R3_REMOTE_MODE ) );
+print json_encode( array( $result, $debug, r3_used_remote() ) );
 ?>
