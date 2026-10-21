@@ -57,12 +57,18 @@ else
 	warn "/etc/trkdev-db.env not found - expected to exist for cron DB credentials"
 fi
 
-DISPLAY_ERRORS=$(php -r 'echo ini_get("display_errors");' 2>/dev/null)
-if [ "$DISPLAY_ERRORS" = "1" ] || [ "$DISPLAY_ERRORS" = "On" ]; then
-	fail "display_errors is On - must be Off before real traffic (leaks paths/queries/stack traces to users)"
-else
-	pass "display_errors is Off"
-fi
+# What the web tier sees: php-fpm's own php.ini + conf.d (99-trkdev.ini
+# sets it there), then any uncommented pool override, which wins. The CLI
+# php.ini doesn't matter here - cron output never reaches a browser.
+DISPLAY_ERRORS=$(PHP_INI_SCAN_DIR=/etc/php/8.4/fpm/conf.d php -c /etc/php/8.4/fpm/php.ini -r 'echo ini_get("display_errors");' 2>/dev/null)
+POOL_DISPLAY_ERRORS=$(grep -oP '^\s*php(_admin)?_(flag|value)\[display_errors\]\s*=\s*\K\S+' /etc/php/8.4/fpm/pool.d/*.conf 2>/dev/null | tail -1)
+[ -n "$POOL_DISPLAY_ERRORS" ] && DISPLAY_ERRORS="$POOL_DISPLAY_ERRORS"
+case "${DISPLAY_ERRORS,,}" in
+	1|on|true|yes|stdout|stderr)
+		fail "display_errors is On in php-fpm - must be Off before real traffic (leaks paths/queries/stack traces to users)" ;;
+	*)
+		pass "display_errors is Off in php-fpm" ;;
+esac
 
 # ---------------------------------------------------------------------------
 section "DynaPDF"
@@ -76,13 +82,25 @@ for f in "$WEBROOT/engine/config.inc.php" "$WEBROOT/client/engine/config.inc.php
 		pass "$f has a SetLicenseKey() call present"
 	fi
 done
-KEYS_MATCH=$(for f in "$WEBROOT/engine/config.inc.php" "$WEBROOT/client/engine/config.inc.php" "$WEBROOT/config.inc.php"; do
-	grep -oP "SetLicenseKey\('\K[^']*" "$f" 2>/dev/null
-done | sort -u | wc -l)
+# Compare the SetLicenseKey() argument as written - normally all three read
+# getenv('TRKDEV_DYNAPDF_LICENSE_KEY'), but a hardcoded key would show up too.
+KEY_ARGS=$(for f in "$WEBROOT/engine/config.inc.php" "$WEBROOT/client/engine/config.inc.php" "$WEBROOT/config.inc.php"; do
+	grep -oP 'SetLicenseKey\(\s*\K.*?(?=\s*\)\s*;)' "$f" 2>/dev/null
+done | sort -u)
+KEYS_MATCH=$(printf '%s' "$KEY_ARGS" | grep -c .)
 if [ "$KEYS_MATCH" = "1" ]; then
-	pass "all three config.inc.php copies carry the same license key"
+	pass "all three config.inc.php copies pass the same license key ($( [[ "$KEY_ARGS" == getenv* ]] && echo "$KEY_ARGS" || echo "hardcoded" ))"
 else
-	fail "config.inc.php copies carry DIFFERENT license keys ($KEYS_MATCH distinct values) - a previous key renewal likely missed one of the three files"
+	fail "config.inc.php copies pass DIFFERENT license keys ($KEYS_MATCH distinct values) - a previous key renewal likely missed one of the three files"
+fi
+if [[ "$KEY_ARGS" == *TRKDEV_DYNAPDF_LICENSE_KEY* ]]; then
+	if ! grep -qP "^TRKDEV_DYNAPDF_LICENSE_KEY=['\"]?[^'\"\s]+" /etc/trkdev-db.env 2>/dev/null; then
+		fail "TRKDEV_DYNAPDF_LICENSE_KEY is not set in /etc/trkdev-db.env - DynaPDF would run unlicensed (watermarked output)"
+	elif ! grep -qP '^\s*env\[TRKDEV_DYNAPDF_LICENSE_KEY\]' /etc/php/8.4/fpm/pool.d/www.conf 2>/dev/null; then
+		fail "php-fpm pool config doesn't pass TRKDEV_DYNAPDF_LICENSE_KEY through (env[...] line missing) - web-tier DynaPDF would run unlicensed"
+	else
+		pass "TRKDEV_DYNAPDF_LICENSE_KEY is set in /etc/trkdev-db.env and passed to php-fpm"
+	fi
 fi
 warn "this script does not render a test PDF - re-run the manual watermark check (see SYSTEM_STATE.md's DynaPDF section) once, on this host, before go-live"
 
