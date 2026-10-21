@@ -4,8 +4,8 @@ include_once('/var/www/html/engine/connect.php');
 include_once('/var/www/html/engine/engine.php');
 include_once('/var/www/html/engine/xml_handler.php');
 
-// DEV-environment gate: while IS_DEV_ENVIRONMENT is true (trkdev2 only -
-// see constans.php), no outgoing Switch call is allowed unless it's on
+// DEV-environment gate: while IS_DEV_ENVIRONMENT is true (ENVIRONMENT is not
+// "production" - see constans.php), no outgoing Switch call is allowed unless it's on
 // behalf of TestCo, our one designated test client. This exists so the
 // hard iptables block on Switch connectivity can be lifted for real-world
 // testing without risking a call reaching Switch for a real production

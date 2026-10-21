@@ -604,9 +604,11 @@
 	// Switch-facing label derived from PMD_LONG must go through this, so
 	// an unsuffixed copy can never be produced (or sent) from a dev host -
 	// not "shouldn't", structurally can't, because there's no other path
-	// that builds this filename.
+	// that builds this filename. "Dev host" means ENVIRONMENT isn't
+	// production (engine/constans.php) - the same rule as the Switch client
+	// gate, not the hostname, so the two can't disagree on a clone.
 	function pmdDevSafeName( $base ) {
-		if( stripos( gethostname(), 'dev' ) !== false ) {
+		if( IS_DEV_ENVIRONMENT ) {
 			$dot = strrpos( $base, '.' );
 			$base = substr( $base, 0, $dot ) . '_DEV' . substr( $base, $dot );
 			}
@@ -1013,7 +1015,7 @@
 		// (it used switchClientAllowed() instead, which requires a jobCode/
 		// Code and so silently returned "blocked" for this dataset-wide,
 		// no-single-job event - every call here was being dropped) and the
-		// dev-hostname _DEV suffix (it hardcoded PMD_LONG.".xml" with no
+		// dev-environment _DEV suffix (it hardcoded PMD_LONG.".xml" with no
 		// suffix logic at all). XMLUpload2() already has both fixed
 		// correctly and already has the durable retry-queue fallback, so
 		// route through it instead of maintaining a second, divergent copy

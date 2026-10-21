@@ -37,9 +37,10 @@ a publication to delete).
 
 Isolated CLI calls (`php -r '...'`) are useful for narrow debugging but
 gave at least one false positive during this run: `IS_DEV_ENVIRONMENT` is
-set via a php-fpm pool env var, so a bare CLI script silently runs with
-the DEV gate *disabled* unless `TRKDEV_ENVIRONMENT` is explicitly
-exported first - a "success" from a CLI test doesn't confirm the gate
+set from the `ENVIRONMENT` env var, which php-fpm gets from
+`/etc/trkdev-db.env`. A bare CLI script without that file sourced has no
+`ENVIRONMENT`, so it runs as `developer` (the DEV gate *enabled*, since
+2026-10-21; before that it was silently disabled) - a "success" from a CLI test doesn't confirm the gate
 logic actually works. Drive real endpoints over HTTP with an authenticated
 session cookie (login via `client/index2.php`, capture the CSRF token
 and session cookie, reuse the cookie jar for subsequent requests) to get

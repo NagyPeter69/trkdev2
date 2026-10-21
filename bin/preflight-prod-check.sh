@@ -28,33 +28,67 @@ warn() { printf "  \033[33mWARN\033[0m  %s\n" "$1"; WARNS=$((WARNS+1)); }
 section() { printf "\n== %s ==\n" "$1"; }
 
 # ---------------------------------------------------------------------------
-section "Dev-safety gates (must be OFF for production)"
+section "Environment (ENVIRONMENT must be production)"
 
-HOSTNAME_NOW="$(hostname)"
-if echo "$HOSTNAME_NOW" | grep -qi 'dev'; then
-	fail "hostname '$HOSTNAME_NOW' contains \"dev\" - pmdDevSafeName() in engine/xml_handler.php will permanently suffix _DEV onto every PMD XML sent to Switch. There is no config flag to override this, only the hostname itself."
+# One variable decides dev vs production behaviour: ENVIRONMENT in
+# /etc/trkdev-db.env, "production" or "developer" (engine/constans.php).
+# Anything but "production" counts as developer - TestCo-only Switch
+# routing (switchClientAllowed()/switchBulkSyncAllowed()) and a _DEV
+# suffix on every PMD XML (pmdDevSafeName()). Cron sources the file;
+# php-fpm gets it through its systemd EnvironmentFile plus an
+# env[ENVIRONMENT] = $ENVIRONMENT pass-through in every pool.
+ENV_FILE=/etc/trkdev-db.env
+if [ ! -f "$ENV_FILE" ]; then
+	fail "$ENV_FILE not found - cron and php-fpm both read ENVIRONMENT (and the DB credentials) from it"
 else
-	pass "hostname '$HOSTNAME_NOW' does not contain \"dev\""
+	# Let bash parse it, the way cron does - values may be quoted.
+	ENV_VALUE=$(bash -c 'set -a; . "$1" >/dev/null 2>&1; printf "%s" "${ENVIRONMENT-<unset>}"' _ "$ENV_FILE")
+	case "$ENV_VALUE" in
+		production) pass "$ENV_FILE sets ENVIRONMENT=production" ;;
+		developer)  fail "$ENV_FILE sets ENVIRONMENT=developer - Switch routing is TestCo-only and PMD XML gets the _DEV suffix" ;;
+		*)          fail "$ENV_FILE sets ENVIRONMENT='$ENV_VALUE' - only production/developer are valid, anything else is treated as developer" ;;
+	esac
 fi
 
-TRKDEV_ENV_POOL=$(grep -oP 'env\[TRKDEV_ENVIRONMENT\]\s*=\s*\K.*' /etc/php/8.4/fpm/pool.d/www.conf 2>/dev/null || true)
-if [ "$TRKDEV_ENV_POOL" = "dev" ]; then
-	fail "TRKDEV_ENVIRONMENT=dev in php-fpm pool config - switchClientAllowed()/switchBulkSyncAllowed() will keep restricting ALL Switch job routing to Colorcom/TestCo only"
-elif [ -z "$TRKDEV_ENV_POOL" ]; then
-	pass "TRKDEV_ENVIRONMENT is unset in php-fpm pool config"
+if grep -rqs 'TRKDEV_ENVIRONMENT' "$ENV_FILE" /etc/php/8.4/fpm/pool.d/*.conf /etc/systemd/system/php8.4-fpm.service.d/*.conf; then
+	fail "the old TRKDEV_ENVIRONMENT is still set somewhere ($(grep -rls 'TRKDEV_ENVIRONMENT' "$ENV_FILE" /etc/php/8.4/fpm/pool.d/*.conf /etc/systemd/system/php8.4-fpm.service.d/*.conf | tr '\n' ' ')) - nothing reads it any more; remove it"
 else
-	warn "TRKDEV_ENVIRONMENT='$TRKDEV_ENV_POOL' in php-fpm pool config (not \"dev\", so IS_DEV_ENVIRONMENT is false - fine, but an unexpected value, worth a glance)"
+	pass "no leftover TRKDEV_ENVIRONMENT"
 fi
 
-if [ -f /etc/trkdev-db.env ]; then
-	TRKDEV_ENV_CRON=$(grep -oP '^TRKDEV_ENVIRONMENT=\K.*' /etc/trkdev-db.env 2>/dev/null || true)
-	if [ "$TRKDEV_ENV_CRON" = "dev" ]; then
-		fail "TRKDEV_ENVIRONMENT=dev in /etc/trkdev-db.env - cron-run scripts will see the same dev restriction as the web tier"
+if grep -qsP "^\s*EnvironmentFile=-?$ENV_FILE\s*$" /etc/systemd/system/php8.4-fpm.service.d/*.conf; then
+	pass "php-fpm loads $ENV_FILE (systemd EnvironmentFile)"
+else
+	fail "php-fpm's systemd unit doesn't load $ENV_FILE - its pools would see no ENVIRONMENT and act as developer"
+fi
+
+for POOL in /etc/php/8.4/fpm/pool.d/*.conf; do
+	POOL_LINE=$(grep -oP '^\s*env\[ENVIRONMENT\]\s*=\s*\K\S+' "$POOL" | tail -1)
+	if [ "$POOL_LINE" = '$ENVIRONMENT' ]; then
+		pass "$(basename "$POOL") passes ENVIRONMENT through from $ENV_FILE"
+	elif [ -z "$POOL_LINE" ]; then
+		fail "$(basename "$POOL") has no env[ENVIRONMENT] = \$ENVIRONMENT line - PHP in that pool sees no ENVIRONMENT and acts as developer"
 	else
-		pass "/etc/trkdev-db.env does not set TRKDEV_ENVIRONMENT=dev"
+		fail "$(basename "$POOL") hardcodes env[ENVIRONMENT] = $POOL_LINE - use \$ENVIRONMENT so $ENV_FILE stays the only place it's set"
+	fi
+done
+
+# What php-fpm actually sees right now (it only re-reads the file on a
+# restart, not a reload). Needs cgi-fcgi (libfcgi-bin); the probe file is
+# removed straight after.
+if command -v cgi-fcgi >/dev/null; then
+	PROBE="$WEBROOT/client/r3shared/preflight_env_$$.php"
+	printf '<?php require "%s/engine/constans.php"; echo "ENV=", ENVIRONMENT;' "$WEBROOT" > "$PROBE"
+	chmod 644 "$PROBE"
+	LIVE_ENV=$(SCRIPT_FILENAME="$PROBE" SCRIPT_NAME=/preflight.php REQUEST_METHOD=GET cgi-fcgi -bind -connect /run/php/php8.4-fpm.sock 2>/dev/null | grep -oP 'ENV=\K\w+')
+	rm -f "$PROBE"
+	if [ "$LIVE_ENV" = "production" ]; then
+		pass "running php-fpm sees ENVIRONMENT=production"
+	else
+		fail "running php-fpm sees ENVIRONMENT='${LIVE_ENV:-<no answer>}' - restart (not reload) php8.4-fpm after changing $ENV_FILE"
 	fi
 else
-	warn "/etc/trkdev-db.env not found - expected to exist for cron DB credentials"
+	warn "cgi-fcgi not installed - can't check what the running php-fpm sees (apt install libfcgi-bin)"
 fi
 
 # What the web tier sees: php-fpm's own php.ini + conf.d (99-trkdev.ini

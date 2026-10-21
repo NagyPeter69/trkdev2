@@ -637,16 +637,17 @@ HTTP request to `SWITCHLOGINURL`, both succeeding in under 10ms), but only for j
 behalf of **TestCo** - this was a deliberate decision, not a regression or a gap, and it
 lines up with (rather than duplicates) the application-level allowlist enforced by
 `switchClientAllowed()`/`switchBulkSyncAllowed()` (see below): both the network rule and
-the app-level `TRKDEV_ENVIRONMENT` gate independently restrict the same one test client,
+the app-level `ENVIRONMENT` gate independently restrict the same one test client,
 rather than the network layer blocking everything and the app layer being the only thing
 narrowing it down. Do not widen either layer without checking with the project owner
 first.
 
-**This entire TestCo-only restriction is conditional on `TRKDEV_ENVIRONMENT=dev`** (see
-`IS_DEV_ENVIRONMENT` in `engine/constans.php`) — everything in this paragraph describes what
+**This entire TestCo-only restriction is conditional on `ENVIRONMENT` not being
+`production`** (see `ENVIRONMENT`/`IS_DEV_ENVIRONMENT` in `engine/constans.php`; valid values
+are `production` and `developer`, and anything else, unset included, counts as `developer`) — everything in this paragraph describes what
 holds whenever that's the case (this machine or any future clone of it), not a permanent
-property of the codebase. **Current state on this machine, confirmed 2026-09-06**:
-`TRKDEV_ENVIRONMENT=production` (see "Environment-identity consolidation" under "Deploying to
+property of the codebase. **Current state on this machine, confirmed 2026-09-06 (variable renamed 2026-10-21)**:
+`ENVIRONMENT=production` (see "Environment-identity consolidation" under "Deploying to
 production" below), so both `switchClientAllowed()`/`switchBulkSyncAllowed()` are unconditional
 no-ops (every client goes through, not just TestCo) — and the **network-layer block described
 above is not currently in place either**: `iptables -L`/`nft list ruleset` show every chain
@@ -655,7 +656,7 @@ persisted config `nftables.service` loads at boot) defines that same empty rules
 2026-09-05 18:00 — a deliberate change that has correctly survived the reboot since, not
 something that failed to persist. Both layers being open is the expected state for a genuine
 production box (every real client, Colorcom included, needs to reach Switch normally) — **if
-you ever find this machine (or a clone) back on `TRKDEV_ENVIRONMENT=dev`, re-apply both layers
+you ever find this machine (or a clone) back on `ENVIRONMENT=developer`, re-apply both layers
 described in this section** rather than assuming production's current openness is itself the
 template to copy.
 
@@ -1448,6 +1449,31 @@ real reset-password send and checking the link in the actual received email, the
 this was verified on trkdev2 (2026-08-07, using real `test1user@colorcom.hu`/
 `test2user@colorcom.hu` mailboxes via IMAP against `mail.colorcom.hu`) — don't just trust the
 config file was edited correctly.
+
+### One ENVIRONMENT variable (2026-10-21)
+
+Dev vs production is now decided by exactly one thing: `ENVIRONMENT` in `/etc/trkdev-db.env`,
+`production` on this box and `developer` on trkdev2 or any clone. It replaced
+`TRKDEV_ENVIRONMENT` (where only the exact value `dev` meant dev, so unset or a typo meant
+production) and the hostname test in `pmdDevSafeName()` (a hostname containing "dev" added
+the `_DEV` suffix, independent of the variable, so the two could disagree on a clone).
+
+- `engine/constans.php` defines `ENVIRONMENT` and `IS_DEV_ENVIRONMENT`. Only the exact value
+  `production` is production. Anything else, unset included, is treated as `developer` (fails
+  closed) and logs a line to the PHP error log, unless the value is literally `developer`.
+- `IS_DEV_ENVIRONMENT` drives both the TestCo-only Switch gate (`switchClientAllowed()`,
+  `switchBulkSyncAllowed()`) and the `_DEV` PMD XML suffix (`pmdDevSafeName()`).
+- Cron sources the file. php-fpm loads it through the systemd drop-in below, and both pools
+  (`www.conf`, `downloads.conf`) pass it on with `env[ENVIRONMENT] = $ENVIRONMENT`. The
+  detached Switch sender (`async_send_cli.php`) inherits it from php-fpm. **A change to the
+  file needs `systemctl restart php8.4-fpm`; a reload keeps the old value.**
+- `bin/preflight-prod-check.sh` checks the file, the leftover old name, the systemd drop-in,
+  every pool's pass-through line, and asks the running php-fpm what it sees.
+- **trkdev2 still needs `ENVIRONMENT=developer` added** (and `TRKDEV_ENVIRONMENT` removed)
+  in its own `/etc/trkdev-db.env` and pool configs. Until then it behaves as developer anyway,
+  but logs the warning on every request.
+
+The section below describes the earlier, 2026-09-06 state and still names `TRKDEV_ENVIRONMENT`.
 
 ### Environment-identity consolidation, post-cutover (2026-09-06)
 

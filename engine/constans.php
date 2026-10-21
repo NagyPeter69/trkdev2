@@ -1,9 +1,20 @@
 <?PHP
-// Set per-host (php-fpm pool config / cron env file), never committed:
-// "dev" on trkdev2, unset (=> production) everywhere else. Governs the
-// Switch client whitelist in client/engine/switchAPI.php - see
-// switchClientAllowed().
-define( "IS_DEV_ENVIRONMENT", getenv( "TRKDEV_ENVIRONMENT" ) === "dev" );
+// The one switch between production and dev behaviour. Set per host in
+// /etc/trkdev-db.env, never committed: ENVIRONMENT=production on the live
+// box, ENVIRONMENT=developer on trkdev2 and any clone. Cron sources that
+// file; php-fpm loads it via its systemd EnvironmentFile and passes it on
+// with env[ENVIRONMENT] = $ENVIRONMENT (a restart, not a reload, picks up
+// a change). Anything else - unset, a typo, the old TRKDEV_ENVIRONMENT -
+// counts as developer, so a misconfigured host fails closed instead of
+// sending real client jobs to Switch.
+// Governs switchClientAllowed()/switchBulkSyncAllowed() in
+// client/engine/switchAPI.php (TestCo only on developer) and
+// pmdDevSafeName() in engine/xml_handler.php (_DEV suffix on developer).
+define( "ENVIRONMENT", getenv( "ENVIRONMENT" ) === "production" ? "production" : "developer" );
+define( "IS_DEV_ENVIRONMENT", ENVIRONMENT !== "production" );
+if( IS_DEV_ENVIRONMENT && !in_array( getenv( "ENVIRONMENT" ), array( "developer" ), true ) ) {
+	error_log( "constans.php: ENVIRONMENT is ".var_export( getenv( "ENVIRONMENT" ), true )." (expected 'production' or 'developer') - treating this host as developer" );
+	}
 
 define( "FPUPLOAD_PATH", "/var/www/html/client/flatplan_uploads" );
 define( "ARCHIVE_PATH", "/var/www/html/archives" );
