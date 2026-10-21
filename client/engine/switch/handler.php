@@ -53,7 +53,36 @@ if( $_POST["userName"] != "switch" or $_POST["password"] != "1mn0tr0b0t" ) {
 	error_log( "include: ".$_POST["event"]."-handler.php" );
 //	}
 
-include( $_POST["event"]."-handler.php" );
+// Switch's archive flow has been seen calling back with no "event" field at
+// all - only userName/password/jobCode/issue/result (DM 2610 on 2026-10-02,
+// HYA19 on 2026-10-08) - which used to include "-handler.php" and silently
+// drop the callback, leaving the job stuck at "archiving". Until the Switch
+// side is fixed: an event-less callback for a job that is currently
+// "archiving" can only be that archive's result, so route it there.
+// jobCode/issue arrive as CODE/ISSUE for Regular jobs (DM/2610) and as
+// CODE/CODE for Adhoc ones (HYA19/HYA19) - the same lookup as
+// archive_results-handler.php handles both.
+if( empty( $_POST["event"] ) && ( $_POST["result"] ?? '' ) != '' && !empty( $_POST["jobCode"] ) && !empty( $_POST["issue"] ) ) {
+	$fbMagazine = sql_aget( 'magazines', "code='".mysqli_real_escape_string( $con, $_POST["jobCode"] )."'", 'id' );
+	$fbPub = array();
+	if( !empty( $fbMagazine[0]['id'] ) ) {
+		$fbPub = sql_aget( 'publications', "magazine_id='".$fbMagazine[0]['id']."' AND code='".mysqli_real_escape_string( $con, $_POST["issue"] )."'", 'status' );
+		}
+	if( ( $fbPub[0]['status'] ?? '' ) == 'archiving' ) {
+		$_POST["event"] = 'archive_results';
+		error_log( "handler.php: event-less Switch callback for ".$_POST["jobCode"]."/".$_POST["issue"]." routed to archive_results (job is archiving)" );
+		}
+	}
+
+// Only ever include a real handler file: an empty or unknown event used to
+// produce a failed include and nothing else, and the raw value was spliced
+// into an include path.
+if( preg_match( '/^[a-z_]+$/', $_POST["event"] ?? '' ) && is_file( __DIR__.'/'.$_POST["event"]."-handler.php" ) ) {
+	include( __DIR__.'/'.$_POST["event"]."-handler.php" );
+	}
+else {
+	error_log( "CRITICAL: handler.php: no handler for Switch event '".( $_POST["event"] ?? '' )."' (jobCode '".( $_POST["jobCode"] ?? '' )."', issue '".( $_POST["issue"] ?? '' )."') - callback dropped, raw payload in client/engine/switch/logs/" );
+	}
 
 $response = '<?xml version="1.0" encoding="UTF-8"?>';
 $response .= '<valami>';
