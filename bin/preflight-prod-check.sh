@@ -87,58 +87,40 @@ fi
 warn "this script does not render a test PDF - re-run the manual watermark check (see SYSTEM_STATE.md's DynaPDF section) once, on this host, before go-live"
 
 # ---------------------------------------------------------------------------
-section "R3 renderer"
+section "R3 render node"
 
-R3_BIN="$WEBROOT/r3API/r3/r3"
-R3RENDER_BIN="$WEBROOT/r3API/r3/r3render"
-for bin in "$R3_BIN" "$R3RENDER_BIN"; do
-	if [ ! -f "$bin" ]; then
-		fail "$bin missing"
-		continue
-	fi
-	if [ ! -x "$bin" ]; then
-		fail "$bin exists but is not executable"
+# R3 runs only on the render node; this host just calls it (engine/r3client_config.php)
+# and falls back to Ghostscript/DynaPDF when it is down.
+R3_URL=$(grep -oP "R3_REMOTE_URL',\s*'\K[^']*" "$WEBROOT/engine/r3client_config.php" 2>/dev/null)
+if [ -z "$R3_URL" ]; then
+	fail "could not extract R3_REMOTE_URL from engine/r3client_config.php"
+else
+	R3_HEALTH="${R3_URL%%/r3remote/*}/health"
+	if [ "$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 4 "$R3_HEALTH")" = "200" ]; then
+		pass "render node answers at $R3_HEALTH"
 	else
-		pass "$bin is executable"
+		fail "render node not answering at $R3_HEALTH - renders will fall back to Ghostscript/DynaPDF (red Pages View spinner); MEASURE points/COMPARE won't work"
 	fi
-	OWNER=$(stat -c '%U:%G' "$bin" 2>/dev/null)
-	if [ "$OWNER" != "www-data:www-data" ]; then
-		warn "$bin owned by $OWNER, expected www-data:www-data"
-	fi
-	if command -v getcap >/dev/null 2>&1; then
-		CAPS=$(getcap "$bin" 2>/dev/null)
-		if echo "$CAPS" | grep -q 'cap_sys_rawio'; then
-			pass "$bin has cap_sys_rawio"
-		else
-			fail "$bin is missing cap_sys_rawio - re-run: setcap cap_sys_rawio+ep $bin (needed on BOTH r3 and r3render, capabilities don't propagate across r3's internal exec of r3render)"
-		fi
+	R3_HOST=$(echo "$R3_URL" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
+	if exportfs -v 2>/dev/null | grep -q "$R3_HOST"; then
+		pass "client/ is NFS-exported to $R3_HOST (render node path mode)"
 	else
-		warn "getcap not installed - cannot verify capabilities on $bin"
+		warn "client/ is not NFS-exported to $R3_HOST - R3 still works, but every call uploads the PDF (slower)"
+	fi
+fi
+
+for icc in FOGRA_39.icc sRGB_Color_Space_Profile.icc; do
+	if [ -f "$WEBROOT/r3API/r3/$icc" ]; then
+		pass "ICC store has $icc (r3API/r3 is the ICC store for Ghostscript/DynaPDF)"
+	else
+		fail "ICC store r3API/r3/$icc missing - Ghostscript/DynaPDF colour conversion will fail"
 	fi
 done
 
 if id www-data 2>/dev/null | grep -q '\bkmem\b'; then
-	pass "www-data is a member of the kmem group"
+	warn "www-data is in the kmem group (/dev/mem read access) - only local R3 needed that; remove: gpasswd -d www-data kmem, then restart php-fpm"
 else
-	fail "www-data is NOT in the kmem group - /dev/mem is crw-r-----root:kmem by stock udev rule, R3 will fail with EACCES before even reaching the capability check. Fix: usermod -aG kmem www-data, then restart php-fpm (running workers keep their original groups until restart)"
-fi
-
-if systemctl is-enabled trkdev-detect-render-mode.service >/dev/null 2>&1; then
-	pass "trkdev-detect-render-mode.service is enabled (will re-detect render mode on every boot)"
-else
-	fail "trkdev-detect-render-mode.service is not enabled - run: sudo bin/install-render-mode-detector.sh (without it, /etc/trkdev-render-mode goes stale after any CPU-model change, e.g. a hypervisor migration)"
-fi
-
-if [ -f /etc/trkdev-render-mode ]; then
-	RENDER_MODE=$(tr -d '[:space:]' < /etc/trkdev-render-mode)
-	CPU_SAYS_KVM64=$(php -r 'require "'"$WEBROOT"'/engine/cpu_detect.php"; echo r3_running_on_kvm64() ? "local" : "remote";' 2>/dev/null || true)
-	if [ "$RENDER_MODE" = "$CPU_SAYS_KVM64" ]; then
-		pass "/etc/trkdev-render-mode ('$RENDER_MODE') matches this boot's actual CPU fingerprint"
-	else
-		fail "/etc/trkdev-render-mode says '$RENDER_MODE' but the CPU fingerprint says '$CPU_SAYS_KVM64' right now - stale (rebooted without the service running? re-run bin/detect-render-mode.php or reboot)"
-	fi
-else
-	fail "/etc/trkdev-render-mode does not exist - run: sudo bin/install-render-mode-detector.sh"
+	pass "www-data is not in the kmem group"
 fi
 
 # ---------------------------------------------------------------------------

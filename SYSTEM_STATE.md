@@ -595,7 +595,7 @@ Found via direct code reading and confirmed against real data, not theoretical:
     the session lock; external asset recipients get a real session via their adhoc hotlink).
   - Root `engine/ajax.php` (legacy pmd.php/magazines.php helper): unauthenticated SQL injection
     - session-gated.
-  - `r3API/*.php` HTTP endpoints (unused - rendering goes through `r3run()`): `api.php` accepted
+  - (files deleted 2026-10-21) `r3API/*.php` HTTP endpoints (unused - rendering goes through `r3run()`): `api.php` accepted
     uploads from anyone into web-reachable `r3API/source/` keeping the client's file name
     (remote code execution), `pdftoimage.php` wrote to a client-chosen path - all now
     CLI/localhost only.
@@ -875,6 +875,24 @@ not three file edits.
 
 ## R3 (PDF rendering / color management)
 
+> **Current state (2026-10-21): R3 no longer exists on this host.** R3 runs only on the render
+> node 10.10.30.23 (VM 121 - kvm64, old QEMU 9.2, licensed SMBIOS UUID; see its own notes).
+> `engine/r3client.php` always calls the node (health ping first, shared-folder "path mode"
+> over the NFS export of `client/`, upload as fallback) and falls back to Ghostscript/DynaPDF
+> (`engine/gs_renderer.php`) when it is down. Removed from .60 on 2026-10-21: the local `r3`,
+> `r3render`, `r3render.vm` and test files in `r3API/r3/`, `r3API/r3_new/`, the old
+> `r3API/*.php` endpoints + `r3API/source|rendered`, `pdftoimage_test.php`, `r3run_local()`,
+> the local/remote switch (`R3_REMOTE_MODE`, `/etc/trkdev-render-mode`,
+> `trkdev-detect-render-mode.service`, `engine/cpu_detect.php`, `bin/detect-render-mode.php`,
+> `bin/install-render-mode-detector.sh`), `www-data`'s `kmem` membership and the binaries'
+> `cap_sys_rawio`. **`r3API/r3/` stays: it is the ICC profile store** used by Ghostscript,
+> DynaPDF, tesztAjax, compare.php and the colour-standard upload (constant `R3_PROFILE_DIR`).
+> The removed binaries + scaffolding are archived in `/root/r3-archive-20261021.tar.gz`
+> (sha256 in the `.sha256` next to it; capabilities preserved as xattrs - extract with
+> `tar --xattrs --xattrs-include='security.capability'`). Because .60 no longer runs R3, its
+> vCPU type is no longer constrained (only VM 121 must stay kvm64).
+> Everything below is history; the cap/kmem/CPU details still describe what the render node needs.
+
 A second, separate PDF-rasterization tool from DynaPDF — a closed-source CLI (`r3`, plus a
 worker binary `r3render` that `r3` execs via `/bin/sh -c`) that does color-managed PDF→JPEG
 rendering (`-mode:RENDER`), box/metadata extraction (`-mode:GETDATA`), and spot-color
@@ -945,7 +963,7 @@ read, not narrowly scoped to the DMI table this specific binary wants) — accep
 the basis that this box sits behind a dedicated firewall gateway (Sophos) and isn't exposed
 to raw internet. Worth re-litigating if this system's network exposure ever changes.
 
-### R3's CPU/license conflict with this VM, and the render-VM workaround
+### R3's CPU/license conflict with this VM, and the render-VM workaround (history - local R3 removed 2026-10-21)
 
 The `/dev/mem` read described above isn't just reading arbitrary bytes — R3's license is
 bound to the motherboard/CPU identity it finds there, and it only accepts a genuine `kvm64`
@@ -1083,7 +1101,7 @@ live code:
   `advertisement.php` uses a `$dirFiles` that is never assigned. Nothing reads
   `pageinfo.lastdifference` anyway.
 
-### Boot-time render-mode detection (2026-08-27)
+### Boot-time render-mode detection (2026-08-27) - REMOVED 2026-10-21, history only
 
 Before this date, `R3_REMOTE_MODE` was computed live on every single PHP request — each
 FPM worker re-read and re-parsed `/proc/cpuinfo` from scratch every time `r3client_config.php`

@@ -1,26 +1,23 @@
 <?php
-// Single entry point for every r3 invocation across the app. RENDER,
-// GETDATA and MEASURE are handled locally by Ghostscript and DynaPDF since
-// R3 lost its license (see gs_renderer.php); COMPARE and AUTOCOMPARE go to
-// either the local r3 binary (only on a genuine kvm64 CPU) or the dedicated
-// render node over HTTP (any other CPU) - see r3client_config.php.
+// Single entry point for every r3 invocation across the app. R3 runs only on
+// the dedicated render node (10.10.30.23, see r3client_config.php) - this
+// host never runs R3 itself (its licence is tied to the node's kvm64 vCPU).
+// When the node is down or returns nothing, RENDER/GETDATA/MEASURE fall back
+// to Ghostscript/DynaPDF locally (see gs_renderer.php); COMPARE and
+// AUTOCOMPARE have no fallback.
 //
 // r3run() always returns the raw r3 output as a string - binary bytes for
 // RENDER/COMPARE (write it to a file yourself), text for GETDATA/MEASURE/
-// AUTOCOMPARE (same shape shell_exec() used to hand back directly). This
-// mirrors what every call site already expected, so migrating a call site
-// is just: replace the shell_exec(...) that built and ran the command with
-// a single r3run(...) call, using the same $params values that used to go
-// into the command string.
+// AUTOCOMPARE.
 //
 // $inputPath / $input2Path must be absolute local paths to the source
-// PDF(s) on THIS machine - r3run() takes care of getting them to wherever
-// r3 actually executes.
+// PDF(s) on THIS machine - r3run() takes care of getting them to the node.
 
 require_once __DIR__.'/r3client_config.php';
 require_once __DIR__.'/gs_renderer.php';
 
-define('R3_LOCAL_DIR', '/var/www/html/r3API/r3');
+// ICC profile store (the folder name is historical - R3 used to run from it).
+define('R3_PROFILE_DIR', '/var/www/html/r3API/r3');
 
 // The render node mounts this host's TRK client/ tree over host-local NFS at
 // R3_SHARE_REMOTE (see the render node's run.php "path mode"). When an r3
@@ -41,11 +38,7 @@ function r3run($mode, $params, $inputPath, $input2Path = null) {
 	// Only go to the render node if it answers a quick health ping; otherwise
 	// fall back straight away, so a down node costs ~1s (the ping) instead of
 	// a long render-curl timeout. r3_node_healthy() is cached per request.
-	if (R3_REMOTE_MODE) {
-		$out = r3_node_healthy() ? r3run_remote($mode, $params, $inputPath, $input2Path) : '';
-	} else {
-		$out = r3run_local($mode, $params, $inputPath, $input2Path);
-	}
+	$out = r3_node_healthy() ? r3run_remote($mode, $params, $inputPath, $input2Path) : '';
 	if (is_string($out) && $out !== '') {
 		return $out;
 	}
@@ -88,9 +81,6 @@ function r3_node_healthy() {
 	static $ok = null;
 	if ($ok !== null) {
 		return $ok;
-	}
-	if (!R3_REMOTE_MODE) {
-		return $ok = true;
 	}
 	$p = parse_url(R3_REMOTE_URL);
 	$url = $p['scheme'].'://'.$p['host'].(isset($p['port']) ? ':'.$p['port'] : '').'/health';
@@ -135,9 +125,9 @@ function r3_render_fallback($params, $inputPath) {
 		return '';
 	}
 
-	$sprofile = R3_LOCAL_DIR.'/'.basename((string) ($params['sprofile'] ?? ''));
+	$sprofile = R3_PROFILE_DIR.'/'.basename((string) ($params['sprofile'] ?? ''));
 	if (!is_file($sprofile)) {
-		$sprofile = R3_LOCAL_DIR.'/FOGRA_39.icc';
+		$sprofile = R3_PROFILE_DIR.'/FOGRA_39.icc';
 	}
 	$colors = strtolower((string) ($params['colors'] ?? ''));
 	$blankInks = array();
@@ -293,16 +283,15 @@ function r3_fallback_canvas($width, $height, $jpeg, $x, $y) {
 	}
 }
 
-// Some legacy call sites still pass paths relative to the r3 directory (e.g.
-// "../../advertisements/x.pdf"), a leftover of the old "cd r3; ./r3 ..."
-// shell_exec() calls. r3run_local() resolves those naturally because it runs
-// r3 from R3_LOCAL_DIR; the remote path must resolve them the same way rather
-// than against PHP's cwd.
+// Some legacy call sites still pass paths relative to the old r3 directory
+// (e.g. "../../advertisements/x.pdf"), a leftover of the old "cd r3; ./r3 ..."
+// shell_exec() calls; resolve them against that directory rather than
+// against PHP's cwd.
 function r3_resolve_input_path($path) {
 	if (!is_string($path) || $path === '' || $path[0] === '/') {
 		return $path;
 	}
-	return R3_LOCAL_DIR.'/'.$path;
+	return R3_PROFILE_DIR.'/'.$path;
 }
 
 function r3run_remote($mode, $params, $inputPath, $input2Path = null) {
@@ -455,79 +444,4 @@ function r3remote_upload($mode, $params, $inputPath, $input2Path = null) {
 	}
 
 	return base64_decode($decoded['data']);
-}
-
-function r3run_local($mode, $params, $inputPath, $input2Path = null) {
-	$pv = function($arr, $key) {
-		return isset($arr[$key]) ? $arr[$key] : '';
-	};
-
-	if ($mode === 'RENDER') {
-		$cmd = './r3 -binary -mode:RENDER'
-			.' -left:'.escapeshellarg($pv($params, 'left'))
-			.' -right:'.escapeshellarg($pv($params, 'right'))
-			.' -bottom:'.escapeshellarg($pv($params, 'bottom'))
-			.' -top:'.escapeshellarg($pv($params, 'top'))
-			.' -width:'.escapeshellarg($pv($params, 'width'))
-			.' -height:'.escapeshellarg($pv($params, 'height'));
-		if (isset($params['colors']) && $params['colors'] !== '') {
-			$cmd .= ' -colors:'.escapeshellarg($params['colors']);
-		}
-		$cmd .= ' -tprofile:'.escapeshellarg($pv($params, 'tprofile'))
-			.' -sprofile:'.escapeshellarg($pv($params, 'sprofile'))
-			.' '.escapeshellarg($inputPath);
-	} elseif ($mode === 'GETDATA') {
-		$cmd = './r3 -mode:GETDATA -metadata '.escapeshellarg($inputPath);
-	} elseif ($mode === 'MEASURE') {
-		$cmd = './r3 -mode:MEASURE'
-			.' -x:'.escapeshellarg($pv($params, 'x'))
-			.' -y:'.escapeshellarg($pv($params, 'y'));
-		if (isset($params['d']) && $params['d'] !== '') {
-			$cmd .= ' -d:'.escapeshellarg($params['d']);
-		}
-		if (isset($params['r']) && $params['r'] !== '') {
-			$cmd .= ' -r:'.escapeshellarg($params['r']);
-		}
-		$cmd .= ' -tprofile:'.escapeshellarg($pv($params, 'tprofile'))
-			.' '.escapeshellarg($inputPath);
-	} elseif ($mode === 'COMPARE') {
-		$cmd = './r3 -mode:COMPARE'
-			.' -other_left:'.escapeshellarg($pv($params, 'other_left'))
-			.' -other_bottom:'.escapeshellarg($pv($params, 'other_bottom'))
-			.' -left:'.escapeshellarg($pv($params, 'left'))
-			.' -bottom:'.escapeshellarg($pv($params, 'bottom'))
-			.' -right:'.escapeshellarg($pv($params, 'right'))
-			.' -top:'.escapeshellarg($pv($params, 'top'))
-			.' -width:'.escapeshellarg($pv($params, 'width'))
-			.' -height:'.escapeshellarg($pv($params, 'height'))
-			.' '.escapeshellarg($inputPath).' '.escapeshellarg($input2Path);
-	} elseif ($mode === 'AUTOCOMPARE') {
-		$cmd = './r3 -mode:AUTOCOMPARE '.escapeshellarg($inputPath).' '.escapeshellarg($input2Path);
-	} else {
-		error_log('r3run_local: unknown mode '.$mode);
-		return '';
-	}
-
-	$outputTmp = tempnam(sys_get_temp_dir(), 'r3out_');
-	$full = 'cd '.escapeshellarg(R3_LOCAL_DIR).' && '.$cmd.' > '.escapeshellarg($outputTmp).' 2>>'.escapeshellarg($outputTmp.'.err');
-
-	// exec() (vs the previous bare shell_exec()) surfaces the process exit
-	// code, purely so a genuine r3 failure (crash, malformed/corrupt PDF,
-	// license issue) gets logged clearly instead of silently looking
-	// identical to "ran fine, produced no output" - every caller up the
-	// stack (getPDFBox() and friends) already has to treat an empty
-	// return as "nothing usable" regardless, so the external return
-	// contract (raw string, '' on any failure) is deliberately left
-	// unchanged here - this is strictly a logging improvement.
-	exec($full, $execOutput, $exitCode);
-	if ($exitCode !== 0) {
-		$errContent = @file_get_contents($outputTmp.'.err');
-		error_log('r3run_local: r3 exited with status '.$exitCode.' for mode '.$mode.(!empty($errContent) ? ' - stderr: '.trim($errContent) : ''));
-	}
-
-	$data = file_exists($outputTmp) ? file_get_contents($outputTmp) : '';
-	@unlink($outputTmp);
-	@unlink($outputTmp.'.err');
-
-	return $data;
 }

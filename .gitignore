@@ -103,7 +103,7 @@ client/tests/B-E.out
 client/engine/dyna/right7.jpg
 client/engine/dyna/test.pdf
 
-# Scratch output from a manual r3API/getpdfbox.php test run (timestamp-
-# prefixed filename) - not source despite the directory name.
-r3API/source/
+# Render node scratch folder: R3 RENDER output written over the NFS share
+# (engine/r3client.php, R3_SHARE_SCRATCH) - transient, unlinked after reading.
+client/r3shared/
 client/csv/
