@@ -16,7 +16,10 @@
 // it does NOT actually distinguish Switch from any other request that
 // reaches this server. Revisit once the network side stops masquerading
 // Switch's traffic or adds a forwarding header.
-if( ( $_SERVER['REMOTE_ADDR'] ?? '' ) !== '10.10.30.250' ) {
+// 2026-10-25: since the 2026-10-23 gateway change Switch arrives un-NATed
+// as 192.168.1.8 (every callback here was 403ing); 10.10.30.250 stays in
+// case the gateway masquerades it again.
+if( !in_array( $_SERVER['REMOTE_ADDR'] ?? '', array( '10.10.30.250', '192.168.1.8' ), true ) ) {
 	http_response_code( 403 );
 	exit;
 	}
