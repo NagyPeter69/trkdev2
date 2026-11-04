@@ -852,9 +852,11 @@ function imageList( $pubID ) {
 	$hird = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND status='2' AND fin='1' AND issue='".$pub[0]["code"]."' AND type='ad' GROUP BY page", "*" );
 	$process = getProcess( $magazine[0]["code"] );
 	
+	// Hardcopy proofs ordered through Switch, in two billing groups: ad pages and
+	// ads from the Adverts View ("Hirdetések"), everything else incl. the cover
+	// ("Szerkesztőségi").
 	$adProof = 0;
 	$proof = 0;
-	$coverProof = 0;
 	$retussum = 0;
 
 	$temp = sql_aget( "pageinfo", "code='".$magazine[0]["code"]."' AND issue='".$pub[0]["code"]."' AND proofCounter != '0'", "*" );
@@ -863,65 +865,54 @@ function imageList( $pubID ) {
 			$adProof += $temp[$i]["proofCounter"];
 			}
 		else {
-			if( $temp[$i]["page"] == "1" ) {
-				$coverProof += $temp[$i]["proofCounter"];
-				}
-			else {
-				$proof += $temp[$i]["proofCounter"];
-				}
+			$proof += $temp[$i]["proofCounter"];
 			}
 		}
 
 	// Ad proofs ordered from the Adverts View are logged in action_log
 	// (client/engine/adAjax.php) - this used to query pageinfo, which has no
 	// action/magazine columns, so the query failed and these never reached
-	// the invoicing / stopped-issue mails. Same fix as the info page's CSV
+	// the invoicing mail. Same fix as the info page's CSV
 	// export (client/engine/ajax.php downloadCSV), 2026-10-06.
 	$adProofTemp = sql_aget( "action_log", "action='adProof' AND magazine='".$pub[0]["magazine_id"]."' AND issue='".$pub[0]["code"]."' ", "*" );
 	$adProof += count( $adProofTemp );
-	
-	if( $process == "Full" or $process == "Hybrid" ) {
-		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."' AND retus > 0", "*" );
-		}
-	else {
-		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."'", "*" );
-		}
 
-	if( $process == "Resize" ) {
-		$txt .= "Képek száma: ".count( $kepek )."<br>";
-		$csv .= "Képek száma:\t".count( $kepek )."\n";
-		}
-	else {
+	// Full workflow bills retouching: list the retouched images with their
+	// minutes. Every other workflow (Hybrid included) bills processing: the
+	// image count only.
+	if( $process == "Full" ) {
+		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."' AND retus > 0", "*" );
 		for( $i = 0; $i < count( $kepek ); $i++ ) {
-			$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$kepek[$i]["name"]."&nbsp;".( $kepek[$i]["retus"] != "0" ? "–&nbsp;".$kepek[$i]["retus"] : "" )."&nbsp;".( $kepek[$i]["maszk"] == "Maszk: 1" ? "1" : "" )."<br>";
-			$csv .= "\t".$kepek[$i]["name"]."\t".( $kepek[$i]["retus"] != "0" ? $kepek[$i]["retus"] : "" )."\t".( $kepek[$i]["maszk"] == "1" ? "1" : "" )."\n";
+			$txt .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$kepek[$i]["name"]."&nbsp;–&nbsp;".$kepek[$i]["retus"]." perc<br>";
+			$csv .= "\t".$kepek[$i]["name"]."\t".$kepek[$i]["retus"]."\n";
 
 			$retussum += $kepek[$i]["retus"];
 			}
 
-		if( $retussum > 0 ) {
-			$txt .= "Összesen (perc):".$retussum."<br>";
-			$csv .= "\tÖsszesen (perc)\t".$retussum."\t\n";
-			}
+		$txt .= "Retusált képek: ".count( $kepek )." db, összesen ".$retussum." perc<br>";
+		$csv .= "Retusált képek:\t".count( $kepek )."\nÖsszesen (perc):\t".$retussum."\n";
 		}
-	
-	if( $process == "Full" or $process == "Hybrid" ) {
-		$txt .= "<br><br>Prooflista:<br>";
-		$csv .= "Prooflista\n";	
-	
-		$txt .= "Hirdetés proof: ".$adProof."<br>";
-		$csv .= "Hirdetés proof:\t".$adProof."\n";	
-	
-		$txt .= "Szerkesztőségi proof: ".$proof."<br>";
-		$csv .= "Szerkesztőségi proof:\t".$proof."\n";
-		
-		$txt .= "Borító proof: ".$coverProof."<br>";
-		$csv .= "Borító proof:\t".$coverProof."\n";
+	else {
+		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."'", "*" );
+		$txt .= "Feldolgozott képek: ".count( $kepek )." db<br>";
+		$csv .= "Feldolgozott képek:\t".count( $kepek )."\n";
+		}
 
-		$txt .= "Összesen: ".($adProof + $proof + $coverProof )."<br>";
-		$csv .= "Összesen:\t".($adProof + $proof + $coverProof )."\n";
+	// Only page-based workflows bill proofs (pages are gated the same way in invoicingTESZT).
+	if( $process == "Full" or $process == "Hybrid" ) {
+		$txt .= "<br><br>Hardcopy proofok:<br>";
+		$csv .= "Hardcopy proofok\n";
+
+		$txt .= "Hirdetések: ".$adProof."<br>";
+		$csv .= "Hirdetések:\t".$adProof."\n";
+
+		$txt .= "Szerkesztőségi: ".$proof."<br>";
+		$csv .= "Szerkesztőségi:\t".$proof."\n";
+
+		$txt .= "Összesen: ".( $adProof + $proof )."<br>";
+		$csv .= "Összesen:\t".( $adProof + $proof )."\n";
 		}
-		
+
 	return array( $txt, $csv );
 	}	
 
@@ -949,28 +940,22 @@ function invoicingTESZT( $pubID ) {
 	$txt .= "Lezárva: ".date( "Y-m-d\TH:i:s" , time() )."<br>";
 	$csv .= "Lezárva:\t".date( "Y-m-d\TH:i:s" , time() )."\n";
 
-	$txt .= "Terjedelem: ".$pub[0]["pages"]."<br>";
-	$csv .= "Terjedelem:\t".$pub[0]["pages"]."\n";
-	
-	$txt .= "Hirdetési oldalak: ".count( $hird )."<br>";
-	$csv .= "Hirdetési oldalak:\t".count( $hird )."\n";	
+	// Full and Hybrid jobs are page-based and bill pages + proofs; Resize/Auto
+	// jobs only bill the processed images.
+	if( $process == "Full" or $process == "Hybrid" ) {
+		$txt .= "Terjedelem: ".$pub[0]["pages"]."<br>";
+		$csv .= "Terjedelem:\t".$pub[0]["pages"]."\n";
 
-	$txt .= "Szerkesztőségi oldalak: ".( $pub[0]["pages"] - count( $hird ) )."<br>";
-	$csv .= "Szerkesztőségi oldalak:\t".( $pub[0]["pages"] - count( $hird ) )."\n";		
-	
-	if( $process == "Full" or $process == "Hybrid" ) {	
-		$txt .= "<br>Retusált képek:<br>";
-		$csv .= "Retusált képek\n";
-			
-		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."' AND retus > 0", "*" );
-		}
-	else {
-		$txt .= "<br>Képlista:<br>";
-		$csv .= "Képlista\n";
+		$txt .= "Hirdetési oldalak: ".count( $hird )."<br>";
+		$csv .= "Hirdetési oldalak:\t".count( $hird )."\n";
 
-		$kepek = sql_aget( "image_map", "pub_id='".$pub[0]["id"]."'", "*" );
+		$txt .= "Szerkesztőségi oldalak: ".( $pub[0]["pages"] - count( $hird ) )."<br>";
+		$csv .= "Szerkesztőségi oldalak:\t".( $pub[0]["pages"] - count( $hird ) )."\n";
 		}
 	
+	$txt .= "<br>";
+	$csv .= "\n";
+
 	$result = imageList( $pubID );
 	$txt .= $result[0];
 	$csv .= $result[1];

@@ -436,71 +436,7 @@
 		$values = array( $_SESSION['intra_user'], 'stoppedIssue', $p_id[0][1], $p_id[0][2],  $p_id[0][10], '', time(), '' );
 		sql_add( 'action_log', $names, $values );
 		
-		$xml = simplexml_load_file( XMLPATH.'/'.PMD.'.xml' );
-		$xpath = $xml->xpath('/Publications');
-		foreach($xpath as $temp) {
-			for( $x = 0; $x < count( $temp->Item ); $x++ ) {
-				if( $temp->Item[$x]->Code == $magazine[0][3] ) {
-					break;
-					}
-				}
-			}
-		
-		$mails = (string) $xml->Item[$x]->Mails;
-		$process = (string) $xml->Item[$x]->Workflow;
-		
-		$to = "ugyvitel@colorcom.hu|ugyvitel@colorcom.hu";
-		
-		$magname = $magazine[0][2]." – ".$magazine[0][3]." – ".$issue[0][10];
-		if( $magazine[0][10] == "Adhoc" ) {
-			$magname = $magazine[0][2]." – ".$magazine[0][3];
-			}
-		
-		$subject = "Stopped issue – ".$magname;
-		
-		if( $issue[0][1] != 0 ) {
-			$ugyfel = "Ügyfél: ".$publisher[0][1];
-			}
-		else {
-			$who = sql_aget( "accounts", "id='".$issue[0][24]."'", "*" );
-			$ugyfel = "Megrendelő: ".$who[0]["full_name"];
-			}
-		
-		$kepek = sql_aget( "image_map", "pub_id='".$issue[0][0]."'", "*" );
-		$retus = sql_aget( "image_map", "pub_id='".$issue[0][0]."' AND retus > 0", "*" );
-		$retustime = 0;
-		for( $i = 0; $i < count( $retus ); $i++ ) {
-			$retustime += intval( $retus[$i]["retus"] );
-			}
-		
-		$maszk = sql_aget( "image_map", "pub_id='".$issue[0][0]."' AND maszk > 0", "*" );
-		$img_hide = array( "_fix", "_lowres", "_inferior" );
-		
-		$imglist = imageList( $issue[0][0] );
-		$imglist = $imglist[0];
-		if( empty( $imglist ) ) $imglist = 0;
-		$body = "
-		Munka neve, kódja: ".$magname."<br>	
-		Kiértesített e-mail címek: ".$mails."<br><br>
-		Feldolgozott képek: ".count( $kepek )." db<br>
-		Maszkolt kép: ".count( $maszk )." db<br>
-		Retusálás: ".$retustime." perc<br><br>
-		Feldolgozott képek:<br>
-		".str_replace( "&nbsp;", "", str_replace( $img_hide, "", $imglist ) )."
-		";
-
-$txt = "
-Munka neve, kódja: ".$magname."
-Kiértesített e-mail címek: ".$mails."
-Feldolgozott képek: ".count( $kepek )." db
-Maszkolt kép: ".count( $maszk )." db
-Retusálás: ".$retustime." perc
-Feldolgozott képek:
-".str_replace( "<br>", "\n", str_replace( "&nbsp;", " ", str_replace( $img_hide, "", $imglist ) ) )."
-		";
-
-
-		produkcioSendmailAttach( $subject, $body, $to, $txt, $magazine[0][2]."_".$issue[0][10].".txt" );
+		// No ugyvitel@ mail on stop - only approvals notify administration (owner decision 2026-11-04).
 
 		$result = "ok";
 		}
