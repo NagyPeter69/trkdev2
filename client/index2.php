@@ -184,9 +184,19 @@ if( isset( $_SESSION['intra_user'] ) ) {
 	foreach( $r[0] as $key => $val ) {
 		$rights[$key] = $val;
 		}
+
+	// A bare visit (remembered login, bookmark of the root URL) used to
+	// always show Publications, ignoring the user's chosen start page -
+	// only a password login redirected to it. Honour it here too, for the
+	// non-default choices settings.php offers.
+	if( !empty( $user[0][0] ) && empty( $_GET ) && $_SERVER['REQUEST_METHOD'] === 'GET'
+		&& in_array( $user[0][9], array( 'advertisement', 'flatplan_planner' ), true ) ) {
+		header( 'Location: ?page='.$user[0][9] );
+		exit;
+		}
 	}
-	
-if( !empty( $user[0][17] ) ) {	
+
+if( !empty( $user[0][17] ) ) {
 	include_once('lang/'.$user[0][17].'.php');	
 	}
 else {

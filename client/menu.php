@@ -5,10 +5,16 @@
 		
 		if( $user[0][4] != 0 ) {
 			if( empty( $user[0][11] ) ) {
+				// No publications to pick from (e.g. a client whose jobs were all
+				// deleted but who still uses the Planner): leave actual empty.
+				// Writing it anyway stored "_", which is non-empty and so
+				// brought back Flatplan/Pages menu items pointing at no job.
 				$pubs = getShortPubs( $user[0] );
-				$mag = sql_aget( "magazines", "id='".$pubs[0][2]."'", "*" );
-				sql_update( "accounts", "actual='".$mag[0]["code"]."_".$pubs[0][10]."'", "id='".$user[0][0]."'" );
-				$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
+				if( !empty( $pubs[0][0] ) ) {
+					$mag = sql_aget( "magazines", "id='".$pubs[0][2]."'", "*" );
+					sql_update( "accounts", "actual='".$mag[0]["code"]."_".$pubs[0][10]."'", "id='".$user[0][0]."'" );
+					$user = sql_get( 'accounts', 'id="'.$_SESSION['intra_user'].'"', '*' );
+					}
 				}
 			
 			$magazines = sql_get( "magazines", "publisher_id='".$user[0][4]."'", "*" );

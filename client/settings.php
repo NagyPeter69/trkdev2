@@ -237,7 +237,8 @@
 				<?
 					$options = array(
 								$lang["menu"]["start_page"] => '',
-								$lang["menu"]["publications"] => 'create_magazine'
+								$lang["menu"]["publications"] => 'create_magazine',
+								$lang["menu"]["planner"] => 'flatplan_planner'
 								);
 				if( $rights['ad_view'] && $rights['ad_send'] && $rights['ad_upload'] && $rights['ad_delete'] ) {
 					$options[ $lang["menu"]["advertisement"] ] = 'advertisement';
