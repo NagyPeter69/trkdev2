@@ -2846,11 +2846,7 @@ function saveComment( div_id ) {
 
 	var defLeft = 100/ zoom * ( parseFloat( $("#"+div_id+"_text").css("left") ) - correction.left );
 	var defTop = 100/ zoom * ( parseFloat( $("#"+div_id+"_text").css("top") ) + correction.top - 2*parseFloat( $(".pagePreview").css("top") ) )+2*pixel( parseFloat( cBox[0]['Top'] ) );
-	
-	if( $('#content_box').scrollTop() > 0 && cBox[2] == "trimbox" ) {
-		defTop -= 100/ zoom * $('#content_box').scrollTop() / 4;
-		}
-	
+
 	$("#"+div_id+"_text").attr( "defLeft", defLeft );
 	$("#"+div_id+"_text").attr( "defTop", defTop );
 	$("#"+div_id+"_text").attr( "owner", user );
@@ -2864,38 +2860,27 @@ function saveComment( div_id ) {
 		});	
 
 	if( $("#"+div_id).attr("defLeft") > parseFloat( file[0]['Width'] ) ) {
-		var sqlLeft = $("#"+div_id).attr("defLeft")-parseFloat( file[0]['Width'] );
 		var sqlPage = parseInt( page ) +1;
 		}
 	else {
-		var tempZoom = zoom;
-		zoom = 100;
-		var sqlLeft = parseFloat( $("#"+div_id).attr("defLeft") )-pixel( parseFloat( cBox[0]['Left'] ) );
-		if( pages == "1" && page%2 == 1 ) {
-			//sqlLeft += pixel( parseFloat( cBox[0]['Left'] ) );
-			}
-			
-		zoom = tempZoom;
 		var sqlPage = parseInt( page );
 		}
-	
-		if( pages == "2" && sqlPage%2 == 1 ) {
-			sqlLeft += pixel( parseFloat( cBox[1]['Right'] ) )
-			}
 
-	if( cBox[2] == "trimbox" ) {
-		//sqlLeft += pixel( cBox[0]["Left"] ) / 2;
-		}
-	
 	if( fpPages == "single" ) {
 		sqlPage = clk;
 		}
+
+	// Exact inverse of loadComments(): store the coordinates that will redraw
+	// the shape at the very pixel it sits on now (= where it was pinned).
+	var screenOffset = commentScreenOffset( sqlPage );
+	var sqlLeft = 100/ zoom * ( parseFloat( $("#"+div_id).css("left") ) - screenOffset.left ) - screenOffset.shift;
+	var sqlTop = 100/ zoom * ( parseFloat( $("#"+div_id).css("top") ) - screenOffset.top );
 
 	var uploadData = {
 		pub: pub,
 		parent: '0',
 		left: sqlLeft,
-		top: defTop,
+		top: sqlTop,
 		width: $("#"+div_id).attr("defWidth"),
 		height: $("#"+div_id).attr("defHeight"),
 		page: sqlPage,
@@ -3150,6 +3135,44 @@ function autoreply( comment_id ) {
 	}
 
 
+// Where a stored remark lands on screen: newLeft = zoom/100*Left + left,
+// newTop = zoom/100*Top + top (Left already shifted by file[0].Width for the
+// right-hand page of a spread, see loadComments()). This is the ONE mapping
+// between stored remark coordinates and #commenDisplay pixels - loadComments()
+// draws with it and saveComment() inverts it, so a remark reloads exactly
+// where it was pinned. They used to carry two unrelated formulas (save also
+// subtracted a quarter of the scroll offset in trimbox mode), which put
+// remarks pinned while zoomed/scrolled tens of pixels away from the click.
+function commentScreenOffset( commentPage ) {
+	var correction = $(".pagePreview").position();
+	if( correction.left <= 0 || isNaN( correction.left ) ) { correction.left = 0; }
+	if( correction.top <= 0 || isNaN( correction.top ) ) { correction.top = 0; }
+
+	if( cBox[2] != "mediabox" && commentPage == page ) {
+		correction.left -= pixel( ( parseFloat( cropbox[0]["Left"] ) - parseFloat( bleedbox[0]["Left"] ) ), 100 );
+		correction.left = parseFloat( correction.left ) + pixel( parseFloat( cBox[0].Left ) );
+		correction.top = parseFloat( correction.top ) - pixel( parseFloat( cBox[0].Bottom ) );
+		}
+	else if( cBox[2] != "mediabox" ) {
+		correction.left += pixel( ( parseFloat( cropbox[0]["Left"] ) - parseFloat( bleedbox[0]["Left"] ) ), 100 );
+		correction.top = parseFloat( correction.top ) - pixel( parseFloat( cBox[0].Bottom ) );
+		}
+
+	var relPosition = {
+		left: $(".pagePreview").offset().left - $("#content_box").offset().left,
+		top : $(".pagePreview").offset().top - $("#content_box").offset().top
+		};
+	if( relPosition.left < 0 ) { relPosition.left = 0; }
+	if( relPosition.top < 0 ) {	relPosition.top = 0; }
+
+	return {
+		left: relPosition.left - correction.left + parseFloat( $(".pagePreview").css("left") ) + pixel( parseInt( cBox[0].Left ) ),
+		top: correction.top + 2*pixel( parseInt( cBox[0].Left ) ),
+		// loadComments() adds this to Left before scaling for the spread's right page
+		shift: ( commentPage == parseInt( page ) + 1 && fpPages != "single" ) ? parseFloat( file[0]['Width'] ) : 0
+		};
+	}
+
 function loadComments( comment ) {
 	if( comment != "" )
 		var separate = comment.split( "|" );
@@ -3187,35 +3210,15 @@ function loadComments( comment ) {
 				}
 			}
 		
-		var correction = $(".pagePreview").position();	
 		previewPic = {
 			Width: $( '.pagePreview' ).width(),
 			Height: $( '.pagePreview' ).height()
 			};
 		zoom_ = zoom;
-		if( correction.left <= 0 || correction.left == 'NaN' ) {	correction.left = 0; }
-		if( correction.top <= 0 || correction.top == 'NaN' ) {	correction.top = 0; }	
-		
-		if( cBox[2] != "mediabox" && commentData.Page == page  ) {
-			correction.left -= pixel( ( parseFloat( cropbox[0]["Left"] ) - parseFloat( bleedbox[0]["Left"] ) ), 100 );
-			correction.left = parseFloat( correction.left ) + pixel( parseFloat( cBox[0].Left ) );
-			correction.top = parseFloat( correction.top ) - pixel( parseFloat( cBox[0].Bottom ) );
-			}
-		else if( cBox[2] != "mediabox" ) {
-			correction.left += pixel( ( parseFloat( cropbox[0]["Left"] ) - parseFloat( bleedbox[0]["Left"] ) ), 100 );
-			correction.top = parseFloat( correction.top ) - pixel( parseFloat( cBox[0].Bottom ) );
-			}
-			
-		var relPosition = {
-			left: $(".pagePreview").offset().left - $("#content_box").offset().left,
-			top : $(".pagePreview").offset().top - $("#content_box").offset().top
-			};
-		
-		if( relPosition.left < 0 ) { relPosition.left = 0; }
-		if( relPosition.top < 0 ) {	relPosition.top = 0; }
 
-		var newLeft = ( zoom_ / 100 * commentData.Left) + relPosition.left - correction.left + parseFloat( $(".pagePreview").css("left") ) + pixel( parseInt( cBox[0].Left ) );
-		var newTop = ( zoom_ / 100 * commentData.Top ) + correction.top + 2*pixel( parseInt( cBox[0].Left ) );
+		var screenOffset = commentScreenOffset( commentData.Page );
+		var newLeft = ( zoom_ / 100 * commentData.Left) + screenOffset.left;
+		var newTop = ( zoom_ / 100 * commentData.Top ) + screenOffset.top;
 		var newWidth = ( zoom_ / 100 ) * commentData.Width;
 		var newHeight = ( zoom_ / 100 ) * commentData.Height;
 		

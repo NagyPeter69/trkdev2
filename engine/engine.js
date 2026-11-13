@@ -583,20 +583,20 @@ function connect(div1, div2, color, thickness, status ) {
     // distance
     var length = Math.sqrt(((x2-x1) * (x2-x1)) + ((y2-y1) * (y2-y1)));
     // center
-    var cx = ((x1 + x2) / 2) - (length / 2) + 3;
+    var cx = ((x1 + x2) / 2) - (length / 2);
     var cy = ((y1 + y2) / 2) - (thickness / 2) ;
     // angle
     var angle = Math.atan2((y1-y2),(x1-x2))*(180/Math.PI);
     // make hr
-    var htmlLine = "<div dash-data='"+$("#div1").attr("id")+"' class='dashLine' style='display: "+toggle[ status ]+"; border-top: "+thickness+"px dotted rgb( 108, 192, 217 ); left:" + cx + "px; top:" + cy + "px; width:" + (length-7) + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+    var htmlLine = "<div dash-data='"+div1.id+"' class='dashLine' style='display: "+toggle[ status ]+"; border-top: "+thickness+"px dotted rgb( 108, 192, 217 ); left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
     //
     //document.getElementById('commenDisplay').innerHTML += htmlLine;
-	if( $("div[dash-data='"+$("#div1").attr("id")+"']").length > 0 ) {
-		var obj = $("div[dash-data='"+$("#div1").attr("id")+"']");
+	if( $("div[dash-data='"+div1.id+"']").length > 0 ) {
+		var obj = $("div[dash-data='"+div1.id+"']");
 		obj.css({
 			"left" : cx + "px",
 			"top" : cy + "px",
-			"width" : (length-7) + "px",
+			"width" : length + "px",
 			"-moz-transform" : "rotate(" + angle + "deg)",
 			"-webkit-transform" : "rotate(" + angle + "deg)",
 			"-o-transform" : "rotate(" + angle + "deg)",
@@ -605,8 +605,9 @@ function connect(div1, div2, color, thickness, status ) {
 			});
 		}
 	else {
-		var html = $("#commenDisplay").html();
-		$("#commenDisplay").html( html + htmlLine );
+		// append, not html() rewrite: rewriting re-creates every remark box and
+		// silently drops the draggable bindings already attached to them
+		$("#commenDisplay").append( htmlLine );
 		}
 	
 	}
