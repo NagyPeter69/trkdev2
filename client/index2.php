@@ -9,6 +9,7 @@ include_once('../engine/engine.php');
 include_once('../engine/xml_handler.php');
 
 $login_error = "";
+define( 'LOGIN_CONFIRM_TTL', 300 );
 if( $_GET['page'] == 'logout' ) {
 	sql_update( "accounts", "logged_in='0'", 'id=\''.$_SESSION['intra_user'].'\'' );
 	clearRememberToken( $_SESSION['intra_user'] );
@@ -100,10 +101,25 @@ if( isset( $_COOKIE["intra_user"] ) && $_COOKIE["intra_user"] != "" ) {
 		}
 	}
 
-elseif( isset($_GET['username'] ) && isset($_GET['password'] ) ) {
-	$escUser = mysqli_real_escape_string( $con, $_GET['username'] );
-	$user = sql_get( 'accounts', 'name=\''.$escUser.'\'', '*' );
-	if( !empty( $user[0][0] ) && checkPassword( $_GET['password'], $user[0][2], $user[0][0] ) ) {
+// "Already logged in elsewhere - log off there?" confirmation. This used to
+// be a GET login carrying the username and password in the URL, so every
+// confirm wrote the plaintext password into the nginx access log and the
+// browser history (and skipped the CSRF check). The POST login below now
+// parks the already-verified account id in this browser's session with a
+// random one-time token, valid for LOGIN_CONFIRM_TTL seconds; only the token
+// travels in the URL, and it is useless outside this session or a second time.
+elseif( isset( $_GET['login_confirm'] ) ) {
+	$pending = $_SESSION['pending_login'] ?? null;
+	unset( $_SESSION['pending_login'] );
+	if( !is_array( $pending ) || empty( $pending['token'] ) || !is_string( $_GET['login_confirm'] )
+		|| !hash_equals( $pending['token'], $_GET['login_confirm'] ) || $pending['expires'] < time() ) {
+		$login_error = "Your login confirmation expired, please log in again";
+		$user = array();
+		}
+	else {
+		$user = sql_get( 'accounts', 'id=\''.(int) $pending['id'].'\'', '*' );
+		}
+	if( !empty( $user[0][0] ) ) {
 		session_regenerate_id( true );
 		$logged_in = 1;
 		issueRememberToken( $user[0][0] );
@@ -145,9 +161,11 @@ elseif( isset($_POST['username'] ) && isset($_POST['password'] ) ) {
 			// to the English question rather than leaving the sentence hanging.
 			$alreadyInQuestion = $lang["login"]["alreadyInQuestion"] ?? 'Would you like to log off on that machine?';
 			$alreadyInMsg = json_encode( $lang["login"]["alreadyIn"]." ".$alreadyInQuestion );
+			$confirmToken = bin2hex( random_bytes( 32 ) );
+			$_SESSION['pending_login'] = array( 'id' => (int) $user[0][0], 'token' => $confirmToken, 'expires' => time() + LOGIN_CONFIRM_TTL );
 			echo "<script>";
 				echo "if( confirm( ".$alreadyInMsg." ) ) {
-						window.location.href = 'index.php?username=".urlencode($_POST['username'])."&password=".urlencode($_POST['password'])."';
+						window.location.href = 'index.php?login_confirm=".$confirmToken."';
 						}";
 			echo "</script>";
 			}
@@ -222,7 +240,7 @@ else {
     <script src="../js/jquery.tipTip.js"></script>
     <script src="../js/jquery.tipTip2.js"></script>    
     <script src="js/jquery.ui.touch-punch.min.js"></script>
-    <script src="../engine/engine.js"></script>
+    <script src="../engine/engine.js?v=<?= @filemtime( __DIR__."/../engine/engine.js" ) ?>"></script>
     <script src="js/script.js"></script>
     <script src="js/jquery.transit.min.js"></script>
     <script src="js/hammer.min.js"></script>
