@@ -1551,6 +1551,13 @@ systematic comparison. Treat it as a sanity check, never as sufficient by itself
   unsubscribe preference (Gate B, independent from the admin's PMD-Mails "M" checkbox — see
   the mail gating section below); `pwset_token`/`pwset_expires` back the secure
   set-your-own-password link that replaced emailing plaintext passwords.
+- `pageinfo` index `idx_code_issue_page (code, issue, page)` — new, 2026-11-15, applied live on
+  production (`ALTER TABLE pageinfo ADD INDEX idx_code_issue_page (code, issue, page)`; MyISAM,
+  table copy took 33 ms). The table had no index besides the primary key, so every page lookup
+  scanned all rows; Pages View's 1/s `loadPagePair` poll dropped from ~1.7 s to ~0.2 s on
+  BAV_2688 (368 pages). No duplicate rows per (code, issue, page, type, state, fin, part)
+  existed, so `LIMIT 1` queries return the same rows as before. Must exist on any rebuilt/cloned
+  database.
 - `magazines.preflight` (`varchar(10) NOT NULL DEFAULT 'Yes'`) — new column, 2026-09-03: mirrors
   the Hybrid-only publication-level "Preflight" Yes/No setting into the DB, same pattern as the
   pre-existing `HideApprovedComments` mirror (the setting's real source of truth is still the

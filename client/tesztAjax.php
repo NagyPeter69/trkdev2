@@ -1,6 +1,10 @@
 <?php
 if( !isset( $_POST['file'] ) ) die();
 session_start();
+// Read-only use of the session: release its lock at once (the timestamp is
+// still refreshed). PHP serialises requests per session, and the 1/s Pages
+// View polls (loadPagePair ~1.7 s) used to queue page loads behind them.
+session_write_close();
 header('Content-Type: text/html; charset=utf-8');
 
 include_once( '../engine/connect.php' );

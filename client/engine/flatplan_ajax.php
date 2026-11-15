@@ -1,5 +1,9 @@
 <?PHP
 	session_start();
+	// Read-only use of the session: release its lock at once (the timestamp is
+	// still refreshed). PHP serialises requests per session, and the 1/s Pages
+	// View polls (loadPagePair ~1.7 s) used to queue page loads behind them.
+	session_write_close();
 	header('Content-Type: text/html; charset=utf-8');
 
 	include_once( '../../engine/connect.php' );
@@ -1941,6 +1945,15 @@
 					$text = "<div class='flatplan_nopage'>".$lang["flatplan"]["nopage"]."</div>";
 					}
 				}
+			}
+		// Pages View asks for lazy thumbnails (lazyThumbs=1): every page's
+		// thumbnail is an inline CSS background, so the browser fetched all of
+		// them (BAV_2688: 362 files, ~33 MB) the moment the list was inserted -
+		// queued ahead of the first page load and render. The URL moves into a
+		// custom property, which isn't fetched; flatplan_preview.php sets the
+		// real background only for thumbnails scrolled into (or near) view.
+		if( $_GET['lazyThumbs'] == '1' ) {
+			$text = preg_replace( '/background-image:\s*url\(/', '--lazy-bg: url(', $text );
 			}
 		$result[0] = $text;
 		$result[1] = $alters;

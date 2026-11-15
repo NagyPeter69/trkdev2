@@ -4006,6 +4006,59 @@ function boxOrPlaceholder( $box, $context = '' ) {
 	return array( "Mediabox" => $placeholder, "Trimbox" => $placeholder, "Cropbox" => $placeholder, "Bleedbox" => $placeholder );
 	}
 
+// Geometry for Pages View remarks (comments table), one entry per displayed
+// page, in that page's own PDF space (PostScript points, y up):
+//   trim  - the page's TrimBox [l, b, r, t]: remarks are stored relative to
+//           its lower-left corner, so they don't depend on zoom, pan, the
+//           viewer's box setting or a later page version's bleed/MediaBox.
+//   view  - the PDF rect the page's raster actually shows inside
+//           .pagePreview [l, b, r, t] (-cropbox.jpg = CropBox, -trimbox.jpg
+//           = TrimBox; on a mediabox-mode spread flatplan_reloadbg.php crops
+//           the spine-side overhang off each raster, mirrored here).
+//   px    - the raster's pixel width in the composite, so the client can
+//           split .pagePreview's width between the pages of a spread.
+// The client maps between these and screen pixels from .pagePreview's live
+// on-screen rect, which already includes zoom and pan - see
+// remarkPdfToScreen()/remarkScreenToPdf() in flatplan_preview.php.
+function remarkGeometry( $pinfoRows, $file, $trim, $boxSetting ) {
+	$suffix = ( $boxSetting == "mediabox" ) ? "-cropbox.jpg" : "-trimbox.jpg";
+	$rasterBox = ( $boxSetting == "mediabox" ) ? "Cropbox" : "Trimbox";
+	$spread = count( $pinfoRows ) > 1;
+	$geom = array();
+
+	foreach( array_values( $pinfoRows ) as $i => $row ) {
+		$box = boxOrPlaceholder( getPDFBox( "Mediabox Trimbox Cropbox Bleedbox", $row ), 'remark geometry, pageinfo id '.( $row[0][0] ?? '?' ) );
+		$r = array_map( 'floatval', $box[ $rasterBox ] );
+		$wPt = $r[2] - $r[0];
+		if( $wPt <= 0 ) $wPt = 1;
+
+		$size = @getimagesize( str_replace( ".pdf", $suffix, $file[$i]["Name"] ) );
+		$wPx = ( !empty( $size[0] ) ) ? floatval( $size[0] ) : $wPt;
+		$pxPerPt = $wPx / $wPt;
+
+		$view = $r;
+		$slotPx = $wPx;
+		if( $spread && $boxSetting == "mediabox" ) {
+			// Same pixel crops as the composite in flatplan_reloadbg.php
+			if( $i == 0 ) {
+				$slotPx = $wPx - floatval( $trim[0]["Left"] );
+				$view[2] = $r[0] + $slotPx / $pxPerPt;
+				}
+			else {
+				$slotPx = $wPx - floatval( $trim[1]["Left"] );
+				$view[0] = $r[0] + floatval( $trim[1]["Left"] ) / $pxPerPt;
+				}
+			}
+
+		$geom[] = array(
+			"trim" => array_map( 'floatval', $box["Trimbox"] ),
+			"view" => $view,
+			"px" => $slotPx
+			);
+		}
+	return $geom;
+	}
+
 function getPDFBox2( $box, $file ) {
 	$boxes = preg_split( '/[\s,]+/', trim( $box ), -1, PREG_SPLIT_NO_EMPTY );
 	$command = r3run( 'GETDATA', array(), $file );

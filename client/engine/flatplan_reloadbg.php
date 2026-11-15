@@ -1,5 +1,9 @@
 <?PHP
 session_start();
+// Read-only use of the session: release its lock at once (the timestamp is
+// still refreshed). PHP serialises requests per session, and the 1/s Pages
+// View polls (loadPagePair ~1.7 s) used to queue page loads behind them.
+session_write_close();
 header('Content-Type: text/html; charset=utf-8');
 
 include_once( '../../engine/connect.php' );
@@ -145,6 +149,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 	$ver = array();
 	$pid = array();
 	$preflightErr = array();
+	$pinfoRows = array();
 
 	for( $i = 0; $i < count( $pages ); $i++ ) {
 		$dir = "../packages/".$magazine[0][3]."/".$issue[0][10];
@@ -199,6 +204,7 @@ if( $_GET['op'] == 'reloadbg' ) {
 		
 		$pid[] = $pageinfo[0][0];
 		$preflightErr[] = intval( $pageinfo[0][18] );
+		$pinfoRows[$i] = $pageinfo;
 
 		$ver[] = "v".$pageinfo[0][3];
 		if( is_file( $dir."/".$file2 ) ) {
@@ -875,7 +881,9 @@ if( $_GET['op'] == 'reloadbg' ) {
 	// any) so the preflight indicator(s) can be refreshed on every AJAX
 	// page navigation instead of only reflecting whichever page happened
 	// to be loaded first.
-	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop, $colorStdNames, $preflightErr, $pid );
+	$remarkGeom = remarkGeometry( $pinfoRows, $file, $trim, $user[0][15] );
+
+	$result = array( $imgData, $newsize, $cbox, $file, $pageID, $text, implode( "-", $numb ), array( $prev_link, $next_link ), $fpPages, $sizes['Top'], $dcolors, $trim, $ver, $dtitles, $bleed, $crop, $colorStdNames, $preflightErr, $pid, $remarkGeom );
 	}
 	
 if( $_GET['op'] == 'getFirstPage' ) {

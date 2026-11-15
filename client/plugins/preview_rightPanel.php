@@ -1311,6 +1311,7 @@ function placeBox( force, source, from ) {
 	}
 
 function reloadBG( switchTo, from ) {
+	if( typeof remarksHide == "function" ) remarksHide( true );
 	$(".pagePreview").css( 'background-image', 'url()' );
 	disableZoom = true;
 	// changePic() already does this on its own nav-arrow-click path, but
@@ -1356,6 +1357,7 @@ function reloadBG( switchTo, from ) {
 			$("#errorInfo").html( "hiba" );
 			$("#errorInfo").fadeIn( 100 );
 			disableZoom = false;
+			if( typeof remarksViewReady == "function" ) remarksViewReady();
 			},
 		success:function( data ) {
 			if( data[0] != "error" ) {
@@ -1537,6 +1539,9 @@ function reloadBG( switchTo, from ) {
 					'Top': data[2][1]['Top'].toString().replace( ",", "." )
 					}
 				cBox[2] = data[2][2];
+				// data[19]: per-page remark geometry (remarkGeometry() in
+				// engine/engine.php) - see remarkFrame() in flatplan_preview.php
+				remarkGeom = ( data[19] != undefined ) ? data[19] : [];
 
 				file[0] = {
 					'Name': data[3][0]["Name"].substring(3),
@@ -2468,6 +2473,9 @@ function toggleBox( img ) {
 	}
 
 function toggleTool( tool ) {
+	// Single/pair/wide switches fade the page out (and save the setting)
+	// before reloadBG() runs - hide the remarks with the page, not after it.
+	if( typeof remarksHide == "function" ) remarksHide( true );
 	removeAdvancedTool();
 	var source = 'changePic';
 	$('.activeGraph').each(function() {

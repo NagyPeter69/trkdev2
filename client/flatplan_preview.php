@@ -1726,16 +1726,47 @@ function getFirstPage() {
 
 var firstRun = true;
 var realfirstRun = true;
+
+// Page-list thumbnails arrive with their URL in a --lazy-bg custom property
+// (lazyThumbs=1, see loadPagePair in engine/flatplan_ajax.php); only those in
+// or near the visible part of the list get their real background, so the
+// first page load isn't queued behind hundreds of thumbnail downloads.
+var lazyThumbsObserver = null;
+function lazyThumbsShow( el ) {
+	var bg = el.style.getPropertyValue( '--lazy-bg' );
+	if( bg ) {
+		el.style.backgroundImage = bg;
+		el.style.removeProperty( '--lazy-bg' );
+		}
+	}
+function lazyThumbsObserve() {
+	var els = $('.innerPreview').find('[style*="--lazy-bg"]').get();
+	if( !( 'IntersectionObserver' in window ) ) {
+		els.forEach( lazyThumbsShow );
+		return;
+		}
+	if( lazyThumbsObserver ) lazyThumbsObserver.disconnect();
+	lazyThumbsObserver = new IntersectionObserver( function( entries, obs ) {
+		entries.forEach( function( entry ) {
+			if( entry.isIntersecting ) {
+				lazyThumbsShow( entry.target );
+				obs.unobserve( entry.target );
+				}
+			});
+		}, { root: $('.innerPreview')[0], rootMargin: '600px 0px' } );
+	els.forEach( function( el ) { lazyThumbsObserver.observe( el ); } );
+	}
 var cache = "<?= time() ?>";
 function loadPages() {
 	$.ajax	({
 		url:"engine/flatplan_ajax.php",
-		data: 'op=loadPagePair&type=fpPreview&filter='+fpFilter+'&opt='+opt+'&maxWidth='+maxWidth+'&cache='+cache+'&id=<?= $_GET["id"] ?>&intra_user=<?= $_SESSION['intra_user'] ?>&part='+$("#part").val()+'&pageNumbering=<?= $pn ?>',
+		data: 'op=loadPagePair&type=fpPreview&lazyThumbs=1&filter='+fpFilter+'&opt='+opt+'&maxWidth='+maxWidth+'&cache='+cache+'&id=<?= $_GET["id"] ?>&intra_user=<?= $_SESSION['intra_user'] ?>&part='+$("#part").val()+'&pageNumbering=<?= $pn ?>',
 		dataType: 'json',
 		success:function( data ) {
 			//processChecker = false;
 			if( txt != data[0] ) {
 				$('.innerPreview').html( data[0] );
+				lazyThumbsObserve();
 
 				if( data[2] == "1" ) {
 					$("#fpnopages").show(0);
@@ -1991,6 +2022,7 @@ function rendering( command, newZoom ) {
 		}
 	
 	if( currentPos.left != actualPos.left || currentPos.top != actualPos.top || command == "force" ) {	
+		remarksHide( true );
 		ajaxDisabled = true;
 		$('#content_box').kinetic( 'detach' );
 				
@@ -2140,7 +2172,9 @@ function rendering( command, newZoom ) {
 		renderStarted();
 		var sendcolors = colors;
 
-		$(".pagePreview").fadeIn( 200 );		
+		// Fast preview is now at its final size/position: remarks may show,
+		// the high-res render below builds up underneath them.
+		$(".pagePreview").fadeIn( 200, remarksViewReady );
 		
 		if( !mobile || zoom > 80 ) {
 			$("#kep").css("overflow", "hidden");
@@ -2582,6 +2616,7 @@ function changePic( data ) {
 		$("#renderedIMG2").hide( 0 ).attr('src', '' );
 		
 		if( data != '?page=flatlpan_preview' ) {
+			remarksHide( true );
 			enableCommentRefresh = false;
 			$("#commenDisplay").html('');
 			$('.activeGraph').each(function() {
@@ -2832,23 +2867,6 @@ function saveComment( div_id ) {
 		background: '#7EFF70',
 		}, $("#divText").val().replace(/\n/g,"<br>"), div_id+"_text", '#commenDraw' );
 	
-	var correction = $(".pagePreview").position();
-	if( correction.left < 0 ) {	correction.left = 0; }
-	if( correction.top < 0 ) {	correction.top = 0; }
-	if( cBox[2] != "mediabox" ) {
-		if( pages == "2" ) {			
-			correction.top = parseFloat( correction.top ) + pixel( ( parseFloat( cropbox[0]["Top"] ) - parseFloat( bleedbox[0]["Top"] ) ) ) + pixel( parseFloat( cBox[0].Bottom ) );	
-			}
-		else {
-			correction.top = parseFloat( correction.top ) + pixel( ( parseFloat( cropbox[0]["Top"] ) - parseFloat( bleedbox[0]["Top"] ) ) ) + pixel( parseFloat( cBox[0].Bottom ) );
-			}
-		}
-
-	var defLeft = 100/ zoom * ( parseFloat( $("#"+div_id+"_text").css("left") ) - correction.left );
-	var defTop = 100/ zoom * ( parseFloat( $("#"+div_id+"_text").css("top") ) + correction.top - 2*parseFloat( $(".pagePreview").css("top") ) )+2*pixel( parseFloat( cBox[0]['Top'] ) );
-
-	$("#"+div_id+"_text").attr( "defLeft", defLeft );
-	$("#"+div_id+"_text").attr( "defTop", defTop );
 	$("#"+div_id+"_text").attr( "owner", user );
 	$("#"+div_id+"_text").addClass( "resizeDiv" );
 	$("#"+div_id+"_text").addClass( "commentText" );
@@ -2859,30 +2877,30 @@ function saveComment( div_id ) {
 		$("#divTextBox").remove();
 		});	
 
-	if( $("#"+div_id).attr("defLeft") > parseFloat( file[0]['Width'] ) ) {
-		var sqlPage = parseInt( page ) +1;
+	// Shape's on-screen box -> TrimBox-relative points (see remarkFrame())
+	var $shape = $("#"+div_id);
+	var pdfRect = remarkScreenToPdf({
+		left: parseFloat( $shape.css("left") ),
+		top: parseFloat( $shape.css("top") ),
+		width: parseFloat( $shape.css("width") ),
+		height: parseFloat( $shape.css("height") )
+		}, '#commenDraw' );
+	if( pdfRect == null ) {
+		console.warn( "saveComment: no page geometry yet, remark not saved" );
+		cancelComment( div_id );
+		return;
 		}
-	else {
-		var sqlPage = parseInt( page );
-		}
-
-	if( fpPages == "single" ) {
-		sqlPage = clk;
-		}
-
-	// Exact inverse of loadComments(): store the coordinates that will redraw
-	// the shape at the very pixel it sits on now (= where it was pinned).
-	var screenOffset = commentScreenOffset( sqlPage );
-	var sqlLeft = 100/ zoom * ( parseFloat( $("#"+div_id).css("left") ) - screenOffset.left ) - screenOffset.shift;
-	var sqlTop = 100/ zoom * ( parseFloat( $("#"+div_id).css("top") ) - screenOffset.top );
+	var sqlPage = pdfRect.page;
+	var sqlLeft = pdfRect.x;
+	var sqlTop = pdfRect.y;
 
 	var uploadData = {
 		pub: pub,
 		parent: '0',
 		left: sqlLeft,
 		top: sqlTop,
-		width: $("#"+div_id).attr("defWidth"),
-		height: $("#"+div_id).attr("defHeight"),
+		width: pdfRect.w,
+		height: pdfRect.h,
 		page: sqlPage,
 		text: $("#"+div_id+"_text").html(),
 		user: user,
@@ -3135,41 +3153,172 @@ function autoreply( comment_id ) {
 	}
 
 
-// Where a stored remark lands on screen: newLeft = zoom/100*Left + left,
-// newTop = zoom/100*Top + top (Left already shifted by file[0].Width for the
-// right-hand page of a spread, see loadComments()). This is the ONE mapping
-// between stored remark coordinates and #commenDisplay pixels - loadComments()
-// draws with it and saveComment() inverts it, so a remark reloads exactly
-// where it was pinned. They used to carry two unrelated formulas (save also
-// subtracted a quarter of the scroll offset in trimbox mode), which put
-// remarks pinned while zoomed/scrolled tens of pixels away from the click.
-function commentScreenOffset( commentPage ) {
-	var correction = $(".pagePreview").position();
-	if( correction.left <= 0 || isNaN( correction.left ) ) { correction.left = 0; }
-	if( correction.top <= 0 || isNaN( correction.top ) ) { correction.top = 0; }
+// Remark (comments table) coordinates are PostScript points relative to the
+// lower-left corner of the remark's own page's TrimBox, y up - the classic
+// PDF convention, independent of zoom, pan, the viewer's mediabox/trimbox
+// setting and of a later page version's bleed/MediaBox:
+//   left/top   = lower-left corner of the shape (x, y), width/height in pt.
+// Screen positions are derived from .pagePreview's live on-screen rect
+// (which already reflects zoom and #content_box's scroll/pan) plus the
+// per-page geometry flatplan_reloadbg.php sends (remarkGeometry() in
+// engine/engine.php): which PDF rect each page raster shows and how wide
+// it is in the composite. Nothing here re-derives zoom or scroll offsets.
+var remarkGeom = [];
 
-	if( cBox[2] != "mediabox" && commentPage == page ) {
-		correction.left -= pixel( ( parseFloat( cropbox[0]["Left"] ) - parseFloat( bleedbox[0]["Left"] ) ), 100 );
-		correction.left = parseFloat( correction.left ) + pixel( parseFloat( cBox[0].Left ) );
-		correction.top = parseFloat( correction.top ) - pixel( parseFloat( cBox[0].Bottom ) );
-		}
-	else if( cBox[2] != "mediabox" ) {
-		correction.left += pixel( ( parseFloat( cropbox[0]["Left"] ) - parseFloat( bleedbox[0]["Left"] ) ), 100 );
-		correction.top = parseFloat( correction.top ) - pixel( parseFloat( cBox[0].Bottom ) );
-		}
+// Remarks are never shown in a wrong place. Any view change (zoom, page
+// change, single/pair/wide switch, box switch, re-render) calls
+// remarksHide(viewChange=true) and hides #commenDisplay (shapes, texts and
+// leader lines all live in it) at once. They come back as soon as the new
+// view's fast preview is in its final size and position - rendering()
+// signals that with remarksViewReady() just before it requests the
+// high-res render, which then builds up underneath the remarks.
+// Scrolling/panning and window resizes only hide them until there has been
+// no movement for REMARK_SETTLE_MS (kinetic panning keeps coasting after
+// mouseup); they don't change the page geometry, so no new "ready" signal
+// is needed for them.
+var REMARK_SETTLE_MS = 100;
+var REMARK_SETTLE_MAX_MS = 20000;
+var remarkViewBusy = false;
+var remarkViewReady = true;
+var remarkLastChange = 0;
+var remarkBusySince = 0;
+var remarkSettleTimer = null;
 
-	var relPosition = {
-		left: $(".pagePreview").offset().left - $("#content_box").offset().left,
-		top : $(".pagePreview").offset().top - $("#content_box").offset().top
+function remarksHide( viewChange ) {
+	remarkLastChange = Date.now();
+	if( !remarkViewBusy ) remarkBusySince = remarkLastChange;
+	remarkViewBusy = true;
+	if( viewChange === true ) remarkViewReady = false;
+	$("#commenDisplay").css( "visibility", "hidden" );
+	remarksScheduleCheck( REMARK_SETTLE_MS );
+	}
+
+// The new view's fast preview is laid out (see rendering())
+function remarksViewReady() {
+	remarkViewReady = true;
+	remarksScheduleCheck( 0 );
+	}
+
+function remarksScheduleCheck( ms ) {
+	if( remarkSettleTimer != null ) clearTimeout( remarkSettleTimer );
+	remarkSettleTimer = setTimeout( remarksSettleCheck, ms );
+	}
+
+function remarksSettleCheck() {
+	remarkSettleTimer = null;
+	if( !remarkViewBusy ) return;
+	var now = Date.now();
+	var sinceChange = now - remarkLastChange;
+	var bg = document.getElementById( "backgroundImage" );
+	var bgReady = !bg || !bg.getAttribute( "src" ) || bg.complete;
+	var ready = remarkViewReady && bgReady && sinceChange >= REMARK_SETTLE_MS;
+	// A view change that never reaches rendering() (an error path) must not
+	// hide remarks forever: once the cap passes, lay out against whatever
+	// the view is now.
+	if( !ready && ( now - remarkBusySince ) < REMARK_SETTLE_MAX_MS ) {
+		remarksScheduleCheck( sinceChange < REMARK_SETTLE_MS ? REMARK_SETTLE_MS - sinceChange : 30 );
+		return;
+		}
+	remarkViewBusy = false;
+	remarkViewReady = true;
+	if( enableCommentRefresh && viewComment && commentCache != "" && commentCacheKey == remarkViewKey() ) {
+		// same pages as before: relayout locally, no server round trip
+		layoutComments( commentCache );
+		remarksShowIfSettled();
+		}
+	else if( enableCommentRefresh && viewComment ) refreshComments( '' );
+	else remarksShowIfSettled();
+	}
+
+// Called after every remark layout; shows them only for a settled view
+function remarksShowIfSettled() {
+	if( !remarkViewBusy ) $("#commenDisplay").css( "visibility", "visible" );
+	}
+
+$('#content_box').on( 'scroll', remarksHide );
+$(window).on( 'resize', remarksHide );
+if( typeof _zoom == "function" ) {
+	var remarkZoomOrig = _zoom;
+	_zoom = function() {
+		if( !disableZoom ) remarksHide( true );
+		return remarkZoomOrig.apply( this, arguments );
 		};
-	if( relPosition.left < 0 ) { relPosition.left = 0; }
-	if( relPosition.top < 0 ) {	relPosition.top = 0; }
+	}
 
+// 0 = left/single page of the view, 1 = right page of a spread
+function remarkSlot( commentPage ) {
+	if( remarkGeom.length > 1 && fpPages != "single" && parseInt( commentPage ) == parseInt( page ) + 1 ) return 1;
+	return 0;
+	}
+
+// Document-coordinate rect of one page's raster, plus its PDF geometry
+function remarkFrame( slot ) {
+	var g = remarkGeom[slot];
+	if( g == undefined ) return null;
+	var $kep = $(".pagePreview");
+	var off = $kep.offset();
+	var W = $kep.innerWidth(), H = $kep.innerHeight();
+	var total = 0, before = 0;
+	for( var i = 0; i < remarkGeom.length; i++ ) {
+		var px = parseFloat( remarkGeom[i].px ) || 0;
+		if( i < slot ) before += px;
+		total += px;
+		}
+	if( total <= 0 ) return null;
 	return {
-		left: relPosition.left - correction.left + parseFloat( $(".pagePreview").css("left") ) + pixel( parseInt( cBox[0].Left ) ),
-		top: correction.top + 2*pixel( parseInt( cBox[0].Left ) ),
-		// loadComments() adds this to Left before scaling for the spread's right page
-		shift: ( commentPage == parseInt( page ) + 1 && fpPages != "single" ) ? parseFloat( file[0]['Width'] ) : 0
+		left: off.left + $kep[0].clientLeft + W * before / total,
+		top: off.top + $kep[0].clientTop,
+		width: W * parseFloat( g.px ) / total,
+		height: H,
+		view: g.view.map( parseFloat ),
+		trim: g.trim.map( parseFloat )
+		};
+	}
+
+// Document coordinates of left:0/top:0 for absolutely positioned children
+// of a container (#commenDisplay / #commenDraw)
+function remarkContainerOrigin( container ) {
+	var $probe = $("<div style='position: absolute; left: 0; top: 0; width: 0; height: 0; margin: 0; border: 0; padding: 0;'></div>").appendTo( container );
+	var o = $probe.offset();
+	$probe.remove();
+	return o;
+	}
+
+// Stored rect (pt, TrimBox-relative) -> CSS left/top/width/height in container
+function remarkPdfToScreen( rect, commentPage, container ) {
+	var f = remarkFrame( remarkSlot( commentPage ) );
+	if( f == null ) return null;
+	var o = remarkContainerOrigin( container );
+	var sx = f.width / ( f.view[2] - f.view[0] );
+	var sy = f.height / ( f.view[3] - f.view[1] );
+	return {
+		left: f.left - o.left + ( f.trim[0] + rect.x - f.view[0] ) * sx,
+		top: f.top - o.top + ( f.view[3] - ( f.trim[1] + rect.y + rect.h ) ) * sy,
+		width: rect.w * sx,
+		height: rect.h * sy
+		};
+	}
+
+// CSS box of an element in container -> { page, x, y, w, h } (pt, TrimBox-relative)
+function remarkScreenToPdf( css, container ) {
+	var o = remarkContainerOrigin( container );
+	var docLeft = o.left + css.left, docTop = o.top + css.top;
+	var slot = 0;
+	var f1 = remarkFrame( 1 );
+	if( f1 != null && fpPages != "single" && docLeft + css.width / 2 >= f1.left ) slot = 1;
+	var f = ( slot == 1 ) ? f1 : remarkFrame( 0 );
+	if( f == null ) return null;
+	var sx = f.width / ( f.view[2] - f.view[0] );
+	var sy = f.height / ( f.view[3] - f.view[1] );
+	var w = css.width / sx, h = css.height / sy;
+	var x = ( docLeft - f.left ) / sx + f.view[0] - f.trim[0];
+	var yTop = f.view[3] - ( docTop - f.top ) / sy;
+	return {
+		page: ( fpPages == "single" ) ? clk : ( slot == 1 ? parseInt( page ) + 1 : parseInt( page ) ),
+		x: x,
+		y: yTop - h - f.trim[1],
+		w: w,
+		h: h
 		};
 	}
 
@@ -3194,10 +3343,7 @@ function loadComments( comment ) {
 			Status: commentLine[12],
 			Extra: commentLine[16]
 			}
-		if( commentData.Page == parseInt( page ) + 1 && fpPages != "single" ) {
-			commentData.Left += parseFloat( file[0]['Width'] );
-			}
-		
+
 		if( commentData.Extra == "comment3" ) {
 			commentData.Status = "comment3";
 			}
@@ -3216,12 +3362,13 @@ function loadComments( comment ) {
 			};
 		zoom_ = zoom;
 
-		var screenOffset = commentScreenOffset( commentData.Page );
-		var newLeft = ( zoom_ / 100 * commentData.Left) + screenOffset.left;
-		var newTop = ( zoom_ / 100 * commentData.Top ) + screenOffset.top;
-		var newWidth = ( zoom_ / 100 ) * commentData.Width;
-		var newHeight = ( zoom_ / 100 ) * commentData.Height;
-		
+		var screenBox = remarkPdfToScreen( { x: commentData.Left, y: commentData.Top, w: commentData.Width, h: commentData.Height }, commentData.Page, '#commenDisplay' );
+		if( screenBox == null ) continue;
+		var newLeft = screenBox.left;
+		var newTop = screenBox.top;
+		var newWidth = screenBox.width;
+		var newHeight = screenBox.height;
+
 		if( commentData.Page == page ) {
 			nextCommentCounter++;
 			var nextComment = nextCommentCounter+"_"+commentData.Page;
@@ -3238,10 +3385,6 @@ function loadComments( comment ) {
 			text: ''
 		}).appendTo('#commenDisplay');
 
-		$('#comment_'+nextComment).attr( "defLeft", commentData.Left );
-		$('#comment_'+nextComment).attr( "defTop", commentData.Top );
-		$('#comment_'+nextComment).attr( "defWidth", commentData.Width );
-		$('#comment_'+nextComment).attr( "defHeight", commentData.Height );
 		
 		var actualPlaceHolder = zoom_/100 * 15;
 		var textLeft = ( parseFloat( $('#comment_'+nextComment).css("left") )+ parseFloat( $('#comment_'+nextComment).css("width") )+actualPlaceHolder);
@@ -3261,18 +3404,6 @@ function loadComments( comment ) {
 			background: '#7EFF70'
 			}, commentData.Text, "comment_"+nextComment+"_text", '#commenDisplay' );
 	
-		var correction = $(".pagePreview").position();
-		if( cBox[2] != "mediabox" && commentData.Page == page ) {
-			correction.left = parseFloat( correction.left ) + pixel( parseFloat( cBox[0].Left ) );
-			correction.top = parseFloat( correction.top ) - pixel( parseFloat( cBox[0].Bottom ) );
-			}	
-		if( correction.left < 0 ) {	correction.left = 0; }
-		if( correction.top < 0 ) {	correction.top = 0; }
-	
-		var defLeft = 100/ zoom_ * ( parseFloat( $("#comment_"+nextComment+"_text").css("left") ) - correction.left );
-		var defTop = 100/ zoom_ * ( parseFloat( $("#comment_"+nextComment+"_text").css("top") ) - correction.top );
-		$("#comment_"+nextComment+"_text").attr( "defLeft", defLeft );
-		$("#comment_"+nextComment+"_text").attr( "defTop", defTop );
 		$("#comment_"+nextComment+"_text").attr( "owner", commentData.Owner );
 		$("#comment_"+nextComment+"_text").attr( "sqlid", commentData.Id );
 		$("#comment_"+nextComment+"_text").addClass( "resizeDiv" );
@@ -3303,6 +3434,52 @@ function loadComments( comment ) {
 var commenDisplayHTML = "";
 var enableCommentRefresh = true;
 var commentCache = "";
+// Lays out the remarks in #commenDisplay against the current view. Used by
+// refreshComments() and, without a server round trip, by the settle check
+// after a pan/zoom of the same pages (see remarksSettleCheck()).
+function layoutComments( commentStr ) {
+	$("#commenDisplay").html('');
+	nextCommentCounter = 0;
+	nextAlterCounter = 0;
+	loadComments( commentStr );
+	$(".commentDraw").each(function(){
+		var status = "";
+		var temp = $(this).attr('id');
+		var classList = document.getElementById( temp ).className.split(/\s+/);
+		for (var i = 0; i < classList.length; i++) {
+			if ( classList[i].indexOf('status_comment') >= 0 ) {
+				status = classList[i].split("_")[1];
+				break;							 	
+  								 	}
+  								 }
+		
+		connect( document.getElementById( temp ), document.getElementById( temp+'_text' ), "#0F0", 3, status, temp+'_dash' );
+		$("#"+temp+"_text").draggable({ 
+			start: function( event, ui ) {
+				$('#content_box').kinetic( 'detach' );
+				},
+			stop: function( event, ui ) {
+       								if( graphState == "" ) {
+       									$('#content_box').kinetic( 'attach' );
+       									}
+				},								
+			drag: function( event, ui ) {
+				ui.position.top += $("#content_box").scrollTop();
+				ui.position.left += $("#content_box").scrollLeft();
+				connect( document.getElementById( temp ), document.getElementById( temp+'_text' ), "#0F0", 3, status, temp+'_dash' );
+				},
+			cursor: "move" 
+			});
+		});
+	}
+
+// Identifies which remarks the view shows; a pan/zoom keeps it, a page,
+// version, part or single/pair change doesn't.
+var commentCacheKey = "";
+function remarkViewKey() {
+	return [ page, clk, pack_id, PageType, tag, $("#part").val(), fpPages, pages ].join( "|" );
+	}
+
 function refreshComments( suboption ) {
 	if( enableCommentRefresh && viewComment ) {
 		$.ajax	({
@@ -3313,51 +3490,29 @@ function refreshComments( suboption ) {
 			success:function( data ) {
 				if( enableCommentRefresh ) {
 					if( data != "" ) {
-						$("#commenDisplay").html('');
-						nextCommentCounter = 0;
-						nextAlterCounter = 0;
-						loadComments( data[0] );
-						$(".commentDraw").each(function(){
-							var status = "";
-							var temp = $(this).attr('id');
-							var classList = document.getElementById( temp ).className.split(/\s+/);
-							for (var i = 0; i < classList.length; i++) {
-								if ( classList[i].indexOf('status_comment') >= 0 ) {
-									status = classList[i].split("_")[1];
-									break;							 	
-  								 	}
-  								 }
-							
-							connect( document.getElementById( temp ), document.getElementById( temp+'_text' ), "#0F0", 3, status, temp+'_dash' );
-							$("#"+temp+"_text").draggable({ 
-								start: function( event, ui ) {
-									$('#content_box').kinetic( 'detach' );
-									},
-								stop: function( event, ui ) {
-       								if( graphState == "" ) {
-       									$('#content_box').kinetic( 'attach' );
-       									}
-									},								
-								drag: function( event, ui ) {
-									ui.position.top += $("#content_box").scrollTop();
-									ui.position.left += $("#content_box").scrollLeft();
-									connect( document.getElementById( temp ), document.getElementById( temp+'_text' ), "#0F0", 3, status, temp+'_dash' );
-									},
-								cursor: "move" 
-								});
-							});
+						layoutComments( data[0] );
 						commentCache = data[0];
+						commentCacheKey = remarkViewKey();
 						}
+					else {
+						// none left (e.g. just deleted) - don't relayout stale ones
+						commentCache = "";
+						}
+					remarksShowIfSettled();
 
 					if( suboption != "" ) {
 						$( suboption ).html('');
 						}
 					}
 				//if( suboption == "" ) setTimeout(function() { refreshComments( suboption ); }, 1000 );
+				},
+			error:function() {
+				remarksShowIfSettled();
 				}
 			});
 		}
 	else {
+		remarksShowIfSettled();
 		//if( suboption == "" ) setTimeout(function() { refreshComments( suboption ); }, 1000 );
 		}	
 	}
